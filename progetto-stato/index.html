@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stato Magazzino</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <h1>Stato</h1>
+
+    <!-- Barra di ricerca -->
+    <input
+      id="search"
+      type="text"
+      placeholder="Cerca prodotto..."
+      autocomplete="off"
+    />
+    <ul id="results"></ul>
+
+    <!-- Card prodotto -->
+    <div id="card" class="card hidden">
+      <p><strong>Descrizione:</strong> <span id="descrizione"></span></p>
+      <p>
+        <strong>Giacenza:</strong>
+        <input id="giacenza" type="number" min="0" />
+      </p>
+      <p>
+        <strong>Scorta minima:</strong>
+        <span id="scorta"></span>
+      </p>
+      <button id="save">Salva</button>
+    </div>
+
+    <!-- Messaggio -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
