@@ -3,13 +3,13 @@ const fetch = require("node-fetch");
 
 module.exports = async function handler(req, res) {
   const SHEET_ID = process.env.SHEET_ID;        // ID del foglio Google
-  const API_KEY = process.env.GOOGLE_API_KEY;   // API Key generata in Google Cloud
-  const TAB_NAME = "Prodotti";                  // nome esatto del tab nel foglio
+  const API_KEY = process.env.GOOGLE_API_KEY;   // API Key creata su Google Cloud
+  const TAB_NAME = "Prodotti";                  // nome esatto del tab
+  const RANGE = "A:C";                          // colonne: Descrizione, Giacenza, Scorta minima
 
   try {
     if (req.method === "GET") {
-      // URL API Google Sheets
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${TAB_NAME}?key=${API_KEY}`;
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${TAB_NAME}!${RANGE}?key=${API_KEY}`;
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -18,9 +18,7 @@ module.exports = async function handler(req, res) {
       }
 
       const data = await response.json();
-
-      // Prima riga come header, le altre come dati
-      const [header, ...rows] = data.values || [];
+      const [header, ...rows] = data.values || []; // prima riga come intestazione
       const result = rows.map((row, index) => ({
         id: index,
         descrizione: row[0] || "",
@@ -31,14 +29,13 @@ module.exports = async function handler(req, res) {
       return res.status(200).json(result);
 
     } else if (req.method === "PATCH") {
-      // Modifica giacenza
       const { rowIndex, Giacenza } = req.body;
-
       if (typeof rowIndex !== "number" || typeof Giacenza !== "number") {
         return res.status(400).json({ error: "rowIndex e Giacenza devono essere numeri" });
       }
 
-      const patchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${TAB_NAME}!B${rowIndex + 1}?valueInputOption=RAW&key=${API_KEY}`;
+      // +1 perché le righe API iniziano da 1 e la prima riga è header
+      const patchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${TAB_NAME}!B${rowIndex + 2}?valueInputOption=RAW&key=${API_KEY}`;
       const patchRes = await fetch(patchUrl, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
