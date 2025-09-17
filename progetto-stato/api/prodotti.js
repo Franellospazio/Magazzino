@@ -1,53 +1,58 @@
-import fetch from "node-fetch";
+// /api/prodotti.js
+import { google } from "googleapis";
 
 export default async function handler(req, res) {
-  const SHEET_ID = process.env.SHEET_ID;
-  const API_KEY = process.env.GOOGLE_API_KEY;
-  const TAB_NAME = "Foglio1";
+  const SHEET_ID = process.env.SHEET_ID; // ID del foglio Google
+  const TAB_NAME = "Foglio1";             // nome del tab (metti quello esatto!)
+  const KEY_FILE = "./service-account.json"; // path al JSON del service account
 
   try {
-    if (req.method === "GET") {
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${TAB_NAME}?key=${API_KEY}`;
-      const response = await fetch(url);
-      if (!response.ok) {
-        const text = await response.text();
-        return res.status(500).json({ error: `Errore Google Sheets GET: ${text}` });
-      }
+    // Autenticazione con service account
+    const auth = new google.auth.GoogleAuth({
+      keyFile: KEY_FILE,
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
 
-      const data = await response.json();
-      const [header, ...rows] = data.values || [];
+    const client = await auth.getClient();
+    const sheets = google.sheets({ version: "v4", auth: client });
+
+    if (req.method === "GET") {
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: TAB_NAME,
+      });
+
+      const [header, ...rows] = response.data.values || [];
       const result = rows.map((row, index) => ({
         id: index,
         descrizione: row[0] || "",
         giacenza: Number(row[1] || 0),
         scorta_minima: Number(row[2] || 0)
       }));
+
       return res.status(200).json(result);
 
     } else if (req.method === "PATCH") {
-      const { rowIndex, Giacenza } = req.body; // <-- qui req.body
+      const { rowIndex, Giacenza } = await req.json();
 
       if (typeof rowIndex !== "number" || typeof Giacenza !== "number") {
         return res.status(400).json({ error: "rowIndex e Giacenza devono essere numeri" });
       }
 
-      // +2 perché riga 1 è header
-      const patchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${TAB_NAME}!B${rowIndex + 2}?valueInputOption=RAW&key=${API_KEY}`;
-      const patchRes = await fetch(patchUrl, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ values: [[Giacenza]] })
+      const range = `${TAB_NAME}!B${rowIndex + 2}`; // +2 perché riga 1 è header
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range,
+        valueInputOption: "RAW",
+        requestBody: { values: [[Giacenza]] },
       });
 
-      if (!patchRes.ok) {
-        const text = await patchRes.text();
-        return res.status(500).json({ error: `Errore Google Sheets PATCH: ${text}` });
-      }
-
       return res.status(200).json({ success: true });
+
     } else {
       return res.status(405).json({ error: "Method Not Allowed" });
     }
+
   } catch (err) {
     console.error("Errore API:", err);
     return res.status(500).json({ error: err.message });
