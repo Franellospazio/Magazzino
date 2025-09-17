@@ -19,6 +19,12 @@ module.exports = async function handler(req, res) {
         grant_type: 'client_credentials'
       })
     });
+
+    if (!tokenRes.ok) {
+      const text = await tokenRes.text();
+      return res.status(500).json({ error: `Errore token OAuth: ${text}` });
+    }
+
     const tokenData = await tokenRes.json();
     const accessToken = tokenData.access_token;
 
@@ -26,11 +32,19 @@ module.exports = async function handler(req, res) {
       const graphRes = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/tables/${tableName}/rows`, {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
+
+      if (!graphRes.ok) {
+        const text = await graphRes.text();
+        return res.status(500).json({ error: `Errore Graph GET: ${text}` });
+      }
+
       const data = await graphRes.json();
-      res.status(200).json(data.value);
+      return res.status(200).json(data.value);
+
     } else if (req.method === 'PATCH') {
       const { rowIndex, Giacenza } = req.body;
-      await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/tables/${tableName}/rows/${rowIndex}`, {
+
+      const patchRes = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/tables/${tableName}/rows/${rowIndex}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -38,12 +52,20 @@ module.exports = async function handler(req, res) {
         },
         body: JSON.stringify({ values: [[Giacenza]] })
       });
-      res.status(200).json({ success: true });
+
+      if (!patchRes.ok) {
+        const text = await patchRes.text();
+        return res.status(500).json({ error: `Errore Graph PATCH: ${text}` });
+      }
+
+      return res.status(200).json({ success: true });
+
     } else {
-      res.status(405).end(); // Method Not Allowed
+      return res.status(405).json({ error: "Method Not Allowed" });
     }
+
   } catch (err) {
     console.error("Errore API:", err);
-    res.status(500).send(`Server error: ${err.message}`);
+    return res.status(500).json({ error: err.message });
   }
 };
