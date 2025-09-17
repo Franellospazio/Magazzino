@@ -3,7 +3,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const results = document.getElementById("results");
   let prodotti = [];
 
-  // Carica i prodotti dall'API
   async function loadProdotti() {
     try {
       const res = await fetch("/api/prodotti");
@@ -14,12 +13,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Funzione per mostrare popup e modificare giacenza
+  // Funzione per mostrare popup con messaggio più chiaro
   function mostraPopup(p) {
-    const nuovaGiacenza = prompt(
-      `Prodotto: ${p.descrizione}\nGiacenza attuale: ${p.giacenza}\nScorta minima: ${p.scorta_minima}\n\nInserisci nuova giacenza:`,
-      p.giacenza
-    );
+    const conferma = confirm(`Vuoi aggiornare la giacenza del prodotto "${p.descrizione}"?\nGiacenza attuale: ${p.giacenza}\nScorta minima: ${p.scorta_minima}`);
+    if (!conferma) return;
+
+    const nuovaGiacenza = prompt(`Inserisci nuova giacenza per "${p.descrizione}":`, p.giacenza);
     if (nuovaGiacenza === null) return; // annullato
     const giacenzaNum = Number(nuovaGiacenza);
     if (isNaN(giacenzaNum)) {
@@ -41,7 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch(err => console.error(err));
   }
 
-  // Ricerca dinamica
   search.addEventListener("input", () => {
     const query = search.value.toLowerCase();
     results.innerHTML = "";
