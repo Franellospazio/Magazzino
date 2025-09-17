@@ -1,28 +1,34 @@
 import { google } from "googleapis";
 
-const SERVICE_ACCOUNT = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID; // ID del tuo foglio
+const SHEET_ID = "1Gizvtr_kqZnWBJOxq6cQoEA6Gki_Ro7s5UiymQrqvdA";
 const TAB_NAME = "Prodotti";
 
+// Carica la chiave dal JSON salvato come variabile ambiente
+const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+
+// Importantissimo: sostituisci i \n con vere nuove linee
+serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+
 const auth = new google.auth.GoogleAuth({
-  credentials: SERVICE_ACCOUNT,
+  credentials: serviceAccount,
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
-const sheets = google.sheets({ version: "v4", auth });
-
 export default async function handler(req, res) {
   try {
+    const client = await auth.getClient();
+    const sheets = google.sheets({ version: "v4", auth: client });
+
     if (req.method === "GET") {
-      // Lettura di tutti i prodotti
-      const result = await sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
+      // Legge tutte le righe della tabella (escludendo intestazione)
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
         range: `${TAB_NAME}!A2:C`,
       });
 
-      const rows = result.data.values || [];
-      const prodotti = rows.map((r, index) => ({
-        id: index + 2, // riga reale nel foglio
+      const rows = response.data.values || [];
+      const prodotti = rows.map((r, i) => ({
+        id: i + 2, // riga nel foglio
         descrizione: r[0] || "",
         giacenza: Number(r[1] || 0),
         scorta_minima: Number(r[2] || 0),
@@ -33,23 +39,24 @@ export default async function handler(req, res) {
 
     if (req.method === "PATCH") {
       const { rowIndex, Giacenza } = req.body;
-      if (!rowIndex || Giacenza == null) {
-        return res.status(400).json({ error: "Dati mancanti" });
+      if (!rowIndex || Giacenza === undefined) {
+        return res.status(400).json({ error: "rowIndex e Giacenza richiesti" });
       }
 
-      // Aggiorna colonna B (Giacenza)
+      // Aggiorna la colonna B (Giacenza) nella riga specificata
       await sheets.spreadsheets.values.update({
-        spreadsheetId: SPREADSHEET_ID,
+        spreadsheetId: SHEET_ID,
         range: `${TAB_NAME}!B${rowIndex}`,
         valueInputOption: "RAW",
-        requestBody: { values: [[Giacenza]] },
+        requestBody: {
+          values: [[Giacenza]],
+        },
       });
 
-      return res.status(200).json({ success: true });
+      return res.status(200).json({ message: "Giacenza aggiornata" });
     }
 
-    res.setHeader("Allow", ["GET", "PATCH"]);
-    return res.status(405).end(`Metodo ${req.method} non consentito`);
+    return res.status(405).json({ error: "Metodo non consentito" });
   } catch (err) {
     console.error("Errore API Google:", err);
     return res.status(500).json({ error: "Errore API Google", details: err.message });
