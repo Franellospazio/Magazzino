@@ -38,6 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   aggiornaBtn.addEventListener("click", async () => {
     if (!selectedProdotto) return;
+
     const giacenzaNum = Number(inputGiacenza.value);
     if (isNaN(giacenzaNum)) {
       alert("Inserisci un numero valido!");
@@ -48,10 +49,24 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/prodotti", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rowIndex: selectedProdotto.id, Giacenza: giacenzaNum })
+        body: JSON.stringify({
+          rowIndex: selectedProdotto.id, // corrisponde alla riga del foglio (indice 0)
+          Giacenza: giacenzaNum
+        })
       });
-      if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || `Errore aggiornamento: ${res.status}`);
+      }
+
+      // Aggiorna localmente la giacenza
       selectedProdotto.giacenza = giacenzaNum;
+
+      // Aggiorna la lista filtrata in tempo reale (opzionale)
+      const li = [...results.children].find(li => li.textContent === selectedProdotto.descrizione);
+      if (li) li.textContent = `${selectedProdotto.descrizione} - Giacenza: ${giacenzaNum}`;
+
       alert(`Giacenza aggiornata a ${giacenzaNum}`);
       closeModal();
     } catch (err) {
@@ -61,7 +76,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   closeBtn.addEventListener("click", closeModal);
-  window.addEventListener("click", e => { if (e.target === modal) closeModal(); });
+  window.addEventListener("click", e => {
+    if (e.target === modal) closeModal();
+  });
 
   search.addEventListener("input", () => {
     const query = search.value.toLowerCase();
