@@ -2,7 +2,7 @@
 import { google } from 'googleapis';
 
 const SHEET_ID = process.env.SHEET_ID;      // ID del foglio
-const TAB_NAME = 'Prodotti';                // Nome del tab
+const TAB_NAME = 'Foglio1';                // Nome del tab
 const SERVICE_ACCOUNT = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
 
 const auth = new google.auth.GoogleAuth({
