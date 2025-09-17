@@ -1,10 +1,9 @@
-// /api/prodotti.js
 import fetch from "node-fetch";
 
 export default async function handler(req, res) {
   const SHEET_ID = process.env.SHEET_ID;        // ID del foglio Google
   const API_KEY = process.env.GOOGLE_API_KEY;   // API Key creata su Google Cloud
-  const TAB_NAME = "Foglio1";                   // nome del tab (metti quello esatto!)
+  const TAB_NAME = "Prodotti";                  // Nome tab del foglio (attenzione maiuscole!)
 
   try {
     if (req.method === "GET") {
@@ -19,7 +18,7 @@ export default async function handler(req, res) {
 
       const data = await response.json();
 
-      // Prima riga come header, le altre come dati
+      // Prima riga intestazioni, poi i dati
       const [header, ...rows] = data.values || [];
       const result = rows.map((row, index) => ({
         id: index,
@@ -31,14 +30,14 @@ export default async function handler(req, res) {
       return res.status(200).json(result);
 
     } else if (req.method === "PATCH") {
-      // Aggiornamento giacenza
-      const { rowIndex, Giacenza } = await req.json();
+      // Modifica giacenza
+      const { rowIndex, Giacenza } = req.body;
 
       if (typeof rowIndex !== "number" || typeof Giacenza !== "number") {
         return res.status(400).json({ error: "rowIndex e Giacenza devono essere numeri" });
       }
 
-      const patchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${TAB_NAME}!B${rowIndex + 1}?valueInputOption=RAW&key=${API_KEY}`;
+      const patchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${TAB_NAME}!B${rowIndex + 2}?valueInputOption=RAW&key=${API_KEY}`;
       const patchRes = await fetch(patchUrl, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
