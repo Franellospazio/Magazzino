@@ -54,7 +54,9 @@ export default async function handler(req, res) {
       return res.status(405).end(`Metodo ${req.method} non consentito`);
     }
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Errore server interno' });
+  console.error('Errore API Google:', error.response?.data || error.message);
+  return res.status(500).json({ error: error.response?.data || error.message });
+}
+
   }
 }
