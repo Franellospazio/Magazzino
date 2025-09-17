@@ -1,15 +1,16 @@
-const fetch = require('node-fetch');
+// /api/prodotti.js
+import fetch from 'node-fetch';
 
-module.exports = async function handler(req, res) {
-  const tenantId = process.env.TENANT_ID;
-  const clientId = process.env.CLIENT_ID;
-  const clientSecret = process.env.CLIENT_SECRET;
-  const fileId = process.env.FILE_ID;
-  const siteId = process.env.SITE_ID; // aggiungi questa variabile su Vercel
-  const tableName = "Prodotti";
+export default async function handler(req, res) {
+  const tenantId = process.env.TENANT_ID;      // Es. a61a1fd9-a117-44c8-8ce6-d539aa12b1aa
+  const clientId = process.env.CLIENT_ID;      // ID applicazione Azure
+  const clientSecret = process.env.CLIENT_SECRET;  // Segreto generato su Azure
+  const siteId = process.env.SITE_ID;          // SITE_ID SharePoint/OneDrive
+  const fileId = process.env.FILE_ID;          // ID file Excel
+  const tableName = "Prodotti";                // Nome tabella nel file Excel
 
   try {
-    // Ottieni token OAuth
+    // Ottieni token OAuth app-only
     const tokenRes = await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -29,8 +30,8 @@ module.exports = async function handler(req, res) {
     const tokenData = await tokenRes.json();
     const accessToken = tokenData.access_token;
 
+    // --- GET: leggere i dati della tabella ---
     if (req.method === 'GET') {
-      // Endpoint corretto per app-only senza /me
       const graphRes = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${fileId}/workbook/tables/${tableName}/rows`, {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
@@ -41,8 +42,18 @@ module.exports = async function handler(req, res) {
       }
 
       const data = await graphRes.json();
-      return res.status(200).json(data.value);
+      // Restituisci solo l'array dei valori
+      const rows = data.value.map(r => {
+        return {
+          descrizione: r.values[0][0],
+          giacenza: r.values[0][1],
+          scorta_minima: r.values[0][2]
+        };
+      });
 
+      return res.status(200).json(rows);
+
+    // --- PATCH: aggiornare la giacenza ---
     } else if (req.method === 'PATCH') {
       const { rowIndex, Giacenza } = req.body;
 
@@ -70,4 +81,4 @@ module.exports = async function handler(req, res) {
     console.error("Errore API:", err);
     return res.status(500).json({ error: err.message });
   }
-};
+}
