@@ -9,17 +9,12 @@
 <body>
   <div class="wrap">
     <div class="search">
-      <input type="text" class="searchTerm" placeholder="Cerca prodotto..." autocomplete="off">
-      <button type="submit" class="searchButton">🔍</button>
+      <input type="text" id="search" class="searchTerm" placeholder="Cerca prodotto...">
+      <button type="button" class="searchButton">
+        🔍
+      </button>
     </div>
-    <ul id="results"></ul>
-
-    <div id="card" class="card hidden">
-      <p><strong>Descrizione:</strong> <span id="descrizione"></span></p>
-      <p><strong>Giacenza:</strong> <input id="giacenza" type="number" min="0"></p>
-      <p><strong>Scorta minima:</strong> <span id="scorta"></span></p>
-      <button id="save">Salva</button>
-    </div>
+    <ul id="results" class="results"></ul>
   </div>
 
   <script src="script.js"></script>
