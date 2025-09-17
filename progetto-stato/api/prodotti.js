@@ -25,14 +25,13 @@ export default async function handler(req, res) {
         id: index,
         descrizione: row[0] || "",
         giacenza: Number(row[1] || 0),
-        scorta_minima: Number(row[2] || 0),
+        scorta_minima: Number(row[2] || 0),  // colonna C
       }));
 
       return res.status(200).json(result);
 
     } else if (req.method === "PATCH") {
-      // Aggiornamento giacenza
-      const { rowIndex, Giacenza } = req.body;  // ✅ FIX
+      const { rowIndex, Giacenza } = await req.json();
 
       if (typeof rowIndex !== "number" || typeof Giacenza !== "number") {
         return res.status(400).json({ error: "rowIndex e Giacenza devono essere numeri" });
@@ -42,7 +41,7 @@ export default async function handler(req, res) {
       const patchRes = await fetch(patchUrl, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ values: [[Giacenza]] }),
+        body: JSON.stringify({ values: [[Giacenza]] })
       });
 
       if (!patchRes.ok) {
@@ -55,6 +54,7 @@ export default async function handler(req, res) {
     } else {
       return res.status(405).json({ error: "Method Not Allowed" });
     }
+
   } catch (err) {
     console.error("Errore API:", err);
     return res.status(500).json({ error: err.message });
