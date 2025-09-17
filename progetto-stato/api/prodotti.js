@@ -5,6 +5,7 @@ module.exports = async function handler(req, res) {
   const clientId = process.env.CLIENT_ID;
   const clientSecret = process.env.CLIENT_SECRET;
   const fileId = process.env.FILE_ID;
+  const siteId = process.env.SITE_ID; // aggiungi questa variabile su Vercel
   const tableName = "Prodotti";
 
   try {
@@ -29,7 +30,8 @@ module.exports = async function handler(req, res) {
     const accessToken = tokenData.access_token;
 
     if (req.method === 'GET') {
-      const graphRes = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/tables/${tableName}/rows`, {
+      // Endpoint corretto per app-only senza /me
+      const graphRes = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${fileId}/workbook/tables/${tableName}/rows`, {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
 
@@ -44,7 +46,7 @@ module.exports = async function handler(req, res) {
     } else if (req.method === 'PATCH') {
       const { rowIndex, Giacenza } = req.body;
 
-      const patchRes = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/tables/${tableName}/rows/${rowIndex}`, {
+      const patchRes = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${fileId}/workbook/tables/${tableName}/rows/${rowIndex}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${accessToken}`,
