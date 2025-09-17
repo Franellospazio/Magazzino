@@ -3,8 +3,8 @@ const fetch = require("node-fetch");
 
 module.exports = async function handler(req, res) {
   const SHEET_ID = process.env.SHEET_ID;        // ID del foglio Google
-  const API_KEY = process.env.GOOGLE_API_KEY;   // API Key creata su Google Cloud
-  const TAB_NAME = "Magazzino";                 // nome del tab all'interno dello sheet
+  const API_KEY = process.env.GOOGLE_API_KEY;   // API Key generata in Google Cloud
+  const TAB_NAME = "Prodotti";                  // nome esatto del tab nel foglio
 
   try {
     if (req.method === "GET") {
@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
       return res.status(200).json(result);
 
     } else if (req.method === "PATCH") {
-      // Per modificare giacenza (opzionale)
+      // Modifica giacenza
       const { rowIndex, Giacenza } = req.body;
 
       if (typeof rowIndex !== "number" || typeof Giacenza !== "number") {
