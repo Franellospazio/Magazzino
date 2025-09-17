@@ -1,7 +1,16 @@
 document.addEventListener("DOMContentLoaded", () => {
   const search = document.getElementById("search");
   const results = document.getElementById("results");
+  const modal = document.getElementById("giacenzaModal");
+  const closeBtn = document.querySelector(".close");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalDescrizione = document.getElementById("modalDescrizione");
+  const modalScorta = document.getElementById("modalScorta");
+  const inputGiacenza = document.getElementById("nuovaGiacenza");
+  const aggiornaBtn = document.getElementById("aggiornaBtn");
+
   let prodotti = [];
+  let selectedProdotto = null;
 
   async function loadProdotti() {
     try {
@@ -13,32 +22,46 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Funzione per mostrare popup con messaggio più chiaro
-  function mostraPopup(p) {
-    const conferma = confirm(`Vuoi aggiornare la giacenza del prodotto "${p.descrizione}"?\nGiacenza attuale: ${p.giacenza}\nScorta minima: ${p.scorta_minima}`);
-    if (!conferma) return;
+  function openModal(prodotto) {
+    selectedProdotto = prodotto;
+    modalTitle.textContent = "Vuoi aggiornare giacenza?";
+    modalDescrizione.textContent = `Prodotto: ${prodotto.descrizione}`;
+    modalScorta.textContent = `Scorta minima: ${prodotto.scorta_minima}`;
+    inputGiacenza.value = prodotto.giacenza;
+    modal.style.display = "block";
+  }
 
-    const nuovaGiacenza = prompt(`Inserisci nuova giacenza per "${p.descrizione}":`, p.giacenza);
-    if (nuovaGiacenza === null) return; // annullato
-    const giacenzaNum = Number(nuovaGiacenza);
+  function closeModal() {
+    modal.style.display = "none";
+    selectedProdotto = null;
+  }
+
+  aggiornaBtn.addEventListener("click", async () => {
+    if (!selectedProdotto) return;
+    const giacenzaNum = Number(inputGiacenza.value);
     if (isNaN(giacenzaNum)) {
       alert("Inserisci un numero valido!");
       return;
     }
 
-    // Aggiorna l'API
-    fetch("/api/prodotti", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rowIndex: p.id, Giacenza: giacenzaNum })
-    })
-      .then(res => {
-        if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
-        p.giacenza = giacenzaNum; // aggiorna localmente
-        alert(`Giacenza aggiornata a ${giacenzaNum}`);
-      })
-      .catch(err => console.error(err));
-  }
+    try {
+      const res = await fetch("/api/prodotti", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rowIndex: selectedProdotto.id, Giacenza: giacenzaNum })
+      });
+      if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
+      selectedProdotto.giacenza = giacenzaNum;
+      alert(`Giacenza aggiornata a ${giacenzaNum}`);
+      closeModal();
+    } catch (err) {
+      console.error(err);
+      alert("Errore aggiornamento giacenza!");
+    }
+  });
+
+  closeBtn.addEventListener("click", closeModal);
+  window.addEventListener("click", e => { if (e.target === modal) closeModal(); });
 
   search.addEventListener("input", () => {
     const query = search.value.toLowerCase();
@@ -49,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
     filtrati.forEach(p => {
       const li = document.createElement("li");
       li.textContent = p.descrizione;
-      li.addEventListener("click", () => mostraPopup(p));
+      li.addEventListener("click", () => openModal(p));
       results.appendChild(li);
     });
   });
