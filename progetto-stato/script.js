@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalTitle = document.getElementById("modalTitle");
   const modalDescrizione = document.getElementById("modalDescrizione");
   const modalScorta = document.getElementById("modalScorta");
-  const minGiacenzaSpan = document.getElementById("minGiacenza");
   const counterValue = document.getElementById("counterValue");
   const decrementBtn = document.getElementById("decrement");
   const incrementBtn = document.getElementById("increment");
@@ -19,7 +18,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";   // <-- inserisci il tuo
   const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID"; // <-- inserisci il tuo
 
-  // Carica prodotti da API
   async function loadProdotti() {
     try {
       const res = await fetch("/api/prodotti");
@@ -30,8 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Aggiorna colore cerchietto giacenza
-  function aggiornaColore() {
+  function aggiornaColore(minGiacenzaSpan) {
     const current = parseInt(counterValue.textContent);
     const min = parseInt(minGiacenzaSpan.textContent);
     counterValue.classList.remove("qty-green", "qty-yellow", "qty-red");
@@ -40,37 +37,38 @@ document.addEventListener("DOMContentLoaded", () => {
     else counterValue.classList.add("qty-red");
   }
 
-  // Apri modal per un prodotto
   function openModal(prodotto) {
     selectedProdotto = prodotto;
     modalTitle.textContent = "Vuoi aggiornare giacenza?";
     modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
     modalScorta.innerHTML = `Scorta minima: <span class="min-qty" id="minGiacenza">${prodotto.ScortaMinima}</span>`;
+
+    const minGiacenzaSpan = document.getElementById("minGiacenza");
     counterValue.textContent = prodotto.Giacenza;
-    aggiornaColore();
+    aggiornaColore(minGiacenzaSpan);
+
     modal.style.display = "block";
   }
 
-  // Chiudi modal
   function closeModal() {
     modal.style.display = "none";
     selectedProdotto = null;
   }
 
-  // Pulsanti incremento/decremento
   decrementBtn.addEventListener("click", () => {
     let current = parseInt(counterValue.textContent);
     if (current > 0) counterValue.textContent = current - 1;
-    aggiornaColore();
+    const minGiacenzaSpan = document.getElementById("minGiacenza");
+    aggiornaColore(minGiacenzaSpan);
   });
 
   incrementBtn.addEventListener("click", () => {
     let current = parseInt(counterValue.textContent);
     counterValue.textContent = current + 1;
-    aggiornaColore();
+    const minGiacenzaSpan = document.getElementById("minGiacenza");
+    aggiornaColore(minGiacenzaSpan);
   });
 
-  // Aggiorna giacenza
   aggiornaBtn.addEventListener("click", async () => {
     if (!selectedProdotto) return;
     const giacenzaNum = parseInt(counterValue.textContent);
@@ -92,14 +90,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
       selectedProdotto.Giacenza = giacenzaNum;
 
-      // Aggiorna lista risultati in tempo reale
       const li = [...results.children].find(
         li => li.textContent.startsWith(selectedProdotto.Descrizione)
       );
       if (li) li.textContent = `${selectedProdotto.Descrizione} - Giacenza: ${giacenzaNum}`;
 
-      // Invio email se giacenza < scorta minima
-      if (giacenzaNum < selectedProdotto.ScortaMinima) {
+      // Invio email solo se la giacenza è inferiore alla scorta minima
+      const minGiacenzaSpan = document.getElementById("minGiacenza");
+      if (giacenzaNum < parseInt(minGiacenzaSpan.textContent)) {
         const templateParams = {
           name: "Sistema Magazzino",
           time: new Date().toLocaleString()
@@ -117,13 +115,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Chiudi modal cliccando X o fuori
   closeBtn.addEventListener("click", closeModal);
   window.addEventListener("click", e => {
     if (e.target === modal) closeModal();
   });
 
-  // Ricerca prodotti
   search.addEventListener("input", () => {
     const query = search.value.toLowerCase();
     results.innerHTML = "";
