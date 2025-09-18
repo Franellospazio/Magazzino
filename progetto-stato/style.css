@@ -54,33 +54,30 @@ body {
   transition: background 0.2s;
 }
 
-.sottoscortaButton {
-  background: #ffcc00;
-  border: none;
-  border-radius: 5px;
-  padding: 0 12px;
-  margin-left: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  height: 40px;
+#sottoscortaBtn:hover {
+  background: #e67e22;
 }
 
-.sottoscortaButton:hover {
-  background: #ffb700;
-}
-
+/* MEDIA QUERIES per smartphone */
 @media (max-width: 600px) {
   .search {
-    flex-direction: column;
-    gap: 5px;
+    flex-direction: column; /* la barra diventa verticale */
+    align-items: stretch;   /* span intera larghezza */
   }
 
-  .sottoscortaButton {
-    width: 100%;
+  .searchTerm {
+    border-radius: 5px 5px 0 0;
+    border-right: 2px solid #00B4CC;
+  }
+
+  .searchButton,
+  #sottoscortaBtn {
+    width: 100%;         /* tutta la larghezza */
+    border-radius: 0 0 5px 5px;
     margin-left: 0;
+    margin-top: 5px;     /* separazione tra pulsanti */
   }
 }
-
 
 
 
@@ -226,6 +223,4 @@ body {
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
-
-
 
