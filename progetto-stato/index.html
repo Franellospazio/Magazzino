@@ -8,10 +8,19 @@
 </head>
 <body>
   <div class="wrap">
+    <!-- Barra ricerca -->
     <div class="search">
       <input type="text" id="search" class="searchTerm" placeholder="Cerca prodotto...">
       <button type="button" class="searchButton">🔍</button>
     </div>
+
+    <!-- Emoji alert prodotti sotto scorta -->
+    <div class="alert-products" style="margin: 10px 0;">
+      <span id="alertBtn" style="cursor:pointer; font-size: 24px;">🚨</span>
+      <span style="margin-left: 10px;">Mostra prodotti sotto scorta</span>
+    </div>
+
+    <!-- Lista dei risultati -->
     <ul id="results" class="results"></ul>
   </div>
 
@@ -33,6 +42,16 @@
     </div>
   </div>
 
+  <!-- Modal popup per prodotti sotto scorta -->
+  <div id="alertModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="alertClose">&times;</span>
+      <h2>Prodotti sotto scorta</h2>
+      <textarea id="alertList" rows="10" style="width:100%;"></textarea>
+      <button id="copyAlertBtn">Copia</button>
+    </div>
+  </div>
+
   <!-- EmailJS SDK v4 -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>
@@ -40,6 +59,36 @@
   </script>
 
   <script src="script.js"></script>
+  <script>
+    // Popup prodotti sotto scorta
+    const alertBtn = document.getElementById("alertBtn");
+    const alertModal = document.getElementById("alertModal");
+    const alertClose = document.getElementById("alertClose");
+    const alertList = document.getElementById("alertList");
+    const copyAlertBtn = document.getElementById("copyAlertBtn");
+
+    alertBtn.addEventListener("click", () => {
+      if (!window.prodotti) return;
+      const sottoScorta = window.prodotti.filter(p => p.Giacenza < p.ScortaMinima);
+      const testo = sottoScorta.map(p => `${p.Descrizione} - Giacenza: ${p.Giacenza} / Scorta Minima: ${p.ScortaMinima}`).join("\n");
+      alertList.value = testo;
+      alertModal.style.display = "block";
+    });
+
+    alertClose.addEventListener("click", () => {
+      alertModal.style.display = "none";
+    });
+
+    window.addEventListener("click", e => {
+      if (e.target === alertModal) alertModal.style.display = "none";
+    });
+
+    copyAlertBtn.addEventListener("click", () => {
+      alertList.select();
+      navigator.clipboard.writeText(alertList.value)
+        .then(() => alert("Copia avvenuta!"))
+        .catch(err => console.error("Errore copia:", err));
+    });
+  </script>
 </body>
 </html>
-
