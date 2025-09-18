@@ -7,16 +7,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalDescrizione = document.getElementById("modalDescrizione");
   const modalScorta = document.getElementById("modalScorta");
   const aggiornaBtn = document.getElementById("aggiornaBtn");
-  const counterValue = document.getElementById("counterValue");
-  const incrementBtn = document.getElementById("increment");
-  const decrementBtn = document.getElementById("decrement");
+  const qtyMinus = document.getElementById("qtyMinus");
+  const qtyPlus = document.getElementById("qtyPlus");
+  const qtyNumber = document.getElementById("qtyNumber");
 
   let prodotti = [];
   let selectedProdotto = null;
   let currentValue = 0;
 
-  const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";   // <-- metti il tuo
-  const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID"; // <-- metti il tuo
+  const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";   // metti il tuo
+  const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID"; // metti il tuo
 
   async function loadProdotti() {
     try {
@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
     modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
     modalScorta.textContent = `Scorta minima: ${prodotto.ScortaMinima}`;
     currentValue = prodotto.Giacenza;
-    counterValue.textContent = currentValue;
+    qtyNumber.textContent = currentValue;
     aggiornaCircleColor();
     modal.style.display = "block";
   }
@@ -47,33 +47,23 @@ document.addEventListener("DOMContentLoaded", () => {
   function aggiornaCircleColor() {
     if (!selectedProdotto) return;
     const min = selectedProdotto.ScortaMinima;
-    if (currentValue > min) {
-      counterValue.style.backgroundColor = "green";
-      counterValue.style.color = "white";
-    } else if (currentValue === min) {
-      counterValue.style.backgroundColor = "gold";
-      counterValue.style.color = "black";
-    } else {
-      counterValue.style.backgroundColor = "red";
-      counterValue.style.color = "white";
-    }
-    counterValue.style.borderRadius = "50%";
-    counterValue.style.padding = "10px 15px";
-    counterValue.style.fontWeight = "bold";
-    counterValue.style.display = "inline-block";
-    counterValue.style.minWidth = "30px";
-    counterValue.style.textAlign = "center";
+    qtyNumber.classList.remove("qty-green","qty-yellow","qty-red");
+    if (currentValue > min) qtyNumber.classList.add("qty-green");
+    else if (currentValue === min) qtyNumber.classList.add("qty-yellow");
+    else qtyNumber.classList.add("qty-red");
   }
 
-  incrementBtn.addEventListener("click", () => {
-    currentValue++;
-    counterValue.textContent = currentValue;
+  qtyMinus.addEventListener("click", () => {
+    if (!selectedProdotto) return;
+    if (currentValue > 0) currentValue--;
+    qtyNumber.textContent = currentValue;
     aggiornaCircleColor();
   });
 
-  decrementBtn.addEventListener("click", () => {
-    currentValue--;
-    counterValue.textContent = currentValue;
+  qtyPlus.addEventListener("click", () => {
+    if (!selectedProdotto) return;
+    currentValue++;
+    qtyNumber.textContent = currentValue;
     aggiornaCircleColor();
   });
 
@@ -90,20 +80,15 @@ document.addEventListener("DOMContentLoaded", () => {
         })
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || `Errore aggiornamento: ${res.status}`);
-      }
-
+      if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
       selectedProdotto.Giacenza = currentValue;
 
-      // Aggiorna la lista filtrata in tempo reale
       const li = [...results.children].find(
         li => li.textContent.startsWith(selectedProdotto.Descrizione)
       );
       if (li) li.textContent = `${selectedProdotto.Descrizione} - Giacenza: ${currentValue}`;
 
-      // 📧 Invio email solo se la giacenza è inferiore alla scorta minima
+      // invio email solo se giacenza < scorta minima
       if (currentValue < selectedProdotto.ScortaMinima) {
         const templateParams = {
           name: "Sistema Magazzino",
@@ -124,9 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   closeBtn.addEventListener("click", closeModal);
-  window.addEventListener("click", e => {
-    if (e.target === modal) closeModal();
-  });
+  window.addEventListener("click", e => { if (e.target === modal) closeModal(); });
 
   search.addEventListener("input", () => {
     const query = search.value.toLowerCase();
