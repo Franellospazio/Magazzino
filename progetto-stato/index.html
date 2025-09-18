@@ -2,6 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
+  <!-- viewport con blocco zoom -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Stato Magazzino</title>
   <link rel="stylesheet" href="style.css">
@@ -22,21 +23,25 @@
       <span class="close">&times;</span>
       <h2 id="modalTitle">Vuoi aggiornare giacenza?</h2>
       <p id="modalDescrizione"></p>
-      <p id="modalScorta">
-        Scorta minima: <span id="minGiacenza" class="min-qty">0</span>
-      </p>
-
-      <!-- Controllo quantità -->
-      <div class="qty-control">
-        <button class="qty-btn minus">-</button>
-        <span id="nuovaGiacenza" class="qty-number">0</span>
-        <button class="qty-btn plus">+</button>
+      <p id="modalScorta"></p>
+      <div class="qty-container">
+        <button id="qtyMinus" class="qty-btn minus">−</button>
+        <span id="qtyNumber" class="qty-number">0</span>
+        <button id="qtyPlus" class="qty-btn plus">+</button>
       </div>
-
       <button id="aggiornaBtn">Aggiorna</button>
     </div>
   </div>
 
+  <!-- Includo EmailJS -->
+  <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+  <script>
+    (function(){
+      emailjs.init("YOUR_PUBLIC_KEY"); // sostituisci con la tua Public Key di EmailJS
+    })();
+  </script>
+
+  <!-- Il tuo script principale -->
   <script src="script.js"></script>
 </body>
 </html>
