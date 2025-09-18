@@ -43,15 +43,17 @@ body {
 }
 /* Pulsante Sottoscorta 📦 accanto alla lente */
 #sottoscortaBtn {
-  width: 50px;
   background: #f39c12; /* arancione */
   border: none;
   border-radius: 0 5px 5px 0;
   color: white;
-  font-size: 18px;
+  font-size: 16px;     /* leggermente più piccolo per testo lungo */
   cursor: pointer;
   margin-left: 5px;
+  padding: 0 10px;     /* più spazio orizzontale */
+  height: 40px;         /* allineato alla barra di ricerca */
   transition: background 0.2s;
+  white-space: nowrap;  /* evita che il testo vada a capo */
 }
 
 #sottoscortaBtn:hover {
@@ -63,6 +65,7 @@ body {
   .search {
     flex-direction: column; /* la barra diventa verticale */
     align-items: stretch;   /* span intera larghezza */
+    gap: 5px;               /* spazio tra input e pulsanti */
   }
 
   .searchTerm {
@@ -72,13 +75,12 @@ body {
 
   .searchButton,
   #sottoscortaBtn {
-    width: 100%;         /* tutta la larghezza */
+    width: 100%;           /* tutta la larghezza */
     border-radius: 0 0 5px 5px;
     margin-left: 0;
-    margin-top: 5px;     /* separazione tra pulsanti */
+    margin-top: 0;         /* già gestito dal gap */
   }
 }
-
 
 
 .results {
@@ -223,4 +225,5 @@ body {
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
+
 
