@@ -50,9 +50,10 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
 body: JSON.stringify({
-  id: selectedProdotto.id,
+  descrizione: selectedProdotto.descrizione,
   Giacenza: giacenzaNum
 })
+
 
       });
 
@@ -97,4 +98,5 @@ body: JSON.stringify({
 
   loadProdotti();
 });
+
 
