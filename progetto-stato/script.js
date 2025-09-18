@@ -26,6 +26,29 @@ searchButton.addEventListener("click", () => {
   });
 });
 
+  // ===================== INIZIO FUNZIONE SOTTOSCORTA =====================
+const sottoscortaBtn = document.getElementById("sottoscortaBtn");
+sottoscortaBtn.addEventListener("click", () => {
+  results.innerHTML = "";
+
+  // Filtra i prodotti in sottoscorta (Giacenza < ScortaMinima)
+  const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
+
+  if (sottoscorta.length === 0) {
+    results.innerHTML = "<li>Nessun prodotto in sottoscorta</li>";
+    return;
+  }
+
+  sottoscorta.forEach(p => {
+    const li = document.createElement("li");
+    li.textContent = `${p.Descrizione} - Giacenza: ${p.Giacenza} (Scorta Min: ${p.ScortaMinima})`;
+    li.addEventListener("click", () => openModal(p));
+    results.appendChild(li);
+  });
+});
+// ===================== FINE FUNZIONE SOTTOSCORTA =====================
+
+
 
   // EmailJS config
   const EMAILJS_SERVICE_ID = "service_487ujbw";   // <-- inserisci il tuo
@@ -156,6 +179,7 @@ if (giacenzaNum < selectedProdotto.ScortaMinima) {
 
   loadProdotti();
 });
+
 
 
 
