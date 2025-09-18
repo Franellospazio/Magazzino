@@ -6,11 +6,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalTitle = document.getElementById("modalTitle");
   const modalDescrizione = document.getElementById("modalDescrizione");
   const modalScorta = document.getElementById("modalScorta");
-  const minGiacenzaSpan = document.getElementById("minGiacenza");
-  const qtyNumber = document.getElementById("nuovaGiacenza");
-  const minusBtn = document.querySelector(".qty-btn.minus");
-  const plusBtn = document.querySelector(".qty-btn.plus");
   const aggiornaBtn = document.getElementById("aggiornaBtn");
+  const qtyMinus = document.getElementById("qtyMinus");
+  const qtyPlus = document.getElementById("qtyPlus");
+  const qtyNumber = document.getElementById("qtyNumber");
 
   let prodotti = [];
   let selectedProdotto = null;
@@ -25,22 +24,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function aggiornaColore() {
-    const current = parseInt(qtyNumber.textContent);
-    const min = parseInt(minGiacenzaSpan.textContent);
-    qtyNumber.classList.remove("qty-green", "qty-yellow", "qty-red");
-    if (current > min) qtyNumber.classList.add("qty-green");
-    else if (current === min) qtyNumber.classList.add("qty-yellow");
-    else qtyNumber.classList.add("qty-red");
+  function updateCircleColor(giacenza, scorta) {
+    qtyNumber.classList.remove("green-circle", "yellow-circle", "red-circle");
+    if (giacenza > scorta) {
+      qtyNumber.classList.add("green-circle");
+    } else if (giacenza === scorta) {
+      qtyNumber.classList.add("yellow-circle");
+    } else {
+      qtyNumber.classList.add("red-circle");
+    }
   }
 
   function openModal(prodotto) {
     selectedProdotto = prodotto;
     modalTitle.textContent = "Vuoi aggiornare giacenza?";
     modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
-    minGiacenzaSpan.textContent = prodotto.ScortaMinima;
+    modalScorta.textContent = `Scorta minima: ${prodotto.ScortaMinima}`;
     qtyNumber.textContent = prodotto.Giacenza;
-    aggiornaColore();
+    updateCircleColor(prodotto.Giacenza, prodotto.ScortaMinima);
     modal.style.display = "block";
   }
 
@@ -49,25 +50,25 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedProdotto = null;
   }
 
-  minusBtn.addEventListener("click", () => {
-    let current = parseInt(qtyNumber.textContent);
-    if (current > 0) qtyNumber.textContent = current - 1;
-    aggiornaColore();
+  qtyMinus.addEventListener("click", () => {
+    let val = parseInt(qtyNumber.textContent);
+    if (val > 0) {
+      val--;
+      qtyNumber.textContent = val;
+      updateCircleColor(val, selectedProdotto.ScortaMinima);
+    }
   });
 
-  plusBtn.addEventListener("click", () => {
-    let current = parseInt(qtyNumber.textContent);
-    qtyNumber.textContent = current + 1;
-    aggiornaColore();
+  qtyPlus.addEventListener("click", () => {
+    let val = parseInt(qtyNumber.textContent);
+    val++;
+    qtyNumber.textContent = val;
+    updateCircleColor(val, selectedProdotto.ScortaMinima);
   });
 
   aggiornaBtn.addEventListener("click", async () => {
     if (!selectedProdotto) return;
     const giacenzaNum = parseInt(qtyNumber.textContent);
-    if (isNaN(giacenzaNum)) {
-      alert("Inserisci un numero valido!");
-      return;
-    }
 
     try {
       const res = await fetch("/api/prodotti", {
@@ -79,8 +80,18 @@ document.addEventListener("DOMContentLoaded", () => {
         })
       });
 
-      if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
+      if (!res.ok) throw new Error("Errore aggiornamento");
       selectedProdotto.Giacenza = giacenzaNum;
+
+      // ✅ invio mail se giacenza < scorta minima
+      if (giacenzaNum < selectedProdotto.ScortaMinima) {
+        emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
+          to_email: "f.disabatino@sepack-lab.it",
+          messaggio: "Alcuni prodotti hanno una bassa giacenza"
+        })
+        .then(() => console.log("Mail inviata!"))
+        .catch(err => console.error("Errore invio mail:", err));
+      }
 
       const li = [...results.children].find(
         li => li.textContent.startsWith(selectedProdotto.Descrizione)
