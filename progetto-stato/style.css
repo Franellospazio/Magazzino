@@ -7,18 +7,15 @@ body {
   padding: 0;
 }
 
-/* Contenitore principale */
 .wrap {
   width: 90%;
   max-width: 500px;
   margin: 50px auto;
 }
 
-/* Barra di ricerca */
 .search {
   display: flex;
   width: 100%;
-  gap: 5px; /* spazio tra input e pulsanti */
 }
 
 .searchTerm {
@@ -35,53 +32,49 @@ body {
   border-color: #007B9E;
 }
 
-/* Pulsante lente 🔍 */
 .searchButton {
+  width: 50px;
   background: #00B4CC;
   border: 2px solid #00B4CC;
   border-radius: 0 5px 5px 0;
   color: #fff;
   font-size: 18px;
   cursor: pointer;
-  padding: 0;
-  width: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
 }
 
-.searchButton:hover {
-  background: #007B9E;
-}
-
-/* Pulsante Sottoscorta 📦 */
+/* Pulsante Sottoscorta 📦 accanto alla lente */
 #sottoscortaBtn {
-  background: #00B4CC;
-  border: 2px solid #00B4CC;
-  border-radius: 0 5px 5px 0;
+  width: 50px;                 /* stessa larghezza della lente */
+  background: #e67e22;         /* arancione scuro */
+  border: 2px solid #e67e22;   /* stesso bordo, colore coerente */
+  border-radius: 0 5px 5px 0;  /* arrotondamento uguale alla lente */
   color: white;
-  font-size: 16px; 
+  font-family: 'Open Sans', sans-serif;
+  font-size: 18px;             /* stessa dimensione della lente */
   cursor: pointer;
-  padding: 0 12px; /* più spazio per il testo */
-  height: 50px;     /* allineato alla lente */
-  display: flex;
+  margin-left: 5px;            /* piccolo spazio dalla lente */
+  padding: 0;                  /* come la lente */
+  height: 50px;                /* altezza uguale alla barra di ricerca */
+  display: flex;               /* centratura verticale emoji + testo */
   align-items: center;
   justify-content: center;
-  white-space: nowrap;
+  white-space: nowrap;         /* evita ritorno a capo */
   transition: background 0.2s;
 }
 
 #sottoscortaBtn:hover {
-  background: #007B9E;
+  background: #d35400;         /* leggermente più scuro al passaggio */
 }
 
-/* Media queries per smartphone */
+/* MEDIA QUERIES per smartphone */
 @media (max-width: 600px) {
   .search {
     flex-direction: column;
     align-items: stretch;
-    gap: 5px; /* spazio tra input e pulsanti */
+    gap: 5px;                  /* spazio tra input e pulsanti */
   }
 
   .searchTerm {
@@ -91,13 +84,12 @@ body {
 
   .searchButton,
   #sottoscortaBtn {
-    width: 100%;        /* tutta la larghezza */
+    width: 100%;               /* tutta la larghezza */
     border-radius: 0 0 5px 5px;
     margin-left: 0;
-    margin-top: 5px;    /* separazione tra pulsanti */
+    margin-top: 5px;
   }
 }
-
 
 .results {
   list-style: none;
@@ -234,14 +226,7 @@ body {
 #aggiornaBtn:hover { background-color: #45a049; }
 
 @media (max-width: 600px) {
-  .search { flex-direction: column; }
-  .searchTerm { border-radius: 5px 5px 0 0; border-right: 2px solid #00B4CC; }
-  .searchButton { border-radius: 0 0 5px 5px; width: 100%; margin-top: 5px; }
   .modal-content { padding: 20px; }
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
-
-
-
-
