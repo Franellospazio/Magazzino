@@ -1,3 +1,4 @@
+// script.js completo (inserisci YOUR_SERVICE_ID e YOUR_TEMPLATE_ID)
 document.addEventListener("DOMContentLoaded", () => {
   const search = document.getElementById("search");
   const results = document.getElementById("results");
@@ -6,10 +7,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalTitle = document.getElementById("modalTitle");
   const modalDescrizione = document.getElementById("modalDescrizione");
   const modalScorta = document.getElementById("modalScorta");
-  const aggiornaBtn = document.getElementById("aggiornaBtn");
   const qtyMinus = document.getElementById("qtyMinus");
   const qtyPlus = document.getElementById("qtyPlus");
   const qtyNumber = document.getElementById("qtyNumber");
+  const aggiornaBtn = document.getElementById("aggiornaBtn");
+
+  // Sostituisci qui:
+  const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";   // es. service_xxx
+  const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID"; // es. template_xxx
+  const ALERT_TO_EMAIL = "f.disabatino@sepack-lab.it";
 
   let prodotti = [];
   let selectedProdotto = null;
@@ -24,15 +30,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function updateCircleColor(giacenza, scorta) {
-    qtyNumber.classList.remove("green-circle", "yellow-circle", "red-circle");
-    if (giacenza > scorta) {
-      qtyNumber.classList.add("green-circle");
-    } else if (giacenza === scorta) {
-      qtyNumber.classList.add("yellow-circle");
-    } else {
-      qtyNumber.classList.add("red-circle");
-    }
+  function aggiornaColore() {
+    const current = parseInt(qtyNumber.textContent || "0", 10);
+    const min = parseInt(selectedProdotto?.ScortaMinima ?? 0, 10);
+    qtyNumber.classList.remove("qty-green", "qty-yellow", "qty-red");
+    if (current > min) qtyNumber.classList.add("qty-green");
+    else if (current === min) qtyNumber.classList.add("qty-yellow");
+    else qtyNumber.classList.add("qty-red");
   }
 
   function openModal(prodotto) {
@@ -41,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
     modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
     modalScorta.textContent = `Scorta minima: ${prodotto.ScortaMinima}`;
     qtyNumber.textContent = prodotto.Giacenza;
-    updateCircleColor(prodotto.Giacenza, prodotto.ScortaMinima);
+    aggiornaColore();
     modal.style.display = "block";
   }
 
@@ -51,26 +55,32 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   qtyMinus.addEventListener("click", () => {
-    let val = parseInt(qtyNumber.textContent);
-    if (val > 0) {
-      val--;
-      qtyNumber.textContent = val;
-      updateCircleColor(val, selectedProdotto.ScortaMinima);
-    }
+    if (!selectedProdotto) return;
+    let current = parseInt(qtyNumber.textContent || "0", 10);
+    if (current > 0) current--;
+    qtyNumber.textContent = current;
+    aggiornaColore();
   });
 
   qtyPlus.addEventListener("click", () => {
-    let val = parseInt(qtyNumber.textContent);
-    val++;
-    qtyNumber.textContent = val;
-    updateCircleColor(val, selectedProdotto.ScortaMinima);
+    if (!selectedProdotto) return;
+    let current = parseInt(qtyNumber.textContent || "0", 10);
+    current++;
+    qtyNumber.textContent = current;
+    aggiornaColore();
   });
 
   aggiornaBtn.addEventListener("click", async () => {
     if (!selectedProdotto) return;
-    const giacenzaNum = parseInt(qtyNumber.textContent);
+    const giacenzaNum = parseInt(qtyNumber.textContent || "0", 10);
+
+    if (isNaN(giacenzaNum)) {
+      alert("Inserisci un numero valido!");
+      return;
+    }
 
     try {
+      // Aggiorna il DB (la tua API)
       const res = await fetch("/api/prodotti", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -80,19 +90,30 @@ document.addEventListener("DOMContentLoaded", () => {
         })
       });
 
-      if (!res.ok) throw new Error("Errore aggiornamento");
+      if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
       selectedProdotto.Giacenza = giacenzaNum;
 
-      // ✅ invio mail se giacenza < scorta minima
+      // **Invia la mail SOLO se giacenza < scorta minima** (richiesta tua)
       if (giacenzaNum < selectedProdotto.ScortaMinima) {
-        emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
-          to_email: "f.disabatino@sepack-lab.it",
-          messaggio: "Alcuni prodotti hanno una bassa giacenza"
-        })
-        .then(() => console.log("Mail inviata!"))
-        .catch(err => console.error("Errore invio mail:", err));
+        // prepara i parametri per il template
+        const templateParams = {
+          name: "Sistema Magazzino",
+          time: new Date().toLocaleString(),
+          messaggio: "Alcuni prodotti hanno una bassa giacenza",
+          to_email: ALERT_TO_EMAIL
+        };
+
+        // invio (assicurati di aver impostato SERVICE_ID e TEMPLATE_ID)
+        if (typeof emailjs !== "undefined" && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
+          emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+            .then(() => console.log("Email di allerta inviata a", ALERT_TO_EMAIL))
+            .catch(err => console.error("Errore invio email:", err));
+        } else {
+          console.warn("EmailJS non inizializzato correttamente o ID mancanti.");
+        }
       }
 
+      // aggiorna lista visuale se presente
       const li = [...results.children].find(
         li => li.textContent.startsWith(selectedProdotto.Descrizione)
       );
