@@ -6,7 +6,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalTitle = document.getElementById("modalTitle");
   const modalDescrizione = document.getElementById("modalDescrizione");
   const modalScorta = document.getElementById("modalScorta");
-  const inputGiacenza = document.getElementById("nuovaGiacenza");
+  const minGiacenzaSpan = document.getElementById("minGiacenza");
+  const qtyNumber = document.getElementById("nuovaGiacenza");
+  const minusBtn = document.querySelector(".qty-btn.minus");
+  const plusBtn = document.querySelector(".qty-btn.plus");
   const aggiornaBtn = document.getElementById("aggiornaBtn");
 
   let prodotti = [];
@@ -22,12 +25,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function aggiornaColore() {
+    const current = parseInt(qtyNumber.textContent);
+    const min = parseInt(minGiacenzaSpan.textContent);
+    qtyNumber.classList.remove("qty-green", "qty-yellow", "qty-red");
+    if (current > min) qtyNumber.classList.add("qty-green");
+    else if (current === min) qtyNumber.classList.add("qty-yellow");
+    else qtyNumber.classList.add("qty-red");
+  }
+
   function openModal(prodotto) {
     selectedProdotto = prodotto;
     modalTitle.textContent = "Vuoi aggiornare giacenza?";
     modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
-    modalScorta.textContent = `Scorta minima: ${prodotto.ScortaMinima}`;
-    inputGiacenza.value = prodotto.Giacenza;
+    minGiacenzaSpan.textContent = prodotto.ScortaMinima;
+    qtyNumber.textContent = prodotto.Giacenza;
+    aggiornaColore();
     modal.style.display = "block";
   }
 
@@ -36,10 +49,21 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedProdotto = null;
   }
 
+  minusBtn.addEventListener("click", () => {
+    let current = parseInt(qtyNumber.textContent);
+    if (current > 0) qtyNumber.textContent = current - 1;
+    aggiornaColore();
+  });
+
+  plusBtn.addEventListener("click", () => {
+    let current = parseInt(qtyNumber.textContent);
+    qtyNumber.textContent = current + 1;
+    aggiornaColore();
+  });
+
   aggiornaBtn.addEventListener("click", async () => {
     if (!selectedProdotto) return;
-
-    const giacenzaNum = Number(inputGiacenza.value);
+    const giacenzaNum = parseInt(qtyNumber.textContent);
     if (isNaN(giacenzaNum)) {
       alert("Inserisci un numero valido!");
       return;
@@ -50,19 +74,14 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          descrizione: selectedProdotto.Descrizione, // case-sensitive
+          descrizione: selectedProdotto.Descrizione,
           Giacenza: giacenzaNum
         })
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || `Errore aggiornamento: ${res.status}`);
-      }
-
+      if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
       selectedProdotto.Giacenza = giacenzaNum;
 
-      // Aggiorna la lista filtrata in tempo reale
       const li = [...results.children].find(
         li => li.textContent.startsWith(selectedProdotto.Descrizione)
       );
