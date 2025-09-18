@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Contenitore principale centrato -->
   <div class="wrap">
     <div class="search">
       <input type="text" id="search" class="searchTerm" placeholder="Cerca prodotto...">
@@ -23,11 +22,11 @@
       <h2 id="modalTitle">Vuoi aggiornare giacenza?</h2>
       <p id="modalDescrizione"></p>
       <p id="modalScorta"></p>
-      
+
       <div class="counter-container">
-        <button id="decrement" class="counter-btn">−</button>
-        <span id="counterValue"></span>
-        <button id="increment" class="counter-btn">+</button>
+        <button id="decrement" class="qty-btn minus" type="button">−</button>
+        <span id="counterValue" class="qty-number">0</span>
+        <button id="increment" class="qty-btn plus" type="button">+</button>
       </div>
 
       <button id="aggiornaBtn">Aggiorna</button>
@@ -37,7 +36,7 @@
   <!-- EmailJS SDK v4 -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>
-    emailjs.init("YOUR_PUBLIC_KEY"); <!-- qui metti la tua Public Key -->
+    emailjs.init("YOUR_PUBLIC_KEY"); // inserisci la tua Public Key
   </script>
 
   <script src="script.js"></script>
