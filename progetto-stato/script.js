@@ -11,8 +11,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const incrementBtn = document.getElementById("increment");
   const aggiornaBtn = document.getElementById("aggiornaBtn");
 
-  let prodotti = [];
-  let selectedProdotto = null;
+let prodotti = [];
+let selectedProdotto = null;
+
+// CLICK LENTE PER MOSTRARE TUTTI I PRODOTTI
+const searchButton = document.querySelector(".searchButton");
+searchButton.addEventListener("click", () => {
+  results.innerHTML = "";
+  prodotti.forEach(p => {
+    const li = document.createElement("li");
+    li.textContent = `${p.Descrizione} - Giacenza: ${p.Giacenza}`;
+    li.addEventListener("click", () => openModal(p));
+    results.appendChild(li);
+  });
+});
+
 
   // EmailJS config
   const EMAILJS_SERVICE_ID = "service_487ujbw";   // <-- inserisci il tuo
@@ -143,5 +156,6 @@ if (giacenzaNum < selectedProdotto.ScortaMinima) {
 
   loadProdotti();
 });
+
 
 
