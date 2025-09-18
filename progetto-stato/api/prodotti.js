@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     const { data, error } = await supabase
       .from("Magazzino")
       .select("*")
-      .order("descrizione", { ascending: true });
+      .order("Descrizione", { ascending: true }); // attenzione alla maiuscola
 
     if (error) {
       console.error("Errore GET Supabase:", error);
@@ -32,8 +32,8 @@ export default async function handler(req, res) {
 
     const { error } = await supabase
       .from("Magazzino")
-      .update({ giacenza: Giacenza })
-      .eq("descrizione", descrizione);
+      .update({ Giacenza: Giacenza }) // attenzione alla maiuscola
+      .eq("Descrizione", descrizione); // case-sensitive
 
     if (error) {
       console.error("Errore PATCH Supabase:", error);
