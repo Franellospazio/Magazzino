@@ -9,11 +9,10 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
-    // Legge tutti i prodotti dal database
     const { data, error } = await supabase
       .from("Magazzino")
       .select("*")
-      .order("Descrizione", { ascending: true }); // attenzione alla maiuscola
+      .order("Descrizione", { ascending: true }); // case-sensitive
 
     if (error) {
       console.error("Errore GET Supabase:", error);
@@ -32,7 +31,7 @@ export default async function handler(req, res) {
 
     const { error } = await supabase
       .from("Magazzino")
-      .update({ Giacenza: Giacenza }) // attenzione alla maiuscola
+      .update({ Giacenza: Giacenza }) // case-sensitive
       .eq("Descrizione", descrizione); // case-sensitive
 
     if (error) {
