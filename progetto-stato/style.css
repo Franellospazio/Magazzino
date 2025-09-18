@@ -121,22 +121,24 @@ body {
 .qty-btn {
   width: 40px;
   height: 40px;
-  border: 2px solid;
+  border: none;
   font-size: 24px;
   cursor: pointer;
-  border-radius: 5px;
+  border-radius: 50%;
   background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   touch-action: manipulation; /* disabilita zoom su touch rapido */
+  padding: 0;
 }
 
 .qty-btn.minus {
   color: #e74c3c;
-  border-color: #e74c3c;
 }
 
 .qty-btn.plus {
   color: #2ecc71;
-  border-color: #2ecc71;
 }
 
 .qty-number {
