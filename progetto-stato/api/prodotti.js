@@ -1,16 +1,22 @@
+// api/prodotti.js
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+// Supabase client server-side, sicuro
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
+    // Legge tutti i prodotti dal database
     const { data, error } = await supabase
       .from("Magazzino")
       .select("*")
       .order("descrizione", { ascending: true });
 
     if (error) {
-      console.error("Errore Supabase GET:", error);
+      console.error("Errore GET Supabase:", error);
       return res.status(500).json({ error: error.message });
     }
 
@@ -30,7 +36,7 @@ export default async function handler(req, res) {
       .eq("descrizione", descrizione);
 
     if (error) {
-      console.error("Errore Supabase PATCH:", error);
+      console.error("Errore PATCH Supabase:", error);
       return res.status(500).json({ error: error.message });
     }
 
