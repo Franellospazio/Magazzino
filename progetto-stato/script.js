@@ -49,10 +49,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/prodotti", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rowIndex: selectedProdotto.id, // corrisponde alla riga del foglio (indice 0)
-          Giacenza: giacenzaNum
-        })
+body: JSON.stringify({
+  id: selectedProdotto.id,
+  Giacenza: giacenzaNum
+})
+
       });
 
       if (!res.ok) {
@@ -96,3 +97,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadProdotti();
 });
+
