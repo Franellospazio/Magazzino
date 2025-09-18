@@ -95,17 +95,21 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       if (li) li.textContent = `${selectedProdotto.Descrizione} - Giacenza: ${giacenzaNum}`;
 
-      // Invio email solo se la giacenza è inferiore alla scorta minima
-      const minGiacenzaSpan = document.getElementById("minGiacenza");
-      if (giacenzaNum < parseInt(minGiacenzaSpan.textContent)) {
-        const templateParams = {
-          name: "Sistema Magazzino",
-          time: new Date().toLocaleString()
-        };
-        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
-          .then(() => console.log("Email di allerta inviata"))
-          .catch(err => console.error("Errore invio email:", err));
-      }
+// 📧 Invio email solo se la giacenza è inferiore alla scorta minima
+if (giacenzaNum < selectedProdotto.ScortaMinima) {
+  const templateParams = {
+    name: "Sistema Magazzino",
+    time: new Date().toLocaleString(),
+    prodotto: selectedProdotto.Descrizione,
+    giacenza: giacenzaNum,
+    scorta: selectedProdotto.ScortaMinima
+  };
+
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+    .then(() => console.log("Email di allerta inviata"))
+    .catch(err => console.error("Errore invio email:", err));
+}
+
 
       alert(`Giacenza aggiornata a ${giacenzaNum}`);
       closeModal();
@@ -139,4 +143,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadProdotti();
 });
+
 
