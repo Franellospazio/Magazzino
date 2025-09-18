@@ -1,4 +1,3 @@
-// script.js completo (inserisci YOUR_SERVICE_ID e YOUR_TEMPLATE_ID)
 document.addEventListener("DOMContentLoaded", () => {
   const search = document.getElementById("search");
   const results = document.getElementById("results");
@@ -7,18 +6,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalTitle = document.getElementById("modalTitle");
   const modalDescrizione = document.getElementById("modalDescrizione");
   const modalScorta = document.getElementById("modalScorta");
-  const qtyMinus = document.getElementById("qtyMinus");
-  const qtyPlus = document.getElementById("qtyPlus");
-  const qtyNumber = document.getElementById("qtyNumber");
   const aggiornaBtn = document.getElementById("aggiornaBtn");
-
-  // Sostituisci qui:
-  const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";   // es. service_xxx
-  const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID"; // es. template_xxx
-  const ALERT_TO_EMAIL = "f.disabatino@sepack-lab.it";
+  const counterValue = document.getElementById("counterValue");
+  const incrementBtn = document.getElementById("increment");
+  const decrementBtn = document.getElementById("decrement");
 
   let prodotti = [];
   let selectedProdotto = null;
+  let currentValue = 0;
+
+  const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";   // <-- metti il tuo
+  const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID"; // <-- metti il tuo
 
   async function loadProdotti() {
     try {
@@ -30,22 +28,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function aggiornaColore() {
-    const current = parseInt(qtyNumber.textContent || "0", 10);
-    const min = parseInt(selectedProdotto?.ScortaMinima ?? 0, 10);
-    qtyNumber.classList.remove("qty-green", "qty-yellow", "qty-red");
-    if (current > min) qtyNumber.classList.add("qty-green");
-    else if (current === min) qtyNumber.classList.add("qty-yellow");
-    else qtyNumber.classList.add("qty-red");
-  }
-
   function openModal(prodotto) {
     selectedProdotto = prodotto;
     modalTitle.textContent = "Vuoi aggiornare giacenza?";
     modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
     modalScorta.textContent = `Scorta minima: ${prodotto.ScortaMinima}`;
-    qtyNumber.textContent = prodotto.Giacenza;
-    aggiornaColore();
+    currentValue = prodotto.Giacenza;
+    counterValue.textContent = currentValue;
+    aggiornaCircleColor();
     modal.style.display = "block";
   }
 
@@ -54,72 +44,78 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedProdotto = null;
   }
 
-  qtyMinus.addEventListener("click", () => {
+  function aggiornaCircleColor() {
     if (!selectedProdotto) return;
-    let current = parseInt(qtyNumber.textContent || "0", 10);
-    if (current > 0) current--;
-    qtyNumber.textContent = current;
-    aggiornaColore();
+    const min = selectedProdotto.ScortaMinima;
+    if (currentValue > min) {
+      counterValue.style.backgroundColor = "green";
+      counterValue.style.color = "white";
+    } else if (currentValue === min) {
+      counterValue.style.backgroundColor = "gold";
+      counterValue.style.color = "black";
+    } else {
+      counterValue.style.backgroundColor = "red";
+      counterValue.style.color = "white";
+    }
+    counterValue.style.borderRadius = "50%";
+    counterValue.style.padding = "10px 15px";
+    counterValue.style.fontWeight = "bold";
+    counterValue.style.display = "inline-block";
+    counterValue.style.minWidth = "30px";
+    counterValue.style.textAlign = "center";
+  }
+
+  incrementBtn.addEventListener("click", () => {
+    currentValue++;
+    counterValue.textContent = currentValue;
+    aggiornaCircleColor();
   });
 
-  qtyPlus.addEventListener("click", () => {
-    if (!selectedProdotto) return;
-    let current = parseInt(qtyNumber.textContent || "0", 10);
-    current++;
-    qtyNumber.textContent = current;
-    aggiornaColore();
+  decrementBtn.addEventListener("click", () => {
+    currentValue--;
+    counterValue.textContent = currentValue;
+    aggiornaCircleColor();
   });
 
   aggiornaBtn.addEventListener("click", async () => {
     if (!selectedProdotto) return;
-    const giacenzaNum = parseInt(qtyNumber.textContent || "0", 10);
-
-    if (isNaN(giacenzaNum)) {
-      alert("Inserisci un numero valido!");
-      return;
-    }
 
     try {
-      // Aggiorna il DB (la tua API)
       const res = await fetch("/api/prodotti", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           descrizione: selectedProdotto.Descrizione,
-          Giacenza: giacenzaNum
+          Giacenza: currentValue
         })
       });
 
-      if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
-      selectedProdotto.Giacenza = giacenzaNum;
-
-      // **Invia la mail SOLO se giacenza < scorta minima** (richiesta tua)
-      if (giacenzaNum < selectedProdotto.ScortaMinima) {
-        // prepara i parametri per il template
-        const templateParams = {
-          name: "Sistema Magazzino",
-          time: new Date().toLocaleString(),
-          messaggio: "Alcuni prodotti hanno una bassa giacenza",
-          to_email: ALERT_TO_EMAIL
-        };
-
-        // invio (assicurati di aver impostato SERVICE_ID e TEMPLATE_ID)
-        if (typeof emailjs !== "undefined" && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
-          emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
-            .then(() => console.log("Email di allerta inviata a", ALERT_TO_EMAIL))
-            .catch(err => console.error("Errore invio email:", err));
-        } else {
-          console.warn("EmailJS non inizializzato correttamente o ID mancanti.");
-        }
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || `Errore aggiornamento: ${res.status}`);
       }
 
-      // aggiorna lista visuale se presente
+      selectedProdotto.Giacenza = currentValue;
+
+      // Aggiorna la lista filtrata in tempo reale
       const li = [...results.children].find(
         li => li.textContent.startsWith(selectedProdotto.Descrizione)
       );
-      if (li) li.textContent = `${selectedProdotto.Descrizione} - Giacenza: ${giacenzaNum}`;
+      if (li) li.textContent = `${selectedProdotto.Descrizione} - Giacenza: ${currentValue}`;
 
-      alert(`Giacenza aggiornata a ${giacenzaNum}`);
+      // 📧 Invio email solo se la giacenza è inferiore alla scorta minima
+      if (currentValue < selectedProdotto.ScortaMinima) {
+        const templateParams = {
+          name: "Sistema Magazzino",
+          time: new Date().toLocaleString()
+        };
+
+        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+          .then(() => console.log("Email di allerta inviata"))
+          .catch(err => console.error("Errore invio email:", err));
+      }
+
+      alert(`Giacenza aggiornata a ${currentValue}`);
       closeModal();
     } catch (err) {
       console.error(err);
