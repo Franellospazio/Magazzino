@@ -15,8 +15,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedProdotto = null;
 
   // EmailJS config
-  const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";   // <-- inserisci il tuo
-  const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID"; // <-- inserisci il tuo
+  const EMAILJS_SERVICE_ID = "service_487ujbw";   // <-- inserisci il tuo
+  const EMAILJS_TEMPLATE_ID = "template_l5an0k5"; // <-- inserisci il tuo
 
   async function loadProdotti() {
     try {
@@ -139,3 +139,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadProdotti();
 });
+
