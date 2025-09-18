@@ -7,15 +7,18 @@ body {
   padding: 0;
 }
 
+/* Contenitore principale */
 .wrap {
   width: 90%;
   max-width: 500px;
   margin: 50px auto;
 }
 
+/* Barra di ricerca */
 .search {
   display: flex;
   width: 100%;
+  gap: 5px; /* spazio tra input e pulsanti */
 }
 
 .searchTerm {
@@ -32,43 +35,53 @@ body {
   border-color: #007B9E;
 }
 
+/* Pulsante lente 🔍 */
 .searchButton {
-  width: 50px;
   background: #00B4CC;
   border: 2px solid #00B4CC;
   border-radius: 0 5px 5px 0;
   color: #fff;
   font-size: 18px;
   cursor: pointer;
-}
-/* Pulsante Sottoscorta 📦 accanto alla lente */
-#sottoscortaBtn {
-  width: 50px;                /* stessa larghezza della lente */
-  background: #00B4CC;        /* stesso colore */
-  border: 2px solid #00B4CC;  /* stesso bordo */
-  border-radius: 0 5px 5px 0; /* stesso bordo arrotondato */
-  color: white;
-  font-size: 18px;            /* stessa dimensione */
-  cursor: pointer;
-  margin-left: 5px;           /* piccolo spazio dalla lente */
-  padding: 0;                 /* come la lente */
-  transition: background 0.2s;
-  display: flex;               /* per centrare l'emoji e testo */
+  padding: 0;
+  width: 50px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  white-space: nowrap;         /* evita il ritorno a capo */
+  transition: background 0.2s;
+}
+
+.searchButton:hover {
+  background: #007B9E;
+}
+
+/* Pulsante Sottoscorta 📦 */
+#sottoscortaBtn {
+  background: #00B4CC;
+  border: 2px solid #00B4CC;
+  border-radius: 0 5px 5px 0;
+  color: white;
+  font-size: 16px; 
+  cursor: pointer;
+  padding: 0 12px; /* più spazio per il testo */
+  height: 50px;     /* allineato alla lente */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transition: background 0.2s;
 }
 
 #sottoscortaBtn:hover {
-  background: #007B9E;        /* stesso hover della lente */
+  background: #007B9E;
 }
 
-/* MEDIA QUERIES per smartphone */
+/* Media queries per smartphone */
 @media (max-width: 600px) {
   .search {
-    flex-direction: column; /* la barra diventa verticale */
+    flex-direction: column;
     align-items: stretch;
-    gap: 5px;               /* spazio tra input e pulsanti */
+    gap: 5px; /* spazio tra input e pulsanti */
   }
 
   .searchTerm {
@@ -78,10 +91,10 @@ body {
 
   .searchButton,
   #sottoscortaBtn {
-    width: 100%;            /* tutta la larghezza */
+    width: 100%;        /* tutta la larghezza */
     border-radius: 0 0 5px 5px;
     margin-left: 0;
-    margin-top: 0;
+    margin-top: 5px;    /* separazione tra pulsanti */
   }
 }
 
@@ -228,6 +241,7 @@ body {
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
+
 
 
 
