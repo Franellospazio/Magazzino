@@ -1,11 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
 
 body {
-  background: #f2f2f2;
+  background-image: url('1.jpg');   /* stesso livello della cartella */
+  background-size: cover;           /* occupa tutta la finestra */
+  background-position: center;      /* centrata */
+  background-repeat: no-repeat;     /* non si ripete */
   font-family: 'Open Sans', sans-serif;
   margin: 0;
   padding: 0;
 }
+
 
 .wrap {
   width: 90%;
@@ -230,3 +234,4 @@ body {
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
+
