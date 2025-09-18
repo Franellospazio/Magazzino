@@ -25,9 +25,9 @@ document.addEventListener("DOMContentLoaded", () => {
   function openModal(prodotto) {
     selectedProdotto = prodotto;
     modalTitle.textContent = "Vuoi aggiornare giacenza?";
-    modalDescrizione.textContent = `Prodotto: ${prodotto.descrizione}`;
-    modalScorta.textContent = `Scorta minima: ${prodotto.scorta_minima}`;
-    inputGiacenza.value = prodotto.giacenza;
+    modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
+    modalScorta.textContent = `Scorta minima: ${prodotto.ScortaMinima}`;
+    inputGiacenza.value = prodotto.Giacenza;
     modal.style.display = "block";
   }
 
@@ -49,12 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/prodotti", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-body: JSON.stringify({
-  descrizione: selectedProdotto.descrizione,
-  Giacenza: giacenzaNum
-})
-
-
+        body: JSON.stringify({
+          descrizione: selectedProdotto.Descrizione, // case-sensitive
+          Giacenza: giacenzaNum
+        })
       });
 
       if (!res.ok) {
@@ -63,11 +61,13 @@ body: JSON.stringify({
       }
 
       // Aggiorna localmente la giacenza
-      selectedProdotto.giacenza = giacenzaNum;
+      selectedProdotto.Giacenza = giacenzaNum;
 
-      // Aggiorna la lista filtrata in tempo reale (opzionale)
-      const li = [...results.children].find(li => li.textContent === selectedProdotto.descrizione);
-      if (li) li.textContent = `${selectedProdotto.descrizione} - Giacenza: ${giacenzaNum}`;
+      // Aggiorna la lista filtrata in tempo reale
+      const li = [...results.children].find(
+        li => li.textContent.startsWith(selectedProdotto.Descrizione)
+      );
+      if (li) li.textContent = `${selectedProdotto.Descrizione} - Giacenza: ${giacenzaNum}`;
 
       alert(`Giacenza aggiornata a ${giacenzaNum}`);
       closeModal();
@@ -87,10 +87,13 @@ body: JSON.stringify({
     results.innerHTML = "";
     if (query.length < 2) return;
 
-    const filtrati = prodotti.filter(p => p.descrizione.toLowerCase().includes(query));
+    const filtrati = prodotti.filter(p =>
+      p.Descrizione.toLowerCase().includes(query)
+    );
+
     filtrati.forEach(p => {
       const li = document.createElement("li");
-      li.textContent = p.descrizione;
+      li.textContent = `${p.Descrizione} - Giacenza: ${p.Giacenza}`;
       li.addEventListener("click", () => openModal(p));
       results.appendChild(li);
     });
@@ -98,5 +101,3 @@ body: JSON.stringify({
 
   loadProdotti();
 });
-
-
