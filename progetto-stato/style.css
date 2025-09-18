@@ -121,15 +121,23 @@ body {
 .qty-btn {
   width: 40px;
   height: 40px;
-  border: none;
+  border: 2px solid;
   font-size: 24px;
   cursor: pointer;
-  color: white;
   border-radius: 5px;
+  background-color: transparent;
+  touch-action: manipulation; /* disabilita zoom su touch rapido */
 }
 
-.qty-btn.minus { background-color: #e74c3c; }
-.qty-btn.plus { background-color: #2ecc71; }
+.qty-btn.minus {
+  color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.qty-btn.plus {
+  color: #2ecc71;
+  border-color: #2ecc71;
+}
 
 .qty-number {
   width: 60px;
@@ -197,6 +205,15 @@ body {
     padding: 20px;
   }
 
-  .qty-btn { width: 50px; height: 50px; font-size: 28px; }
-  .qty-number { width: 70px; line-height: 50px; font-size: 22px; }
+  .qty-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 28px;
+  }
+
+  .qty-number {
+    width: 70px;
+    line-height: 50px;
+    font-size: 22px;
+  }
 }
