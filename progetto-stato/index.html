@@ -22,8 +22,15 @@
       <span class="close">&times;</span>
       <h2 id="modalTitle">Vuoi aggiornare giacenza?</h2>
       <p id="modalDescrizione"></p>
-      <p id="modalScorta"></p>
-      <input type="number" id="nuovaGiacenza" placeholder="Nuova giacenza">
+      <p id="modalScorta">Scorta minima: <span id="minGiacenza" class="min-qty">0</span></p>
+
+      <!-- Controllo quantità -->
+      <div class="qty-control">
+        <button class="qty-btn minus">-</button>
+        <span id="nuovaGiacenza" class="qty-number">0</span>
+        <button class="qty-btn plus">+</button>
+      </div>
+
       <button id="aggiornaBtn">Aggiorna</button>
     </div>
   </div>
