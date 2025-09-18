@@ -60,7 +60,6 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(errData.error || `Errore aggiornamento: ${res.status}`);
       }
 
-      // Aggiorna localmente la giacenza
       selectedProdotto.Giacenza = giacenzaNum;
 
       // Aggiorna la lista filtrata in tempo reale
