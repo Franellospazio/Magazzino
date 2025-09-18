@@ -1,48 +1,38 @@
-import fs from "fs";
-import path from "path";
+import { createClient } from '@supabase/supabase-js';
 
-const filePath = path.join(process.cwd(), "data", "prodotti.json");
-
-function readProdotti() {
-  try {
-    const data = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(data);
-  } catch (err) {
-    console.error("Errore lettura JSON:", err);
-    return [];
-  }
-}
-
-function writeProdotti(prodotti) {
-  try {
-    fs.writeFileSync(filePath, JSON.stringify(prodotti, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Errore scrittura JSON:", err);
-  }
-}
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
-    const prodotti = readProdotti();
-    return res.status(200).json(prodotti);
+    const { data, error } = await supabase
+      .from("Magazzino")
+      .select("*")
+      .order("descrizione", { ascending: true });
+
+    if (error) {
+      console.error("Errore Supabase GET:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json(data);
   }
 
   if (req.method === "PATCH") {
-    const { id, Giacenza } = req.body;
+    const { descrizione, Giacenza } = req.body;
 
-    if (!id || Giacenza === undefined) {
-      return res.status(400).json({ error: "id e Giacenza richiesti" });
+    if (!descrizione || Giacenza === undefined) {
+      return res.status(400).json({ error: "descrizione e Giacenza richiesti" });
     }
 
-    const prodotti = readProdotti();
-    const index = prodotti.findIndex(p => p.id === id);
+    const { error } = await supabase
+      .from("Magazzino")
+      .update({ giacenza: Giacenza })
+      .eq("descrizione", descrizione);
 
-    if (index === -1) {
-      return res.status(404).json({ error: "Prodotto non trovato" });
+    if (error) {
+      console.error("Errore Supabase PATCH:", error);
+      return res.status(500).json({ error: error.message });
     }
-
-    prodotti[index].giacenza = Number(Giacenza);
-    writeProdotti(prodotti);
 
     return res.status(200).json({ message: "Giacenza aggiornata" });
   }
