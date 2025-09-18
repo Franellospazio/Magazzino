@@ -7,9 +7,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalDescrizione = document.getElementById("modalDescrizione");
   const modalScorta = document.getElementById("modalScorta");
   const minGiacenzaSpan = document.getElementById("minGiacenza");
-  const qtyNumber = document.getElementById("nuovaGiacenza");
-  const minusBtn = document.querySelector(".qty-btn.minus");
-  const plusBtn = document.querySelector(".qty-btn.plus");
+  const counterValue = document.getElementById("counterValue");
+  const decrementBtn = document.getElementById("decrement");
+  const incrementBtn = document.getElementById("increment");
   const aggiornaBtn = document.getElementById("aggiornaBtn");
 
   let prodotti = [];
@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";   // <-- inserisci il tuo
   const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID"; // <-- inserisci il tuo
 
+  // Carica prodotti da API
   async function loadProdotti() {
     try {
       const res = await fetch("/api/prodotti");
@@ -29,45 +30,50 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Aggiorna colore cerchietto giacenza
   function aggiornaColore() {
-    const current = parseInt(qtyNumber.textContent);
+    const current = parseInt(counterValue.textContent);
     const min = parseInt(minGiacenzaSpan.textContent);
-    qtyNumber.classList.remove("qty-green", "qty-yellow", "qty-red");
-    if (current > min) qtyNumber.classList.add("qty-green");
-    else if (current === min) qtyNumber.classList.add("qty-yellow");
-    else qtyNumber.classList.add("qty-red");
+    counterValue.classList.remove("qty-green", "qty-yellow", "qty-red");
+    if (current > min) counterValue.classList.add("qty-green");
+    else if (current === min) counterValue.classList.add("qty-yellow");
+    else counterValue.classList.add("qty-red");
   }
 
+  // Apri modal per un prodotto
   function openModal(prodotto) {
     selectedProdotto = prodotto;
     modalTitle.textContent = "Vuoi aggiornare giacenza?";
     modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
-    minGiacenzaSpan.textContent = prodotto.ScortaMinima;
-    qtyNumber.textContent = prodotto.Giacenza;
+    modalScorta.innerHTML = `Scorta minima: <span class="min-qty" id="minGiacenza">${prodotto.ScortaMinima}</span>`;
+    counterValue.textContent = prodotto.Giacenza;
     aggiornaColore();
     modal.style.display = "block";
   }
 
+  // Chiudi modal
   function closeModal() {
     modal.style.display = "none";
     selectedProdotto = null;
   }
 
-  minusBtn.addEventListener("click", () => {
-    let current = parseInt(qtyNumber.textContent);
-    if (current > 0) qtyNumber.textContent = current - 1;
+  // Pulsanti incremento/decremento
+  decrementBtn.addEventListener("click", () => {
+    let current = parseInt(counterValue.textContent);
+    if (current > 0) counterValue.textContent = current - 1;
     aggiornaColore();
   });
 
-  plusBtn.addEventListener("click", () => {
-    let current = parseInt(qtyNumber.textContent);
-    qtyNumber.textContent = current + 1;
+  incrementBtn.addEventListener("click", () => {
+    let current = parseInt(counterValue.textContent);
+    counterValue.textContent = current + 1;
     aggiornaColore();
   });
 
+  // Aggiorna giacenza
   aggiornaBtn.addEventListener("click", async () => {
     if (!selectedProdotto) return;
-    const giacenzaNum = parseInt(qtyNumber.textContent);
+    const giacenzaNum = parseInt(counterValue.textContent);
     if (isNaN(giacenzaNum)) {
       alert("Inserisci un numero valido!");
       return;
@@ -86,18 +92,18 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
       selectedProdotto.Giacenza = giacenzaNum;
 
+      // Aggiorna lista risultati in tempo reale
       const li = [...results.children].find(
         li => li.textContent.startsWith(selectedProdotto.Descrizione)
       );
       if (li) li.textContent = `${selectedProdotto.Descrizione} - Giacenza: ${giacenzaNum}`;
 
-      // 📧 Invio email solo se la giacenza è inferiore alla scorta minima
+      // Invio email se giacenza < scorta minima
       if (giacenzaNum < selectedProdotto.ScortaMinima) {
         const templateParams = {
           name: "Sistema Magazzino",
           time: new Date().toLocaleString()
         };
-
         emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
           .then(() => console.log("Email di allerta inviata"))
           .catch(err => console.error("Errore invio email:", err));
@@ -111,11 +117,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Chiudi modal cliccando X o fuori
   closeBtn.addEventListener("click", closeModal);
   window.addEventListener("click", e => {
     if (e.target === modal) closeModal();
   });
 
+  // Ricerca prodotti
   search.addEventListener("input", () => {
     const query = search.value.toLowerCase();
     results.innerHTML = "";
