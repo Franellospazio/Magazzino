@@ -2,11 +2,12 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stato Magazzino</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Contenitore principale centrato -->
   <div class="wrap">
     <div class="search">
       <input type="text" id="search" class="searchTerm" placeholder="Cerca prodotto...">
@@ -15,29 +16,28 @@
     <ul id="results" class="results"></ul>
   </div>
 
+  <!-- Modal per aggiornare giacenza -->
   <div id="giacenzaModal" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
       <h2 id="modalTitle">Vuoi aggiornare giacenza?</h2>
       <p id="modalDescrizione"></p>
       <p id="modalScorta"></p>
-
-      <div class="qty-control">
-        <button id="qtyMinus" class="qty-btn minus">−</button>
-        <span id="qtyNumber" class="qty-number">0</span>
-        <button id="qtyPlus" class="qty-btn plus">+</button>
+      
+      <div class="counter-container">
+        <button id="decrement" class="counter-btn">−</button>
+        <span id="counterValue"></span>
+        <button id="increment" class="counter-btn">+</button>
       </div>
 
       <button id="aggiornaBtn">Aggiorna</button>
     </div>
   </div>
 
-  <!-- EmailJS: metti qui la PUBLIC KEY copiata da EmailJS -->
-  <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+  <!-- EmailJS SDK v4 -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>
-    (function(){
-      emailjs.init("YOUR_PUBLIC_KEY"); // <--- sostituisci con la tua Public Key (user_xxx)
-    })();
+    emailjs.init("YOUR_PUBLIC_KEY"); <!-- qui metti la tua Public Key -->
   </script>
 
   <script src="script.js"></script>
