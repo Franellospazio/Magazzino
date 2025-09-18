@@ -109,13 +109,59 @@ body {
   color: black;
 }
 
-#nuovaGiacenza {
-  width: 80%;
-  padding: 10px;
-  margin: 10px 0;
-  font-size: 16px;
+/* Controllo quantità */
+.qty-control {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 15px 0;
+  gap: 10px;
 }
 
+.qty-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: white;
+  border-radius: 5px;
+}
+
+.qty-btn.minus { background-color: #e74c3c; }
+.qty-btn.plus { background-color: #2ecc71; }
+
+.qty-number {
+  width: 60px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  border-radius: 50%;
+  display: inline-block;
+  line-height: 40px;
+  color: white;
+}
+
+/* Stati della giacenza */
+.qty-green { background-color: #2ecc71; }
+.qty-yellow { background-color: #f1c40f; }
+.qty-red { background-color: #e74c3c; }
+
+/* Scorta minima */
+.min-qty {
+  display: inline-block;
+  background-color: #00B4CC;
+  color: white;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  text-align: center;
+  line-height: 24px;
+  margin-left: 5px;
+}
+
+/* Pulsante Aggiorna */
 #aggiornaBtn {
   padding: 10px 20px;
   background-color: #4CAF50;
@@ -130,7 +176,7 @@ body {
   background-color: #45a049;
 }
 
-/* MEDIA QUERIES per smartphone */
+/* Media queries per smartphone */
 @media (max-width: 600px) {
   .search {
     flex-direction: column;
@@ -147,11 +193,10 @@ body {
     margin-top: 5px;
   }
 
-  #nuovaGiacenza {
-    width: 100%;
-  }
-
   .modal-content {
     padding: 20px;
   }
+
+  .qty-btn { width: 50px; height: 50px; font-size: 28px; }
+  .qty-number { width: 70px; line-height: 50px; font-size: 22px; }
 }
