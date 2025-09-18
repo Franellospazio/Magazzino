@@ -1,21 +1,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
 
+/* Sfondo di default: nessuno per desktop */
 body {
-  background-image: url('1.jpg');   /* stesso livello della cartella */
-  background-size: cover;           /* occupa tutta la finestra */
-  background-position: center;      /* centrata */
-  background-repeat: no-repeat;     /* non si ripete */
   font-family: 'Open Sans', sans-serif;
   margin: 0;
   padding: 0;
 }
 
+/* Sfondo solo per schermi piccoli */
+@media (max-width: 600px) {
+  body {
+    background-image: url('1.jpg');       /* percorso immagine */
+    background-size: cover;               /* copre tutta la viewport */
+    background-position: center;          /* centrata */
+    background-repeat: no-repeat;         /* non si ripete */
+    background-attachment: fixed;         /* resta fisso durante scroll */
+    z-index: -1;                          /* sotto tutti gli elementi */
+  }
+}
 
+/* Wrap e box restano sopra lo sfondo */
 .wrap {
+  position: relative;  /* per essere sopra lo sfondo */
+  z-index: 1;
   width: 90%;
   max-width: 500px;
   margin: 50px auto;
 }
+
 
 .search {
   display: flex;
@@ -234,4 +246,5 @@ body {
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
+
 
