@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "descrizione": "Prodotto A",
+    "giacenza": 10,
+    "scorta_minima": 3
+  },
+  {
+    "id": 2,
+    "descrizione": "Prodotto B",
+    "giacenza": 5,
+    "scorta_minima": 2
+  }
+]
