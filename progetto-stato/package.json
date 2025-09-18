@@ -1,9 +1,13 @@
 {
-  "name": "progetto-stato",
+  "name": "magazzino",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "node server.js"
+  },
   "dependencies": {
-    "node-fetch": "^3.3.2",
-    "googleapis": "^118.0.0"
+    "@supabase/supabase-js": "^2.26.0",
+    "express": "^4.18.2"
   }
 }
