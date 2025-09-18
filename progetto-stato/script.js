@@ -144,4 +144,3 @@ if (giacenzaNum < selectedProdotto.ScortaMinima) {
   loadProdotti();
 });
 
-
