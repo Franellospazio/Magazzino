@@ -14,17 +14,28 @@ document.addEventListener("DOMContentLoaded", () => {
 let prodotti = [];
 let selectedProdotto = null;
 
-// CLICK LENTE PER MOSTRARE TUTTI I PRODOTTI
+// CLICK LENTE PER MOSTRARE / NASCONDERE TUTTI I PRODOTTI
 const searchButton = document.querySelector(".searchButton");
+let showingAll = false; // stato toggle
+
 searchButton.addEventListener("click", () => {
-  results.innerHTML = "";
-  prodotti.forEach(p => {
-    const li = document.createElement("li");
-    li.textContent = `${p.Descrizione} - Giacenza: ${p.Giacenza}`;
-    li.addEventListener("click", () => openModal(p));
-    results.appendChild(li);
-  });
+  if (showingAll) {
+    // Se già visibili → nasconde
+    results.innerHTML = "";
+    showingAll = false;
+  } else {
+    // Se non visibili → mostra solo i nomi dei prodotti
+    results.innerHTML = "";
+    prodotti.forEach(p => {
+      const li = document.createElement("li");
+      li.textContent = p.Descrizione; // 👈 solo il nome
+      li.addEventListener("click", () => openModal(p));
+      results.appendChild(li);
+    });
+    showingAll = true;
+  }
 });
+
 
 
   // EmailJS config
@@ -157,6 +168,7 @@ search.addEventListener("input", () => {
 
   loadProdotti();
 });
+
 
 
 
