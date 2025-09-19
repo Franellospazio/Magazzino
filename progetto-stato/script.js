@@ -137,24 +137,26 @@ if (giacenzaNum < selectedProdotto.ScortaMinima) {
     if (e.target === modal) closeModal();
   });
 
-  search.addEventListener("input", () => {
-    const query = search.value.toLowerCase();
-    results.innerHTML = "";
-    if (query.length < 2) return;
+search.addEventListener("input", () => {
+  const query = search.value.toLowerCase();
+  results.innerHTML = "";
+  if (query.length < 1) return; // parte subito anche con una sola lettera
 
-    const filtrati = prodotti.filter(p =>
-      p.Descrizione.toLowerCase().includes(query)
-    );
+  const filtrati = prodotti.filter(p =>
+    p.Descrizione.toLowerCase().includes(query)
+  );
 
-    filtrati.forEach(p => {
-      const li = document.createElement("li");
-      li.textContent = `${p.Descrizione} - Giacenza: ${p.Giacenza}`;
-      li.addEventListener("click", () => openModal(p));
-      results.appendChild(li);
-    });
+  filtrati.forEach(p => {
+    const li = document.createElement("li");
+    li.textContent = p.Descrizione; // solo nome prodotto, senza giacenza
+    li.addEventListener("click", () => openModal(p));
+    results.appendChild(li);
   });
+});
+
 
   loadProdotti();
 });
+
 
 
