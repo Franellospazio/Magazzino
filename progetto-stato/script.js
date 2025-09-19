@@ -36,6 +36,36 @@ searchButton.addEventListener("click", () => {
   }
 });
 
+  // CLICK 📦 PER MOSTRARE / NASCONDERE PRODOTTI SOTTOSCORTA
+const sottoscortaBtn = document.getElementById("sottoscortaBtn");
+let showingSottoscorta = false;
+
+sottoscortaBtn.addEventListener("click", () => {
+  if (showingSottoscorta) {
+    // Se già visibili → nasconde
+    results.innerHTML = "";
+    showingSottoscorta = false;
+  } else {
+    // Filtra i prodotti sottoscorta
+    const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
+
+    results.innerHTML = "";
+    sottoscorta.forEach(p => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        ${p.Descrizione} — 
+        <span style="color:red;">${p.Giacenza}</span> 
+        (<span style="color:blue;">${p.ScortaMinima}</span>)
+      `;
+      li.addEventListener("click", () => openModal(p));
+      results.appendChild(li);
+    });
+
+    showingSottoscorta = true;
+  }
+});
+
+
 
 
   // EmailJS config
@@ -168,6 +198,7 @@ search.addEventListener("input", () => {
 
   loadProdotti();
 });
+
 
 
 
