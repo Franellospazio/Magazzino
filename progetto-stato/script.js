@@ -17,14 +17,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let prodotti = [];
   let selectedProdotto = null;
-
   let showingAll = false;
   let showingSottoscorta = false;
   let showingCategorie = false;
 
-  // contenitore dinamico per i pulsanti categoria
+  // contenitore pulsanti categoria
   const categorieContainer = document.createElement("div");
-  categorieContainer.id = "categorieContainer";
   categorieContainer.classList.add("categorie-container");
   searchDiv.appendChild(categorieContainer);
 
@@ -40,7 +38,6 @@ document.addEventListener("DOMContentLoaded", () => {
       content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
     }
 
-    // immagine sempre alla fine
     if (p.ImageURL) {
       content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
     } else {
@@ -84,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // CREAZIONE MENU CATEGORIE MASTER
+  // CREAZIONE MASTER CATEGORIE 🏷️
   let categorieBtn = null;
 
   function buildCategorieButton(categorie) {
@@ -94,6 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
     categorieBtn.type = "button";
     categorieBtn.textContent = "🏷️ Categorie";
     categorieBtn.classList.add("categoriaMasterBtn");
+    categorieBtn.style.marginLeft = "5px";
 
     categorieBtn.addEventListener("click", () => {
       if (showingCategorie) {
@@ -103,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
         categorie.forEach(cat => {
           const btn = document.createElement("button");
           btn.type = "button";
-          btn.textContent = cat;
+          btn.textContent = cat; // senza emoji
           btn.classList.add("categoriaBtn");
 
           btn.addEventListener("click", () => {
