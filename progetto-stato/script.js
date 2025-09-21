@@ -25,26 +25,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Funzione generica per creare li con immagini
   function createProductLi(p, showGiacenza = false) {
-    const li = document.createElement("li");
-    li.style.borderBottom = "1px solid #ccc";
-    li.style.padding = "5px 0";
+  const li = document.createElement("li");
+  li.style.borderBottom = "1px solid #ccc";
+  li.style.padding = "5px 0";
 
-    let content = `<strong>${p.Descrizione}</strong>`;
+  // Suddividiamo il testo
+  // esempio chiave: nome_2_casi_taglio
+  const keyParts = p.Descrizione.split("_");
+  const nome = keyParts[0];
+  const taglio = keyParts[keyParts.length - 1];
+  const middle = keyParts.slice(1, keyParts.length - 1).join("_");
 
-    if (showGiacenza) {
-      content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
-    }
+  let content = `<strong style="color:black;">${nome}</strong>`; // nome in grassetto nero
+  if (middle) content += ` <span style="color:#999;">${middle}</span>`; // tutto ciò che è nel mezzo grigio chiaro
+  content += ` <span style="color:#2ecc71;">${taglio}</span>`; // taglio verde chiaro
 
-    if (p.ImageURL) {
-      content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
-    } else {
-      content += `<br><em>(img non presente)</em>`;
-    }
-
-    li.innerHTML = content;
-    li.addEventListener("click", () => openModal(p));
-    return li;
+  if (showGiacenza) {
+    content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
   }
+
+  if (p.ImageURL) {
+    content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
+  } else {
+    content += `<br><em>(img non presente)</em>`;
+  }
+
+  li.innerHTML = content;
+  li.addEventListener("click", () => openModal(p));
+  return li;
+}
 
   // Funzione per resettare tutto
   function resetAll() {
@@ -233,3 +242,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadProdotti();
 });
+
