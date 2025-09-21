@@ -45,35 +45,43 @@ html, body {
 .searchButton,
 #sottoscortaBtn,
 .categoriaMasterBtn {
-  flex: 1 1 auto;
+  flex: 1 1 auto;              /* occupa lo stesso spazio */
   min-width: 100px;
-  height: 50px;
+  height: 50px;                /* stessa altezza */
   border: none;
   border-radius: 5px;
-  color: white;
+  color: white;                /* colore testo uniforme */
+  font-weight: bold;           /* migliora leggibilità */
   font-size: 18px;
   cursor: pointer;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: center;         /* centra verticalmente */
+  justify-content: center;     /* centra orizzontalmente */
   padding: 0 12px;
   white-space: nowrap;
   transition: background 0.2s, transform 0.1s;
 }
 
-.searchButton { background: #00B4CC; }
-.searchButton:hover { background: #0097a7; }
+/* Colori e hover specifici */
+.searchButton {
+  background: #00B4CC;
+}
+.searchButton:hover {
+  background: #0097a7;
+}
 
-#sottoscortaBtn { background: #e67e22; }
-#sottoscortaBtn:hover { background: #d35400; }
+#sottoscortaBtn {
+  background: #e67e22;
+}
+#sottoscortaBtn:hover {
+  background: #d35400;
+}
 
 .categoriaMasterBtn {
   background-color: #FFC107;
-  color: #333;
 }
 .categoriaMasterBtn:hover {
   background-color: #e0a800;
-  color: #fff;
 }
 
 /* --- Container categorie a tendina --- */
@@ -251,3 +259,4 @@ html, body {
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
+
