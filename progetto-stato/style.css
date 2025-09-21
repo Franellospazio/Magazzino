@@ -23,13 +23,6 @@ body {
   height: 100%; /* riempie l'altezza disponibile */
 }
 
-.wrap {
-  position: relative;
-  z-index: 1;
-  width: 90%;
-  max-width: 500px;
-  margin: 50px auto;
-}
 
 .search {
   display: flex;
@@ -270,6 +263,7 @@ body {
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
+
 
 
 
