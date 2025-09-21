@@ -13,7 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const searchButton = document.querySelector(".searchButton");
   const sottoscortaBtn = document.getElementById("sottoscortaBtn");
-  const searchDiv = document.querySelector(".search");
+  const categorieMasterBtn = document.getElementById("categorieMasterBtn"); // pulsante HTML
+  const categorieContainer = document.getElementById("categorieContainer"); // container HTML
 
   let prodotti = [];
   let selectedProdotto = null;
@@ -21,12 +22,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let showingAll = false;
   let showingSottoscorta = false;
   let showingCategorie = false;
-
-  // contenitore dinamico per i pulsanti categoria
-  const categorieContainer = document.createElement("div");
-  categorieContainer.id = "categorieContainer";
-  categorieContainer.style.marginTop = "10px";
-  searchDiv.appendChild(categorieContainer);
 
   // Funzione generica per creare li con immagini
   function createProductLi(p, showGiacenza = false) {
@@ -51,10 +46,11 @@ document.addEventListener("DOMContentLoaded", () => {
     return li;
   }
 
-  // reset generale
+  // Funzione per resettare tutto
   function resetAll() {
     results.innerHTML = "";
     categorieContainer.innerHTML = "";
+    categorieContainer.style.display = "none";
     showingAll = false;
     showingSottoscorta = false;
     showingCategorie = false;
@@ -83,45 +79,37 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // CREAZIONE MENU CATEGORIE
-  let categorieBtn = null;
+  // PULSANTE CATEGORIE
+  categorieMasterBtn.addEventListener("click", () => {
+    if (showingCategorie) {
+      categorieContainer.style.display = "none";
+      categorieContainer.innerHTML = "";
+      showingCategorie = false;
+    } else {
+      resetAll(); // chiude tutto prima
+      categorieContainer.style.display = "flex";
+      categorieContainer.innerHTML = "";
 
-  function buildCategorieButton(categorie) {
-    if (categorieBtn) categorieBtn.remove();
+      const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
 
-    categorieBtn = document.createElement("button");
-    categorieBtn.type = "button";
-    categorieBtn.textContent = "🏷️ Categorie";
-    categorieBtn.style.backgroundColor = "#FFC107"; // giallo ambrato
-    categorieBtn.style.marginLeft = "5px";
-    categorieBtn.classList.add("categoriaMasterBtn");
+      categorie.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = cat;
+        btn.classList.add("categoriaBtn");
 
-    categorieBtn.addEventListener("click", () => {
-      if (showingCategorie) {
-        resetAll();
-      } else {
-        resetAll();
-        categorie.forEach(cat => {
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.textContent = `${cat}`;
-          btn.classList.add("categoriaBtn");
-          btn.style.margin = "3px";
-
-          btn.addEventListener("click", () => {
-            results.innerHTML = "";
-            const filtrati = prodotti.filter(p => p.categoria === cat);
-            filtrati.forEach(p => results.appendChild(createProductLi(p)));
-          });
-
-          categorieContainer.appendChild(btn);
+        btn.addEventListener("click", () => {
+          results.innerHTML = "";
+          const filtrati = prodotti.filter(p => p.categoria === cat);
+          filtrati.forEach(p => results.appendChild(createProductLi(p)));
         });
-        showingCategorie = true;
-      }
-    });
 
-    searchDiv.appendChild(categorieBtn);
-  }
+        categorieContainer.appendChild(btn);
+      });
+
+      showingCategorie = true;
+    }
+  });
 
   // EmailJS config
   const EMAILJS_SERVICE_ID = "service_487ujbw";
@@ -132,9 +120,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/prodotti");
       if (!res.ok) throw new Error(`Errore API: ${res.status}`);
       prodotti = await res.json();
-
-      const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
-      buildCategorieButton(categorie);
     } catch (err) {
       console.error("Errore caricamento dati:", err);
     }
