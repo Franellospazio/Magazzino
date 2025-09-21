@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedProdotto = null;
 
   // Funzione generica per creare li con immagini e linea separatrice
-  function createProductLi(p, showGiacenza = false, imgAfterText = false) {
+  function createProductLi(p, showGiacenza = false) {
     const li = document.createElement("li");
     li.style.borderBottom = "1px solid #ccc";
     li.style.padding = "5px 0";
@@ -26,12 +26,11 @@ document.addEventListener("DOMContentLoaded", () => {
       content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
     }
 
+    // Immagine sempre alla fine del testo
     if (p.ImageURL) {
-      const imgTag = `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px;">`;
-      content = imgAfterText ? content + imgTag : imgTag + content;
+      content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px;">`;
     } else {
-      const noImgText = `<br><em>(img non presente)</em>`;
-      content = imgAfterText ? content + noImgText : noImgText + content;
+      content += `<br><em>(img non presente)</em>`;
     }
 
     li.innerHTML = content;
@@ -65,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
       results.innerHTML = "";
-      sottoscorta.forEach(p => results.appendChild(createProductLi(p, true, true))); // immagine dopo testo
+      sottoscorta.forEach(p => results.appendChild(createProductLi(p, true))); // immagine sempre alla fine
       showingSottoscorta = true;
     }
   });
