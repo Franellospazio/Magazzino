@@ -14,9 +14,29 @@ document.addEventListener("DOMContentLoaded", () => {
   let prodotti = [];
   let selectedProdotto = null;
 
+  // Funzione generica per creare li con immagini
+  function createProductLi(p, showGiacenza = false) {
+    const li = document.createElement("li");
+    let content = `<strong>${p.Descrizione}</strong>`;
+    
+    if (p.ImageURL) {
+      content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px;">`;
+    } else {
+      content += ` <em>(img non presente)</em>`;
+    }
+
+    if (showGiacenza) {
+      content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
+    }
+
+    li.innerHTML = content;
+    li.addEventListener("click", () => openModal(p));
+    return li;
+  }
+
   // CLICK LENTE PER MOSTRARE / NASCONDERE TUTTI I PRODOTTI
   const searchButton = document.querySelector(".searchButton");
-  let showingAll = false; // stato toggle
+  let showingAll = false;
 
   searchButton.addEventListener("click", () => {
     if (showingAll) {
@@ -24,22 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
       showingAll = false;
     } else {
       results.innerHTML = "";
-      prodotti.forEach(p => {
-        const li = document.createElement("li");
-
-        // Controllo presenza immagine
-        if (p.ImageURL) {
-          li.innerHTML = `
-            <strong>${p.Descrizione}</strong><br>
-            <img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px;">
-          `;
-        } else {
-          li.innerHTML = `<strong>${p.Descrizione}</strong> <em>(img non presente)</em>`;
-        }
-
-        li.addEventListener("click", () => openModal(p));
-        results.appendChild(li);
-      });
+      prodotti.forEach(p => results.appendChild(createProductLi(p)));
       showingAll = true;
     }
   });
@@ -55,16 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
       results.innerHTML = "";
-      sottoscorta.forEach(p => {
-        const li = document.createElement("li");
-        li.innerHTML = `
-          ${p.Descrizione} — 
-          <span style="color:red;">${p.Giacenza}</span> 
-          (<span style="color:blue;">${p.ScortaMinima}</span>)
-        `;
-        li.addEventListener("click", () => openModal(p));
-        results.appendChild(li);
-      });
+      sottoscorta.forEach(p => results.appendChild(createProductLi(p, true)));
       showingSottoscorta = true;
     }
   });
@@ -150,7 +146,6 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       if (li) li.textContent = `${selectedProdotto.Descrizione} - Giacenza: ${giacenzaNum}`;
 
-      // Invio email se sotto scorta
       if (giacenzaNum < selectedProdotto.ScortaMinima) {
         const templateParams = {
           name: "Sistema Magazzino",
@@ -177,7 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target === modal) closeModal();
   });
 
-  // Ricerca in tempo reale (solo nome prodotto)
+  // Ricerca in tempo reale con immagini
   search.addEventListener("input", () => {
     const query = search.value.toLowerCase();
     results.innerHTML = "";
@@ -187,12 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
       p.Descrizione.toLowerCase().includes(query)
     );
 
-    filtrati.forEach(p => {
-      const li = document.createElement("li");
-      li.textContent = p.Descrizione; // solo nome
-      li.addEventListener("click", () => openModal(p));
-      results.appendChild(li);
-    });
+    filtrati.forEach(p => results.appendChild(createProductLi(p)));
   });
 
   loadProdotti();
