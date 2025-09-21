@@ -22,19 +22,11 @@ document.addEventListener("DOMContentLoaded", () => {
   let showingSottoscorta = false;
   let showingCategorie = false;
 
-  // Contenitore dinamico per i pulsanti categoria
+  // contenitore dinamico per i pulsanti categoria
   const categorieContainer = document.createElement("div");
   categorieContainer.id = "categorieContainer";
-  categorieContainer.classList.add("categorie-container");
+  categorieContainer.style.marginTop = "10px";
   searchDiv.appendChild(categorieContainer);
-
-  // Pulsante master categorie 🏷️
-  const categorieMasterBtn = document.createElement("button");
-  categorieMasterBtn.type = "button";
-  categorieMasterBtn.textContent = "🏷️ Categorie";
-  categorieMasterBtn.classList.add("categoriaMasterBtn");
-  categorieMasterBtn.style.marginLeft = "5px";
-  searchDiv.appendChild(categorieMasterBtn);
 
   // Funzione generica per creare li con immagini
   function createProductLi(p, showGiacenza = false) {
@@ -43,11 +35,11 @@ document.addEventListener("DOMContentLoaded", () => {
     li.style.padding = "5px 0";
 
     let content = `<strong>${p.Descrizione}</strong>`;
+
     if (showGiacenza) {
       content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
     }
 
-    // immagine sempre alla fine
     if (p.ImageURL) {
       content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
     } else {
@@ -59,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return li;
   }
 
-  // Reset generale (nasconde prodotti e pulsanti categorie figlie)
+  // reset generale
   function resetAll() {
     results.innerHTML = "";
     categorieContainer.innerHTML = "";
@@ -70,44 +62,66 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // MOSTRA / NASCONDI TUTTI I PRODOTTI
   searchButton.addEventListener("click", () => {
-    resetAll();
-    prodotti.forEach(p => results.appendChild(createProductLi(p)));
-    showingAll = true;
+    if (showingAll) {
+      resetAll();
+    } else {
+      resetAll();
+      prodotti.forEach(p => results.appendChild(createProductLi(p)));
+      showingAll = true;
+    }
   });
 
   // SOTTOSCORTA
   sottoscortaBtn.addEventListener("click", () => {
-    resetAll();
-    const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
-    sottoscorta.forEach(p => results.appendChild(createProductLi(p, true)));
-    showingSottoscorta = true;
-  });
-
-  // Pulsante master categorie
-  categorieMasterBtn.addEventListener("click", () => {
-    if (showingCategorie) {
-      categorieContainer.innerHTML = "";
-      showingCategorie = false;
+    if (showingSottoscorta) {
+      resetAll();
     } else {
-      categorieContainer.innerHTML = "";
-      const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
-      categorie.forEach(cat => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.textContent = cat; // senza emoji
-        btn.classList.add("categoriaBtn");
-
-        btn.addEventListener("click", () => {
-          results.innerHTML = "";
-          const filtrati = prodotti.filter(p => p.categoria === cat);
-          filtrati.forEach(p => results.appendChild(createProductLi(p)));
-        });
-
-        categorieContainer.appendChild(btn);
-      });
-      showingCategorie = true;
+      resetAll();
+      const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
+      sottoscorta.forEach(p => results.appendChild(createProductLi(p, true)));
+      showingSottoscorta = true;
     }
   });
+
+  // CREAZIONE MENU CATEGORIE
+  let categorieBtn = null;
+
+  function buildCategorieButton(categorie) {
+    if (categorieBtn) categorieBtn.remove();
+
+    categorieBtn = document.createElement("button");
+    categorieBtn.type = "button";
+    categorieBtn.textContent = "🏷️ Categorie";
+    categorieBtn.style.backgroundColor = "#FFC107"; // giallo ambrato
+    categorieBtn.style.marginLeft = "5px";
+    categorieBtn.classList.add("categoriaMasterBtn");
+
+    categorieBtn.addEventListener("click", () => {
+      if (showingCategorie) {
+        resetAll();
+      } else {
+        resetAll();
+        categorie.forEach(cat => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.textContent = `${cat}`;
+          btn.classList.add("categoriaBtn");
+          btn.style.margin = "3px";
+
+          btn.addEventListener("click", () => {
+            results.innerHTML = "";
+            const filtrati = prodotti.filter(p => p.categoria === cat);
+            filtrati.forEach(p => results.appendChild(createProductLi(p)));
+          });
+
+          categorieContainer.appendChild(btn);
+        });
+        showingCategorie = true;
+      }
+    });
+
+    searchDiv.appendChild(categorieBtn);
+  }
 
   // EmailJS config
   const EMAILJS_SERVICE_ID = "service_487ujbw";
@@ -118,6 +132,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/prodotti");
       if (!res.ok) throw new Error(`Errore API: ${res.status}`);
       prodotti = await res.json();
+
+      const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
+      buildCategorieButton(categorie);
     } catch (err) {
       console.error("Errore caricamento dati:", err);
     }
