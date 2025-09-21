@@ -142,6 +142,57 @@ body {
   background-color: #ddd;
 }
 
+/* 🔘 Stile base per tutti i pulsanti */
+.search button,
+.categoriaBtn,
+.categoriaMasterBtn {
+  background-color: #007bff; /* blu */
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  margin: 4px 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.search button:hover,
+.categoriaBtn:hover,
+.categoriaMasterBtn:hover {
+  background-color: #0056b3;
+  transform: scale(1.03);
+}
+
+/* 🔘 Pulsante master categorie (giallo ambrato) */
+.categoriaMasterBtn {
+  background-color: #FFC107; /* giallo ambrato */
+  color: #333; /* testo scuro per contrasto */
+}
+
+.categoriaMasterBtn:hover {
+  background-color: #e0a800;
+  color: #fff;
+}
+
+/* 🔘 Pulsanti delle singole categorie */
+.categoriaBtn {
+  background-color: #6c757d; /* grigio */
+  font-size: 13px;
+}
+
+.categoriaBtn:hover {
+  background-color: #5a6268;
+}
+
+/* Lista risultati */
+.results li {
+  list-style: none;
+  margin: 6px 0;
+  padding: 6px;
+  border-bottom: 1px solid #ccc;
+}
+
 
 .results {
   list-style: none;
@@ -282,6 +333,7 @@ body {
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
+
 
 
 
