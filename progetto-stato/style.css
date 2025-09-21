@@ -1,46 +1,44 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
 
-/* Sfondo di default: nessuno per desktop */
+/* --- Base layout --- */
 body {
   font-family: 'Open Sans', sans-serif;
   margin: 0;
   padding: 0;
 }
 
-/* Sfondo solo per schermi piccoli */
 @media (max-width: 600px) {
   body {
-    background-image: url('1.jpg');       /* percorso immagine */
-    background-size: cover;               /* copre tutta la viewport */
-    background-position: center;          /* centrata */
-    background-repeat: no-repeat;         /* non si ripete */
-    background-attachment: fixed;         /* resta fisso durante scroll */
-    z-index: -1;                          /* sotto tutti gli elementi */
+    background-image: url('1.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    z-index: -1;
   }
 }
 
-/* Wrap e box restano sopra lo sfondo */
 .wrap {
-  position: relative;  /* per essere sopra lo sfondo */
+  position: relative;
   z-index: 1;
   width: 90%;
   max-width: 500px;
   margin: 50px auto;
 }
 
-
 .search {
   display: flex;
-  width: 100%;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 
+/* --- Barra ricerca --- */
 .searchTerm {
   flex: 1;
   padding: 12px;
   font-size: 16px;
   border: 2px solid #00B4CC;
-  border-right: none;
-  border-radius: 5px 0 0 5px;
+  border-radius: 5px;
   outline: none;
 }
 
@@ -48,142 +46,76 @@ body {
   border-color: #007B9E;
 }
 
-.searchButton {
-  width: 50px;
-  background: #00B4CC;
-  border: 2px solid #00B4CC;
-  border-radius: 0 5px 5px 0;
-  color: #fff;
+/* --- Pulsanti principali (stessa dimensione) --- */
+.searchButton,
+#sottoscortaBtn,
+.categoriaMasterBtn {
+  flex: 0 0 auto;
+  min-width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 5px;
+  color: white;
   font-size: 18px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0 12px;
+  white-space: nowrap;
+  transition: background 0.2s, transform 0.1s;
 }
 
-/* Pulsante Sottoscorta 📦 accanto alla lente */
-#sottoscortaBtn {
-  width: 50px;                 /* stessa larghezza della lente */
-  background: #e67e22;         /* arancione scuro */
-  border: 2px solid #e67e22;   /* stesso bordo, colore coerente */
-  border-radius: 0 5px 5px 0;  /* arrotondamento uguale alla lente */
-  color: white;
-  font-family: 'Open Sans', sans-serif;
-  font-size: 18px;             /* stessa dimensione della lente */
-  cursor: pointer;
-  margin-left: 5px;            /* piccolo spazio dalla lente */
-  padding: 0;                  /* come la lente */
-  height: 50px;                /* altezza uguale alla barra di ricerca */
-  display: flex;               /* centratura verticale emoji + testo */
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;         /* evita ritorno a capo */
-  transition: background 0.2s;
-}
+.searchButton { background: #00B4CC; }
+.searchButton:hover { background: #0097a7; }
 
-#sottoscortaBtn:hover {
-  background: #d35400;         /* leggermente più scuro al passaggio */
-}
+#sottoscortaBtn { background: #e67e22; }
+#sottoscortaBtn:hover { background: #d35400; }
 
-/* MEDIA QUERIES per smartphone */
-@media (max-width: 600px) {
-  .search {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 5px;                  /* spazio tra input e pulsanti */
-  }
-
-  .searchTerm {
-    border-radius: 5px 5px 0 0;
-    border-right: 2px solid #00B4CC;
-  }
-
-  .searchButton,
-  #sottoscortaBtn {
-    width: 100%;               /* tutta la larghezza */
-    border-radius: 0 0 5px 5px;
-    margin-left: 0;
-    margin-top: 5px;
-  }
-}
-
-.categorieButton {
-  background-color: #FFC107; /* giallo ambrato */
-  border: none;
-  padding: 10px 20px;
-  margin-left: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  border-radius: 5px;
+/* Pulsante Categorie 🏷️ */
+.categoriaMasterBtn {
+  background-color: #FFC107;
   color: #333;
-  transition: background 0.3s;
 }
-
-.categorieButton:hover {
-  background-color: #e0a800;
-}
-
-.categorie-container {
-  display: none; /* nascosto finché non clicchi */
-  margin-top: 10px;
-}
-
-.categorie-container button {
-  background-color: #f4f4f4;
-  border: 1px solid #ddd;
-  padding: 8px 15px;
-  margin: 3px;
-  cursor: pointer;
-  border-radius: 5px;
-  font-size: 14px;
-}
-
-.categorie-container button:hover {
-  background-color: #ddd;
-}
-
-/* 🔘 Stile base per tutti i pulsanti */
-.search button,
-.categoriaBtn,
-.categoriaMasterBtn {
-  background-color: #007bff; /* blu */
-  color: white;
-  border: none;
-  padding: 8px 14px;
-  margin: 4px 2px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s ease, transform 0.1s ease;
-}
-
-.search button:hover,
-.categoriaBtn:hover,
-.categoriaMasterBtn:hover {
-  background-color: #0056b3;
-  transform: scale(1.03);
-}
-
-/* 🔘 Pulsante master categorie (giallo ambrato) */
-.categoriaMasterBtn {
-  background-color: #FFC107; /* giallo ambrato */
-  color: #333; /* testo scuro per contrasto */
-}
-
 .categoriaMasterBtn:hover {
   background-color: #e0a800;
   color: #fff;
 }
 
-/* 🔘 Pulsanti delle singole categorie */
-.categoriaBtn {
-  background-color: #6c757d; /* grigio */
-  font-size: 13px;
+/* --- Container categorie (inizialmente nascosto) --- */
+.categorie-container {
+  display: none;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 10px;
 }
 
-.categoriaBtn:hover {
-  background-color: #5a6268;
+/* Pulsanti categorie */
+.categoriaBtn {
+  background-color: #fff3cd;  /* giallo chiaro */
+  border: 1px solid #ffeeba;
+  color: #333;
+  padding: 8px 15px;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
 }
+
+.categoriaBtn:hover,
+.categoriaBtn.active {
+  background-color: #e0a800; /* più scuro */
+  color: #fff;
+}
+
+/* --- Risultati lista --- */
+.results li {
+  list-style: none;
+  margin: 6px 0;
+  padding: 6px;
+  border-bottom: 1px solid #ccc;
+}
+
 
 /* Lista risultati */
 .results li {
@@ -333,6 +265,7 @@ body {
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
+
 
 
 
