@@ -11,10 +11,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const incrementBtn = document.getElementById("increment");
   const aggiornaBtn = document.getElementById("aggiornaBtn");
 
+  const searchButton = document.querySelector(".searchButton");
+  const sottoscortaBtn = document.getElementById("sottoscortaBtn");
+  const searchDiv = document.querySelector(".search"); // container dei pulsanti
+
   let prodotti = [];
   let selectedProdotto = null;
+  let showingAll = false;
+  let showingSottoscorta = false;
 
-  // Funzione generica per creare li con immagini e linea separatrice
+  // Funzione generica per creare li con immagini
   function createProductLi(p, showGiacenza = false) {
     const li = document.createElement("li");
     li.style.borderBottom = "1px solid #ccc";
@@ -26,9 +32,9 @@ document.addEventListener("DOMContentLoaded", () => {
       content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
     }
 
-    // Immagine sempre alla fine del testo
+    // immagine sempre alla fine
     if (p.ImageURL) {
-      content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px;">`;
+      content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
     } else {
       content += `<br><em>(img non presente)</em>`;
     }
@@ -39,9 +45,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // MOSTRA / NASCONDI TUTTI I PRODOTTI
-  const searchButton = document.querySelector(".searchButton");
-  let showingAll = false;
-
   searchButton.addEventListener("click", () => {
     if (showingAll) {
       results.innerHTML = "";
@@ -54,9 +57,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // SOTTOSCORTA
-  const sottoscortaBtn = document.getElementById("sottoscortaBtn");
-  let showingSottoscorta = false;
-
   sottoscortaBtn.addEventListener("click", () => {
     if (showingSottoscorta) {
       results.innerHTML = "";
@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
       results.innerHTML = "";
-      sottoscorta.forEach(p => results.appendChild(createProductLi(p, true))); // immagine sempre alla fine
+      sottoscorta.forEach(p => results.appendChild(createProductLi(p, true)));
       showingSottoscorta = true;
     }
   });
@@ -78,6 +78,34 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/prodotti");
       if (!res.ok) throw new Error(`Errore API: ${res.status}`);
       prodotti = await res.json();
+
+      // 🔥 CREAZIONE PULSANTI PER CATEGORIE
+      const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
+
+      categorie.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = `📂 ${cat}`;
+        btn.classList.add("categoriaBtn");
+        btn.style.marginLeft = "5px";
+
+        let showingCategoria = false;
+
+        btn.addEventListener("click", () => {
+          if (showingCategoria) {
+            results.innerHTML = "";
+            showingCategoria = false;
+          } else {
+            results.innerHTML = "";
+            const filtrati = prodotti.filter(p => p.categoria === cat);
+            filtrati.forEach(p => results.appendChild(createProductLi(p)));
+            showingCategoria = true;
+          }
+        });
+
+        searchDiv.appendChild(btn);
+      });
+
     } catch (err) {
       console.error("Errore caricamento dati:", err);
     }
@@ -176,7 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target === modal) closeModal();
   });
 
-  // Ricerca in tempo reale con immagini
+  // Ricerca
   search.addEventListener("input", () => {
     const query = search.value.toLowerCase();
     results.innerHTML = "";
