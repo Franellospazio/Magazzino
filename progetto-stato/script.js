@@ -13,12 +13,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const searchButton = document.querySelector(".searchButton");
   const sottoscortaBtn = document.getElementById("sottoscortaBtn");
-  const searchDiv = document.querySelector(".search"); // container dei pulsanti
+  const searchDiv = document.querySelector(".search");
+
+  // 🔥 Nuovi elementi per categorie
+  const categorieBtn = document.createElement("button");
+  categorieBtn.type = "button";
+  categorieBtn.id = "categorieBtn";
+  categorieBtn.textContent = "🏷️ Categorie";
+  categorieBtn.classList.add("categorieButton");
+  searchDiv.appendChild(categorieBtn);
+
+  const categorieContainer = document.createElement("div");
+  categorieContainer.id = "categorieContainer";
+  categorieContainer.classList.add("categorie-container");
+  searchDiv.appendChild(categorieContainer);
 
   let prodotti = [];
   let selectedProdotto = null;
   let showingAll = false;
   let showingSottoscorta = false;
+  let categorieVisibili = false;
 
   // Funzione generica per creare li con immagini
   function createProductLi(p, showGiacenza = false) {
@@ -69,6 +83,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // ESPANDI/NASCONDI CATEGORIE
+  categorieBtn.addEventListener("click", () => {
+    if (categorieVisibili) {
+      categorieContainer.style.display = "none";
+      categorieVisibili = false;
+    } else {
+      categorieContainer.style.display = "block";
+      categorieVisibili = true;
+    }
+  });
+
   // EmailJS config
   const EMAILJS_SERVICE_ID = "service_487ujbw";
   const EMAILJS_TEMPLATE_ID = "template_l5an0k5";
@@ -80,35 +105,30 @@ document.addEventListener("DOMContentLoaded", () => {
       prodotti = await res.json();
 
       // 🔥 CREAZIONE PULSANTI PER CATEGORIE
-      const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
-
-      categorie.forEach(cat => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.textContent = `📂 ${cat}`;
-        btn.classList.add("categoriaBtn");
-        btn.style.marginLeft = "5px";
-
-        let showingCategoria = false;
-
-        btn.addEventListener("click", () => {
-          if (showingCategoria) {
-            results.innerHTML = "";
-            showingCategoria = false;
-          } else {
-            results.innerHTML = "";
-            const filtrati = prodotti.filter(p => p.categoria === cat);
-            filtrati.forEach(p => results.appendChild(createProductLi(p)));
-            showingCategoria = true;
-          }
-        });
-
-        searchDiv.appendChild(btn);
-      });
-
+      renderCategorie(prodotti);
     } catch (err) {
       console.error("Errore caricamento dati:", err);
     }
+  }
+
+  function renderCategorie(prodotti) {
+    categorieContainer.innerHTML = "";
+    const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
+
+    categorie.forEach(cat => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = `📂 ${cat}`;
+      btn.classList.add("categoriaBtn");
+
+      btn.addEventListener("click", () => {
+        results.innerHTML = "";
+        const filtrati = prodotti.filter(p => p.categoria === cat);
+        filtrati.forEach(p => results.appendChild(createProductLi(p)));
+      });
+
+      categorieContainer.appendChild(btn);
+    });
   }
 
   function aggiornaColore(minGiacenzaSpan) {
