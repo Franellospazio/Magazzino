@@ -15,26 +15,35 @@ let prodotti = [];
 let selectedProdotto = null;
 
 // CLICK LENTE PER MOSTRARE / NASCONDERE TUTTI I PRODOTTI
-const searchButton = document.querySelector(".searchButton");
-let showingAll = false; // stato toggle
-
 searchButton.addEventListener("click", () => {
   if (showingAll) {
     // Se già visibili → nasconde
     results.innerHTML = "";
     showingAll = false;
   } else {
-    // Se non visibili → mostra solo i nomi dei prodotti
+    // Se non visibili → mostra nome prodotto + immagine (se presente)
     results.innerHTML = "";
     prodotti.forEach(p => {
       const li = document.createElement("li");
-      li.textContent = p.Descrizione; // 👈 solo il nome
+
+      if (p.ImageURL) {
+        // Se ImageURL presente, mostra immagine ridotta
+        li.innerHTML = `
+          ${p.Descrizione} 
+          <img src="${p.ImageURL}" alt="${p.Descrizione}" style="width:50px; height:50px; object-fit:cover; vertical-align:middle; margin-left:10px;">
+        `;
+      } else {
+        // Altrimenti messaggio placeholder
+        li.innerHTML = `${p.Descrizione} (img non presente)`;
+      }
+
       li.addEventListener("click", () => openModal(p));
       results.appendChild(li);
     });
     showingAll = true;
   }
 });
+
 
   // CLICK 📦 PER MOSTRARE / NASCONDERE PRODOTTI SOTTOSCORTA
 const sottoscortaBtn = document.getElementById("sottoscortaBtn");
@@ -198,6 +207,7 @@ search.addEventListener("input", () => {
 
   loadProdotti();
 });
+
 
 
 
