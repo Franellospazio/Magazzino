@@ -14,19 +14,24 @@ document.addEventListener("DOMContentLoaded", () => {
   let prodotti = [];
   let selectedProdotto = null;
 
-  // Funzione generica per creare li con immagini
-  function createProductLi(p, showGiacenza = false) {
+  // Funzione generica per creare li con immagini e linea separatrice
+  function createProductLi(p, showGiacenza = false, imgAfterText = false) {
     const li = document.createElement("li");
+    li.style.borderBottom = "1px solid #ccc";
+    li.style.padding = "5px 0";
+
     let content = `<strong>${p.Descrizione}</strong>`;
-    
-    if (p.ImageURL) {
-      content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px;">`;
-    } else {
-      content += ` <em>(img non presente)</em>`;
-    }
 
     if (showGiacenza) {
       content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
+    }
+
+    if (p.ImageURL) {
+      const imgTag = `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px;">`;
+      content = imgAfterText ? content + imgTag : imgTag + content;
+    } else {
+      const noImgText = `<br><em>(img non presente)</em>`;
+      content = imgAfterText ? content + noImgText : noImgText + content;
     }
 
     li.innerHTML = content;
@@ -34,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return li;
   }
 
-  // CLICK LENTE PER MOSTRARE / NASCONDERE TUTTI I PRODOTTI
+  // MOSTRA / NASCONDI TUTTI I PRODOTTI
   const searchButton = document.querySelector(".searchButton");
   let showingAll = false;
 
@@ -49,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // CLICK 📦 PER MOSTRARE / NASCONDERE PRODOTTI SOTTOSCORTA
+  // SOTTOSCORTA
   const sottoscortaBtn = document.getElementById("sottoscortaBtn");
   let showingSottoscorta = false;
 
@@ -60,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
       results.innerHTML = "";
-      sottoscorta.forEach(p => results.appendChild(createProductLi(p, true)));
+      sottoscorta.forEach(p => results.appendChild(createProductLi(p, true, true))); // immagine dopo testo
       showingSottoscorta = true;
     }
   });
