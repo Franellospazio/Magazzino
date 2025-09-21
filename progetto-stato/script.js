@@ -22,10 +22,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let showingSottoscorta = false;
   let showingCategorie = false;
 
-  // contenitore dinamico per i pulsanti categoria
+  // Contenitore dinamico per i pulsanti categoria
   const categorieContainer = document.createElement("div");
   categorieContainer.id = "categorieContainer";
-  categorieContainer.style.marginTop = "10px";
+  categorieContainer.classList.add("categorie-container");
   searchDiv.appendChild(categorieContainer);
 
   // Funzione generica per creare li con immagini
@@ -51,13 +51,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return li;
   }
 
-  // reset generale
+  // Reset generale
   function resetAll() {
     results.innerHTML = "";
-    categorieContainer.innerHTML = "";
+    closeCategorieMenu();
     showingAll = false;
     showingSottoscorta = false;
     showingCategorie = false;
+    search.value = "";
   }
 
   // MOSTRA / NASCONDI TUTTI I PRODOTTI
@@ -83,44 +84,55 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // CREAZIONE MENU CATEGORIE
+  // CREAZIONE PULSANTE MASTER CATEGORIE
   let categorieBtn = null;
-
   function buildCategorieButton(categorie) {
     if (categorieBtn) categorieBtn.remove();
 
     categorieBtn = document.createElement("button");
     categorieBtn.type = "button";
     categorieBtn.textContent = "🏷️ Categorie";
-    categorieBtn.style.backgroundColor = "#FFC107"; // giallo ambrato
-    categorieBtn.style.marginLeft = "5px";
     categorieBtn.classList.add("categoriaMasterBtn");
 
     categorieBtn.addEventListener("click", () => {
       if (showingCategorie) {
-        resetAll();
+        closeCategorieMenu();
       } else {
-        resetAll();
-        categorie.forEach(cat => {
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.textContent = `${cat}`;
-          btn.classList.add("categoriaBtn");
-          btn.style.margin = "3px";
-
-          btn.addEventListener("click", () => {
-            results.innerHTML = "";
-            const filtrati = prodotti.filter(p => p.categoria === cat);
-            filtrati.forEach(p => results.appendChild(createProductLi(p)));
-          });
-
-          categorieContainer.appendChild(btn);
-        });
-        showingCategorie = true;
+        openCategorieMenu(categorie);
       }
     });
 
     searchDiv.appendChild(categorieBtn);
+  }
+
+  function openCategorieMenu(categorie) {
+    categorieContainer.innerHTML = "";
+    categorie.forEach(cat => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = cat;
+      btn.classList.add("categoriaBtn");
+
+      btn.addEventListener("click", () => {
+        results.innerHTML = "";
+        const filtrati = prodotti.filter(p => p.categoria === cat);
+        filtrati.forEach(p => results.appendChild(createProductLi(p)));
+        // Gestione active
+        [...categorieContainer.children].forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+
+      categorieContainer.appendChild(btn);
+    });
+
+    categorieContainer.classList.add("show");
+    showingCategorie = true;
+  }
+
+  function closeCategorieMenu() {
+    categorieContainer.classList.remove("show");
+    showingCategorie = false;
+    [...categorieContainer.children].forEach(b => b.classList.remove("active"));
   }
 
   // EmailJS config
@@ -248,4 +260,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadProdotti();
 });
-
