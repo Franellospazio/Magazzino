@@ -1,21 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
 
-/* --- Base layout --- */
-body {
-  font-family: 'Open Sans', sans-serif;
+/* --- Base layout e sfondo fisso --- */
+html, body {
+  height: 100%;
   margin: 0;
   padding: 0;
-}
-
-@media (max-width: 600px) {
-  body {
-    background-image: url('1.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    z-index: -1;
-  }
+  font-family: 'Open Sans', sans-serif;
+  background: url('1.jpg') no-repeat center center fixed;
+  background-size: cover;
+  overflow-x: hidden;
 }
 
 .wrap {
@@ -23,18 +16,20 @@ body {
   z-index: 1;
   width: 90%;
   max-width: 500px;
-  margin: 50px auto;
+  margin: 20px auto;
+  display: flex;
+  flex-direction: column;
 }
 
+/* --- Search + Pulsanti principali --- */
 .search {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
 }
 
-/* --- Barra ricerca --- */
 .searchTerm {
-  flex: 1;
+  flex: 1 1 auto;
   padding: 12px;
   font-size: 16px;
   border: 2px solid #00B4CC;
@@ -46,12 +41,12 @@ body {
   border-color: #007B9E;
 }
 
-/* --- Pulsanti principali (stessa dimensione) --- */
+/* Pulsanti principali */
 .searchButton,
 #sottoscortaBtn,
 .categoriaMasterBtn {
-  flex: 0 0 auto;
-  min-width: 50px;
+  flex: 1 1 auto;
+  min-width: 100px;
   height: 50px;
   border: none;
   border-radius: 5px;
@@ -72,7 +67,6 @@ body {
 #sottoscortaBtn { background: #e67e22; }
 #sottoscortaBtn:hover { background: #d35400; }
 
-/* Pulsante Categorie 🏷️ */
 .categoriaMasterBtn {
   background-color: #FFC107;
   color: #333;
@@ -82,7 +76,7 @@ body {
   color: #fff;
 }
 
-/* --- Container categorie (inizialmente nascosto) --- */
+/* --- Container categorie a tendina --- */
 .categorie-container {
   display: none;
   flex-wrap: wrap;
@@ -90,7 +84,6 @@ body {
   margin-top: 10px;
 }
 
-/* Pulsanti categorie */
 .categoriaBtn {
   background-color: #fff3cd;  /* giallo chiaro */
   border: 1px solid #ffeeba;
@@ -108,24 +101,7 @@ body {
   color: #fff;
 }
 
-/* --- Risultati lista --- */
-.results li {
-  list-style: none;
-  margin: 6px 0;
-  padding: 6px;
-  border-bottom: 1px solid #ccc;
-}
-
-
-/* Lista risultati */
-.results li {
-  list-style: none;
-  margin: 6px 0;
-  padding: 6px;
-  border-bottom: 1px solid #ccc;
-}
-
-
+/* --- Lista risultati --- */
 .results {
   list-style: none;
   margin-top: 8px;
@@ -138,7 +114,10 @@ body {
 }
 
 .results li {
+  list-style: none;
+  margin: 6px 0;
   padding: 10px;
+  border-bottom: 1px solid #ccc;
   cursor: pointer;
 }
 
@@ -146,6 +125,7 @@ body {
   background: #f3f4f6;
 }
 
+/* --- Modal --- */
 .modal {
   display: none;
   position: fixed;
@@ -185,11 +165,9 @@ body {
   cursor: pointer;
 }
 
-.close:hover {
-  color: black;
-}
+.close:hover { color: black; }
 
-/* Counter */
+/* --- Counter --- */
 .counter-container {
   display: flex;
   justify-content: center;
@@ -208,7 +186,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  touch-action: manipulation; /* disabilita zoom rapido su touch */
+  touch-action: manipulation;
 }
 
 .qty-btn.minus { color: #e74c3c; }
@@ -227,7 +205,6 @@ body {
   user-select: none;
 }
 
-/* Stati giacenza */
 .qty-green { background-color: #2ecc71; }
 .qty-yellow { background-color: #f1c40f; color: black; }
 .qty-red { background-color: #e74c3c; }
@@ -260,11 +237,17 @@ body {
 
 #aggiornaBtn:hover { background-color: #45a049; }
 
+/* --- Media queries --- */
 @media (max-width: 600px) {
+  .searchTerm, 
+  .searchButton,
+  #sottoscortaBtn,
+  .categoriaMasterBtn {
+    width: 100%;
+    min-width: auto;
+  }
+
   .modal-content { padding: 20px; }
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
-
-
-
