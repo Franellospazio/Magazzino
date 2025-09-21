@@ -11,75 +11,67 @@ document.addEventListener("DOMContentLoaded", () => {
   const incrementBtn = document.getElementById("increment");
   const aggiornaBtn = document.getElementById("aggiornaBtn");
 
-let prodotti = [];
-let selectedProdotto = null;
+  let prodotti = [];
+  let selectedProdotto = null;
 
-// CLICK LENTE PER MOSTRARE / NASCONDERE TUTTI I PRODOTTI
-searchButton.addEventListener("click", () => {
-  if (showingAll) {
-    // Se già visibili → nasconde
-    results.innerHTML = "";
-    showingAll = false;
-  } else {
-    // Se non visibili → mostra nome prodotto + immagine (se presente)
-    results.innerHTML = "";
-    prodotti.forEach(p => {
-      const li = document.createElement("li");
+  // CLICK LENTE PER MOSTRARE / NASCONDERE TUTTI I PRODOTTI
+  const searchButton = document.querySelector(".searchButton");
+  let showingAll = false; // stato toggle
 
-      if (p.ImageURL) {
-        // Se ImageURL presente, mostra immagine ridotta
-        li.innerHTML = `
-          ${p.Descrizione} 
-          <img src="${p.ImageURL}" alt="${p.Descrizione}" style="width:50px; height:50px; object-fit:cover; vertical-align:middle; margin-left:10px;">
-        `;
-      } else {
-        // Altrimenti messaggio placeholder
-        li.innerHTML = `${p.Descrizione} (img non presente)`;
-      }
+  searchButton.addEventListener("click", () => {
+    if (showingAll) {
+      results.innerHTML = "";
+      showingAll = false;
+    } else {
+      results.innerHTML = "";
+      prodotti.forEach(p => {
+        const li = document.createElement("li");
 
-      li.addEventListener("click", () => openModal(p));
-      results.appendChild(li);
-    });
-    showingAll = true;
-  }
-});
+        // Controllo presenza immagine
+        if (p.ImageURL) {
+          li.innerHTML = `
+            <strong>${p.Descrizione}</strong><br>
+            <img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px;">
+          `;
+        } else {
+          li.innerHTML = `<strong>${p.Descrizione}</strong> <em>(img non presente)</em>`;
+        }
 
+        li.addEventListener("click", () => openModal(p));
+        results.appendChild(li);
+      });
+      showingAll = true;
+    }
+  });
 
   // CLICK 📦 PER MOSTRARE / NASCONDERE PRODOTTI SOTTOSCORTA
-const sottoscortaBtn = document.getElementById("sottoscortaBtn");
-let showingSottoscorta = false;
+  const sottoscortaBtn = document.getElementById("sottoscortaBtn");
+  let showingSottoscorta = false;
 
-sottoscortaBtn.addEventListener("click", () => {
-  if (showingSottoscorta) {
-    // Se già visibili → nasconde
-    results.innerHTML = "";
-    showingSottoscorta = false;
-  } else {
-    // Filtra i prodotti sottoscorta
-    const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
-
-    results.innerHTML = "";
-    sottoscorta.forEach(p => {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        ${p.Descrizione} — 
-        <span style="color:red;">${p.Giacenza}</span> 
-        (<span style="color:blue;">${p.ScortaMinima}</span>)
-      `;
-      li.addEventListener("click", () => openModal(p));
-      results.appendChild(li);
-    });
-
-    showingSottoscorta = true;
-  }
-});
-
-
-
+  sottoscortaBtn.addEventListener("click", () => {
+    if (showingSottoscorta) {
+      results.innerHTML = "";
+      showingSottoscorta = false;
+    } else {
+      const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
+      results.innerHTML = "";
+      sottoscorta.forEach(p => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          ${p.Descrizione} — 
+          <span style="color:red;">${p.Giacenza}</span> 
+          (<span style="color:blue;">${p.ScortaMinima}</span>)
+        `;
+        li.addEventListener("click", () => openModal(p));
+        results.appendChild(li);
+      });
+      showingSottoscorta = true;
+    }
+  });
 
   // EmailJS config
-  const EMAILJS_SERVICE_ID = "service_487ujbw";   // <-- inserisci il tuo
-  const EMAILJS_TEMPLATE_ID = "template_l5an0k5"; // <-- inserisci il tuo
+  const EMAILJS_SERVICE_ID = "service_487ujbw";
+  const EMAILJS_TEMPLATE_ID = "template_l5an0k5";
 
   async function loadProdotti() {
     try {
@@ -158,21 +150,19 @@ sottoscortaBtn.addEventListener("click", () => {
       );
       if (li) li.textContent = `${selectedProdotto.Descrizione} - Giacenza: ${giacenzaNum}`;
 
-// 📧 Invio email solo se la giacenza è inferiore alla scorta minima
-if (giacenzaNum < selectedProdotto.ScortaMinima) {
-  const templateParams = {
-    name: "Sistema Magazzino",
-    time: new Date().toLocaleString(),
-    prodotto: selectedProdotto.Descrizione,
-    giacenza: giacenzaNum,
-    scorta: selectedProdotto.ScortaMinima
-  };
-
-  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
-    .then(() => console.log("Email di allerta inviata"))
-    .catch(err => console.error("Errore invio email:", err));
-}
-
+      // Invio email se sotto scorta
+      if (giacenzaNum < selectedProdotto.ScortaMinima) {
+        const templateParams = {
+          name: "Sistema Magazzino",
+          time: new Date().toLocaleString(),
+          prodotto: selectedProdotto.Descrizione,
+          giacenza: giacenzaNum,
+          scorta: selectedProdotto.ScortaMinima
+        };
+        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+          .then(() => console.log("Email di allerta inviata"))
+          .catch(err => console.error("Errore invio email:", err));
+      }
 
       alert(`Giacenza aggiornata a ${giacenzaNum}`);
       closeModal();
@@ -187,29 +177,23 @@ if (giacenzaNum < selectedProdotto.ScortaMinima) {
     if (e.target === modal) closeModal();
   });
 
-search.addEventListener("input", () => {
-  const query = search.value.toLowerCase();
-  results.innerHTML = "";
-  if (query.length < 1) return; // parte subito anche con una sola lettera
+  // Ricerca in tempo reale (solo nome prodotto)
+  search.addEventListener("input", () => {
+    const query = search.value.toLowerCase();
+    results.innerHTML = "";
+    if (query.length < 1) return;
 
-  const filtrati = prodotti.filter(p =>
-    p.Descrizione.toLowerCase().includes(query)
-  );
+    const filtrati = prodotti.filter(p =>
+      p.Descrizione.toLowerCase().includes(query)
+    );
 
-  filtrati.forEach(p => {
-    const li = document.createElement("li");
-    li.textContent = p.Descrizione; // solo nome prodotto, senza giacenza
-    li.addEventListener("click", () => openModal(p));
-    results.appendChild(li);
+    filtrati.forEach(p => {
+      const li = document.createElement("li");
+      li.textContent = p.Descrizione; // solo nome
+      li.addEventListener("click", () => openModal(p));
+      results.appendChild(li);
+    });
   });
-});
-
 
   loadProdotti();
 });
-
-
-
-
-
-
