@@ -23,37 +23,37 @@ document.addEventListener("DOMContentLoaded", () => {
   let showingSottoscorta = false;
   let showingCategorie = false;
 
-  // Funzione generica per creare li con immagini
+  let activeCategoryBtn = null; // riferimento categoria attiva
+
+  // Funzione generica per creare li con immagini e formattazione chiave
   function createProductLi(p, showGiacenza = false) {
-  const li = document.createElement("li");
-  li.style.borderBottom = "1px solid #ccc";
-  li.style.padding = "5px 0";
+    const li = document.createElement("li");
+    li.style.borderBottom = "1px solid #ccc";
+    li.style.padding = "5px 0";
 
-  // Suddividiamo il testo
-  // esempio chiave: nome_2_casi_taglio
-  const keyParts = p.Descrizione.split("_");
-  const nome = keyParts[0];
-  const taglio = keyParts[keyParts.length - 1];
-  const middle = keyParts.slice(1, keyParts.length - 1).join("_");
+    const keyParts = p.Descrizione.split("_");
+    const nome = keyParts[0];
+    const taglio = keyParts[keyParts.length - 1];
+    const middle = keyParts.slice(1, keyParts.length - 1).join("_");
 
-  let content = `<strong style="color:black;">${nome}</strong>`; // nome in grassetto nero
-  if (middle) content += ` <span style="color:#999;">${middle}</span>`; // tutto ciò che è nel mezzo grigio chiaro
-  content += ` <span style="color:#2ecc71;">${taglio}</span>`; // taglio verde chiaro
+    let content = `<strong style="color:black;">${nome}</strong>`;
+    if (middle) content += ` <span style="color:#999;">${middle}</span>`;
+    content += ` <span style="color:#2ecc71;">${taglio}</span>`;
 
-  if (showGiacenza) {
-    content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
+    if (showGiacenza) {
+      content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
+    }
+
+    if (p.ImageURL) {
+      content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
+    } else {
+      content += `<br><em>(img non presente)</em>`;
+    }
+
+    li.innerHTML = content;
+    li.addEventListener("click", () => openModal(p));
+    return li;
   }
-
-  if (p.ImageURL) {
-    content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
-  } else {
-    content += `<br><em>(img non presente)</em>`;
-  }
-
-  li.innerHTML = content;
-  li.addEventListener("click", () => openModal(p));
-  return li;
-}
 
   // Funzione per resettare tutto
   function resetAll() {
@@ -63,13 +63,13 @@ document.addEventListener("DOMContentLoaded", () => {
     showingAll = false;
     showingSottoscorta = false;
     showingCategorie = false;
+    activeCategoryBtn = null;
   }
 
   // MOSTRA / NASCONDI TUTTI I PRODOTTI
   searchButton.addEventListener("click", () => {
-    if (showingAll) {
-      resetAll();
-    } else {
+    if (showingAll) resetAll();
+    else {
       resetAll();
       prodotti.forEach(p => results.appendChild(createProductLi(p)));
       showingAll = true;
@@ -78,9 +78,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // SOTTOSCORTA
   sottoscortaBtn.addEventListener("click", () => {
-    if (showingSottoscorta) {
-      resetAll();
-    } else {
+    if (showingSottoscorta) resetAll();
+    else {
       resetAll();
       const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
       sottoscorta.forEach(p => results.appendChild(createProductLi(p, true)));
@@ -94,35 +93,44 @@ document.addEventListener("DOMContentLoaded", () => {
       categorieContainer.style.display = "none";
       categorieContainer.innerHTML = "";
       showingCategorie = false;
+      activeCategoryBtn = null;
     } else {
-      resetAll(); // chiude tutto prima
+      resetAll();
       categorieContainer.style.display = "flex";
       categorieContainer.innerHTML = "";
 
       const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
 
       categorie.forEach(cat => {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.textContent = cat;
-  btn.classList.add("categoriaBtn");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = cat;
+        btn.classList.add("categoriaBtn");
+        btn.style.touchAction = "manipulation"; // evita zoom mobile
+        btn.style.userSelect = "none";
 
-  let showingThisCategory = false; // aggiungiamo lo stato del toggle
+        btn.addEventListener("click", () => {
+          // se stesso pulsante → toggle off
+          if (activeCategoryBtn === btn) {
+            results.innerHTML = "";
+            activeCategoryBtn.classList.remove("active");
+            activeCategoryBtn = null;
+            return;
+          }
 
-  btn.addEventListener("click", () => {
-    if (showingThisCategory) {
-      results.innerHTML = "";
-      showingThisCategory = false;
-    } else {
-      results.innerHTML = "";
-      const filtrati = prodotti.filter(p => p.categoria === cat);
-      filtrati.forEach(p => results.appendChild(createProductLi(p)));
-      showingThisCategory = true;
-    }
-  });
+          // se un altro pulsante era attivo → reset
+          if (activeCategoryBtn) activeCategoryBtn.classList.remove("active");
 
-  categorieContainer.appendChild(btn);
-});
+          results.innerHTML = "";
+          const filtrati = prodotti.filter(p => p.categoria === cat);
+          filtrati.forEach(p => results.appendChild(createProductLi(p)));
+
+          btn.classList.add("active");
+          activeCategoryBtn = btn;
+        });
+
+        categorieContainer.appendChild(btn);
+      });
 
       showingCategorie = true;
     }
@@ -250,5 +258,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadProdotti();
 });
-
 
