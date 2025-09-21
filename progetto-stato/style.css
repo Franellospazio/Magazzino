@@ -107,6 +107,42 @@ body {
   }
 }
 
+.categorieButton {
+  background-color: #FFC107; /* giallo ambrato */
+  border: none;
+  padding: 10px 20px;
+  margin-left: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 5px;
+  color: #333;
+  transition: background 0.3s;
+}
+
+.categorieButton:hover {
+  background-color: #e0a800;
+}
+
+.categorie-container {
+  display: none; /* nascosto finché non clicchi */
+  margin-top: 10px;
+}
+
+.categorie-container button {
+  background-color: #f4f4f4;
+  border: 1px solid #ddd;
+  padding: 8px 15px;
+  margin: 3px;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.categorie-container button:hover {
+  background-color: #ddd;
+}
+
+
 .results {
   list-style: none;
   margin-top: 8px;
@@ -246,5 +282,6 @@ body {
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
+
 
 
