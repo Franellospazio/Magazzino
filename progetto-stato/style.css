@@ -1,21 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
 
 /* --- Base layout --- */
+
 body {
-  font-family: 'Open Sans', sans-serif;
+  height: 100%;
   margin: 0;
   padding: 0;
+  font-family: 'Open Sans', sans-serif;
+  background: url('1.jpg') no-repeat center center fixed;
+  background-size: cover;
+  overflow: hidden; /* evita scroll globale */
 }
 
-@media (max-width: 600px) {
-  body {
-    background-image: url('1.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    z-index: -1;
-  }
+.wrap {
+  position: relative;
+  z-index: 1;
+  width: 90%;
+  max-width: 500px;
+  margin: 20px auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* riempie l'altezza disponibile */
 }
 
 .wrap {
@@ -265,6 +270,7 @@ body {
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
+
 
 
 
