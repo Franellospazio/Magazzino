@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // contenitore dinamico per i pulsanti categoria
   const categorieContainer = document.createElement("div");
   categorieContainer.id = "categorieContainer";
-  categorieContainer.style.marginTop = "10px";
+  categorieContainer.classList.add("categorie-container");
   searchDiv.appendChild(categorieContainer);
 
   // Funzione generica per creare li con immagini
@@ -40,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
       content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
     }
 
+    // immagine sempre alla fine
     if (p.ImageURL) {
       content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
     } else {
@@ -83,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // CREAZIONE MENU CATEGORIE
+  // CREAZIONE MENU CATEGORIE MASTER
   let categorieBtn = null;
 
   function buildCategorieButton(categorie) {
@@ -91,9 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     categorieBtn = document.createElement("button");
     categorieBtn.type = "button";
-    categorieBtn.textContent = "📑 Categorie";
-    categorieBtn.style.backgroundColor = "#FFC107"; // giallo ambrato
-    categorieBtn.style.marginLeft = "5px";
+    categorieBtn.textContent = "🏷️ Categorie";
     categorieBtn.classList.add("categoriaMasterBtn");
 
     categorieBtn.addEventListener("click", () => {
@@ -104,9 +103,8 @@ document.addEventListener("DOMContentLoaded", () => {
         categorie.forEach(cat => {
           const btn = document.createElement("button");
           btn.type = "button";
-          btn.textContent = `📂 ${cat}`;
+          btn.textContent = cat;
           btn.classList.add("categoriaBtn");
-          btn.style.margin = "3px";
 
           btn.addEventListener("click", () => {
             results.innerHTML = "";
