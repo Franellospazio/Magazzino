@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     categorieBtn = document.createElement("button");
     categorieBtn.type = "button";
-    categorieBtn.textContent = "📑 Categorie";
+    categorieBtn.textContent = "🏷️ Categorie";
     categorieBtn.style.backgroundColor = "#FFC107"; // giallo ambrato
     categorieBtn.style.marginLeft = "5px";
     categorieBtn.classList.add("categoriaMasterBtn");
@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
         categorie.forEach(cat => {
           const btn = document.createElement("button");
           btn.type = "button";
-          btn.textContent = `📂 ${cat}`;
+          btn.textContent = `${cat}`;
           btn.classList.add("categoriaBtn");
           btn.style.margin = "3px";
 
@@ -248,3 +248,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadProdotti();
 });
+
