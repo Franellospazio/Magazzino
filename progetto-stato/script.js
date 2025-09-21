@@ -102,19 +102,27 @@ document.addEventListener("DOMContentLoaded", () => {
       const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
 
       categorie.forEach(cat => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.textContent = cat;
-        btn.classList.add("categoriaBtn");
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.textContent = cat;
+  btn.classList.add("categoriaBtn");
 
-        btn.addEventListener("click", () => {
-          results.innerHTML = "";
-          const filtrati = prodotti.filter(p => p.categoria === cat);
-          filtrati.forEach(p => results.appendChild(createProductLi(p)));
-        });
+  let showingThisCategory = false; // aggiungiamo lo stato del toggle
 
-        categorieContainer.appendChild(btn);
-      });
+  btn.addEventListener("click", () => {
+    if (showingThisCategory) {
+      results.innerHTML = "";
+      showingThisCategory = false;
+    } else {
+      results.innerHTML = "";
+      const filtrati = prodotti.filter(p => p.categoria === cat);
+      filtrati.forEach(p => results.appendChild(createProductLi(p)));
+      showingThisCategory = true;
+    }
+  });
+
+  categorieContainer.appendChild(btn);
+});
 
       showingCategorie = true;
     }
@@ -242,4 +250,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadProdotti();
 });
+
 
