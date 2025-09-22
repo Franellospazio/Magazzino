@@ -181,8 +181,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // sempre mostra scorta minima
     modalScorta.innerHTML = `
-      Scorta minima: <span id="scortaMinSpan">${prodotto.ScortaMinima}</span>
-    `;
+  Scorta minima: <span id="scortaMinSpan" class="min-qty">${prodotto.ScortaMinima}</span>
+`;
 
     // se admin aggiungiamo campi input
     if (isAdmin) {
@@ -292,3 +292,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadProdotti();
 });
+
