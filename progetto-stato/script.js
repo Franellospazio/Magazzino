@@ -15,7 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const sottoscortaBtn = document.getElementById("sottoscortaBtn");
   const categorieMasterBtn = document.getElementById("categorieMasterBtn");
   const categorieContainer = document.getElementById("categorieContainer");
-
   const adminBtn = document.getElementById("adminBtn");
 
   let prodotti = [];
@@ -25,10 +24,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let showingSottoscorta = false;
   let showingCategorie = false;
   let activeCategoryBtn = null;
-
   let isAdmin = false;
 
-  // toggle admin
+  // Toggle modalità admin
   adminBtn.addEventListener("click", () => {
     isAdmin = !isAdmin;
     if (isAdmin) {
@@ -40,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Funzione generica per creare li con immagini e formattazione chiave
+  // Funzione per creare elementi lista prodotto
   function createProductLi(p, showGiacenza = false) {
     const li = document.createElement("li");
     li.style.borderBottom = "1px solid #ccc";
@@ -59,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
       content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
     }
 
-    if (p.inordine !== undefined && p.inordine !== null && p.inordine > 0) {
+    if (p.inordine && p.inordine > 0) {
       content += `<br>🛒 In ordine: ${p.inordine}`;
     }
 
@@ -74,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return li;
   }
 
-  // Funzione per resettare tutto
+  // Reset della lista
   function resetAll() {
     results.innerHTML = "";
     categorieContainer.innerHTML = "";
@@ -85,7 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
     activeCategoryBtn = null;
   }
 
-  // MOSTRA / NASCONDI TUTTI I PRODOTTI
+  // Mostra tutti i prodotti
   searchButton.addEventListener("click", () => {
     if (showingAll) resetAll();
     else {
@@ -95,11 +93,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // SOTTOSCORTA
+  // Sottoscorta
   sottoscortaBtn.addEventListener("click", () => {
-    if (showingSottoscorta) {
-      resetAll();
-    } else {
+    if (showingSottoscorta) resetAll();
+    else {
       resetAll();
       const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
       sottoscorta.forEach(p => results.appendChild(createProductLi(p, true)));
@@ -107,17 +104,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // PULSANTE CATEGORIE
+  // Categorie
   categorieMasterBtn.addEventListener("click", () => {
-    if (showingCategorie) {
-      resetAll();
-    } else {
+    if (showingCategorie) resetAll();
+    else {
       resetAll();
       categorieContainer.style.display = "flex";
       categorieContainer.innerHTML = "";
 
       const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
-
       categorie.forEach(cat => {
         const btn = document.createElement("button");
         btn.type = "button";
@@ -133,13 +128,9 @@ document.addEventListener("DOMContentLoaded", () => {
             activeCategoryBtn = null;
             return;
           }
-
           if (activeCategoryBtn) activeCategoryBtn.classList.remove("active");
-
           results.innerHTML = "";
-          const filtrati = prodotti.filter(p => p.categoria === cat);
-          filtrati.forEach(p => results.appendChild(createProductLi(p)));
-
+          prodotti.filter(p => p.categoria === cat).forEach(p => results.appendChild(createProductLi(p)));
           btn.classList.add("active");
           activeCategoryBtn = btn;
         });
@@ -174,27 +165,43 @@ document.addEventListener("DOMContentLoaded", () => {
     else counterValue.classList.add("qty-red");
   }
 
+  // Modal
   function openModal(prodotto) {
     selectedProdotto = prodotto;
     modalTitle.textContent = isAdmin ? "Aggiorna prodotto" : "Aggiorna giacenza";
     modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
 
-    // sempre mostra scorta minima con stile cerchietto
     modalScorta.innerHTML = `
-      Scorta minima: <span id="scortaMinSpan" class="min-qty">${prodotto.ScortaMinima}</span>
+      Giacenza: <span id="scortaMinSpan" class="min-qty">${prodotto.Giacenza}</span>
     `;
 
-    // se admin aggiungiamo campi input
+    // Modal admin: In ordine con +/-
     if (isAdmin) {
       modalScorta.innerHTML += `
-        <br>In ordine: <input type="number" id="inOrdineInput" value="${prodotto.inordine || 0}" style="width:60px;">
+        <br>In ordine: 
+        <button id="decInOrdine" class="qty-btn minus" type="button">−</button>
+        <input type="number" id="inOrdineInput" value="${prodotto.inordine || 0}" style="width:60px; text-align:center;">
+        <button id="incInOrdine" class="qty-btn plus" type="button">+</button>
         <br>Modifica scorta minima: <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" style="width:60px;">
       `;
+
+      // Listener pulsanti +/-
+      const decInOrdine = document.getElementById("decInOrdine");
+      const incInOrdine = document.getElementById("incInOrdine");
+      const inOrdineInput = document.getElementById("inOrdineInput");
+
+      decInOrdine.addEventListener("click", () => {
+        let val = parseInt(inOrdineInput.value) || 0;
+        if (val > 0) inOrdineInput.value = val - 1;
+      });
+      incInOrdine.addEventListener("click", () => {
+        let val = parseInt(inOrdineInput.value) || 0;
+        inOrdineInput.value = val + 1;
+      });
     }
 
     counterValue.textContent = prodotto.Giacenza;
     aggiornaColore(document.getElementById("scortaMinSpan"));
-
     modal.style.display = "block";
   }
 
@@ -204,25 +211,22 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   decrementBtn.addEventListener("click", () => {
-    let current = parseInt(counterValue.textContent);
-    if (current > 0) counterValue.textContent = current - 1;
+    let val = parseInt(counterValue.textContent) || 0;
+    if (val > 0) counterValue.textContent = val - 1;
     aggiornaColore(document.getElementById("scortaMinSpan"));
   });
 
   incrementBtn.addEventListener("click", () => {
-    let current = parseInt(counterValue.textContent);
-    counterValue.textContent = current + 1;
+    let val = parseInt(counterValue.textContent) || 0;
+    counterValue.textContent = val + 1;
     aggiornaColore(document.getElementById("scortaMinSpan"));
   });
 
-  // Aggiorna prodotto / giacenza
+  // Aggiorna prodotto/giacenza
   aggiornaBtn.addEventListener("click", async () => {
     if (!selectedProdotto) return;
-    const giacenzaNum = parseInt(counterValue.textContent);
-    if (isNaN(giacenzaNum)) {
-      alert("Inserisci un numero valido!");
-      return;
-    }
+    const giacenzaNum = parseInt(counterValue.textContent) || 0;
+    if (isNaN(giacenzaNum)) { alert("Inserisci un numero valido!"); return; }
 
     let inOrdineNum = selectedProdotto.inordine || 0;
     let scortaMinimaNum = selectedProdotto.ScortaMinima;
@@ -245,14 +249,13 @@ document.addEventListener("DOMContentLoaded", () => {
           ScortaMinima: scortaMinimaNum
         })
       });
-
       if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
 
       selectedProdotto.Giacenza = giacenzaNum;
       selectedProdotto.inordine = inOrdineNum;
       selectedProdotto.ScortaMinima = scortaMinimaNum;
 
-      // invia email solo se non sei in modalità admin
+      // In modalità admin non inviamo email
       if (!isAdmin && giacenzaNum < selectedProdotto.ScortaMinima) {
         const templateParams = {
           name: "Sistema Magazzino",
@@ -284,12 +287,8 @@ document.addEventListener("DOMContentLoaded", () => {
     resetAll();
     const query = search.value.toLowerCase();
     if (query.length < 1) return;
-
-    const filtrati = prodotti.filter(p =>
-      p.Descrizione.toLowerCase().includes(query)
-    );
-
-    filtrati.forEach(p => results.appendChild(createProductLi(p)));
+    prodotti.filter(p => p.Descrizione.toLowerCase().includes(query))
+             .forEach(p => results.appendChild(createProductLi(p)));
   });
 
   loadProdotti();
