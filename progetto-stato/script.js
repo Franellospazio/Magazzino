@@ -13,10 +13,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const searchButton = document.querySelector(".searchButton");
   const sottoscortaBtn = document.getElementById("sottoscortaBtn");
-  const categorieMasterBtn = document.getElementById("categorieMasterBtn"); 
-  const categorieContainer = document.getElementById("categorieContainer"); 
+  const categorieMasterBtn = document.getElementById("categorieMasterBtn");
+  const categorieContainer = document.getElementById("categorieContainer");
 
-  const adminBtn = document.getElementById("adminBtn"); // nuovo pulsante admin
+  const adminBtn = document.getElementById("adminBtn");
 
   let prodotti = [];
   let selectedProdotto = null;
@@ -24,9 +24,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let showingAll = false;
   let showingSottoscorta = false;
   let showingCategorie = false;
-  let activeCategoryBtn = null; 
+  let activeCategoryBtn = null;
 
-  let isAdmin = false; // modalità amministratore
+  let isAdmin = false;
 
   // toggle admin
   adminBtn.addEventListener("click", () => {
@@ -59,7 +59,6 @@ document.addEventListener("DOMContentLoaded", () => {
       content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
     }
 
-    // Mostra in ordine se presente
     if (p.inordine !== undefined && p.inordine !== null && p.inordine > 0) {
       content += `<br>🛒 In ordine: ${p.inordine}`;
     }
@@ -103,38 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       resetAll();
       const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
-
-      sottoscorta.forEach(p => {
-        const li = document.createElement("li");
-        li.style.borderBottom = "1px solid #ccc";
-        li.style.padding = "5px 0";
-
-        const keyParts = p.Descrizione.split("_");
-        const nome = keyParts[0];
-        const taglio = keyParts[keyParts.length - 1];
-        const middle = keyParts.slice(1, keyParts.length - 1).join("_");
-
-        let content = `<strong style="color:black;">${nome}</strong>`;
-        if (middle) content += ` <span style="color:#999;">${middle}</span>`;
-        content += ` <span style="color:#2ecc71;">${taglio}</span>`;
-
-        content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
-
-        if (p.inordine !== undefined && p.inordine !== null && p.inordine > 0) {
-          content += `<br>🛒 In ordine: ${p.inordine}`;
-        }
-
-        if (p.ImageURL) {
-          content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
-        } else {
-          content += `<br><em>(img non presente)</em>`;
-        }
-
-        li.innerHTML = content;
-        li.addEventListener("click", () => openModal(p));
-        results.appendChild(li);
-      });
-
+      sottoscorta.forEach(p => results.appendChild(createProductLi(p, true)));
       showingSottoscorta = true;
     }
   });
@@ -197,9 +165,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function aggiornaColore(minGiacenzaSpan) {
+  function aggiornaColore(scortaMinSpan) {
     const current = parseInt(counterValue.textContent);
-    const min = parseInt(minGiacenzaSpan.textContent);
+    const min = parseInt(scortaMinSpan.textContent);
     counterValue.classList.remove("qty-green", "qty-yellow", "qty-red");
     if (current > min) counterValue.classList.add("qty-green");
     else if (current === min) counterValue.classList.add("qty-yellow");
@@ -208,24 +176,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function openModal(prodotto) {
     selectedProdotto = prodotto;
-    modalTitle.textContent = isAdmin ? "Vuoi aggiornare prodotto?" : "Vuoi aggiornare giacenza?";
+    modalTitle.textContent = isAdmin ? "Aggiorna prodotto" : "Aggiorna giacenza";
     modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
 
+    // sempre mostra scorta minima
     modalScorta.innerHTML = `
-      Giacenza: <span id="minGiacenza">${prodotto.Giacenza}</span>
+      Scorta minima: <span id="scortaMinSpan">${prodotto.ScortaMinima}</span>
     `;
 
+    // se admin aggiungiamo campi input
     if (isAdmin) {
       modalScorta.innerHTML += `
-        <br>In Ordine: <input type="number" id="inOrdineInput" value="${prodotto.inordine || 0}" style="width:60px;">
-        <br>Scorta Minima: <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" style="width:60px;">
+        <br>In ordine: <input type="number" id="inOrdineInput" value="${prodotto.inordine || 0}" style="width:60px;">
+        <br>Modifica scorta minima: <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" style="width:60px;">
       `;
-    } else {
-      modalScorta.innerHTML += ` (min: <span>${prodotto.ScortaMinima}</span>)`;
     }
 
     counterValue.textContent = prodotto.Giacenza;
-    aggiornaColore(document.getElementById("minGiacenza"));
+    aggiornaColore(document.getElementById("scortaMinSpan"));
 
     modal.style.display = "block";
   }
@@ -238,13 +206,13 @@ document.addEventListener("DOMContentLoaded", () => {
   decrementBtn.addEventListener("click", () => {
     let current = parseInt(counterValue.textContent);
     if (current > 0) counterValue.textContent = current - 1;
-    aggiornaColore(document.getElementById("minGiacenza"));
+    aggiornaColore(document.getElementById("scortaMinSpan"));
   });
 
   incrementBtn.addEventListener("click", () => {
     let current = parseInt(counterValue.textContent);
     counterValue.textContent = current + 1;
-    aggiornaColore(document.getElementById("minGiacenza"));
+    aggiornaColore(document.getElementById("scortaMinSpan"));
   });
 
   aggiornaBtn.addEventListener("click", async () => {
@@ -296,7 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
           .catch(err => console.error("Errore invio email:", err));
       }
 
-      alert(`Prodotto aggiornato!`);
+      alert("Prodotto aggiornato!");
       closeModal();
     } catch (err) {
       console.error(err);
