@@ -1,74 +1,60 @@
-document.addEventListener("DOMContentLoaded", async () => {
-  const ADMIN_APPROVED = false;
-  const IP_API = "https://api.ipify.org?format=json"; // per rilevare IP pubblico
+document.addEventListener('DOMContentLoaded', () => {
+  const accessModal = document.createElement('div');
+  accessModal.innerHTML = `
+    <div id="accessModal" style="
+      position:fixed;top:0;left:0;width:100%;height:100%;
+      background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:9999;
+    ">
+      <div style="background:#fff;padding:30px;border-radius:10px;text-align:center;">
+        <h2>Accesso richiesto</h2>
+        <p>Inserisci la tua email aziendale per richiedere accesso:</p>
+        <input type="email" id="accessEmail" placeholder="email@azienda.com" style="padding:8px;width:80%;margin-bottom:10px;">
+        <button id="sendAccessBtn" style="padding:10px 20px;">Invia richiesta</button>
+        <p id="accessMsg" style="margin-top:10px;color:red;"></p>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(accessModal);
 
-  // Funzione per ottenere IP
-  async function getUserIP() {
-    try {
-      const res = await fetch(IP_API);
-      if (!res.ok) throw new Error("Impossibile ottenere IP");
-      const data = await res.json();
-      return data.ip;
-    } catch (err) {
-      console.error(err);
-      return null;
+  const modalDiv = document.getElementById('accessModal');
+  const emailInput = document.getElementById('accessEmail');
+  const sendBtn = document.getElementById('sendAccessBtn');
+  const msgP = document.getElementById('accessMsg');
+
+  async function checkAccess() {
+    const ip = await fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => d.ip);
+    const res = await fetch('/api/verifica-accesso', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ip })
+    });
+    const data = await res.json();
+    if (data.approved) {
+      modalDiv.style.display = 'none';
+    } else {
+      modalDiv.style.display = 'flex';
     }
   }
 
-  // Funzione per inviare richiesta di accesso
-  async function inviaRichiesta(email, ip) {
+  sendBtn.addEventListener('click', async () => {
+    const email = emailInput.value.trim();
+    if (!email) { msgP.textContent = 'Inserisci un email valida'; return; }
+
+    const ip = await fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => d.ip);
+
     try {
-      const res = await fetch("/api/richiesta-accesso", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/richiesta-accesso', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, ip })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Errore invio richiesta");
-      alert("Richiesta inviata all'amministratore. Attendi approvazione.");
-    } catch (err) {
-      console.error(err);
-      alert("Errore invio richiesta accesso. Riprova.");
+      if (!res.ok) msgP.textContent = data.error || 'Errore invio richiesta';
+      else msgP.textContent = 'Richiesta inviata. Attendi approvazione.';
+    } catch (e) {
+      msgP.textContent = 'Errore server.';
     }
-  }
+  });
 
-  // Funzione per verificare accesso
-  async function verificaAccesso(ip) {
-    try {
-      const res = await fetch("/api/verifica-accesso", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ip })
-      });
-      if (!res.ok) return false;
-      const data = await res.json();
-      return data.accesso === true;
-    } catch (err) {
-      console.error(err);
-      return false;
-    }
-  }
-
-  // Flusso principale
-  const userIP = await getUserIP();
-  if (!userIP) return;
-
-  // Verifica se IP è approvato
-  const accesso = await verificaAccesso(userIP);
-  if (accesso) {
-    console.log("IP approvato: modalità admin abilitata se conosci password.");
-    return; // continua con script principale normalmente
-  }
-
-  // Se non approvato, chiedi email e invia richiesta
-  let email = prompt("Inserisci la tua email aziendale per richiesta accesso:");
-  if (!email) {
-    alert("Email richiesta per procedere. Funzionalità admin non abilitata.");
-    return;
-  }
-
-  await inviaRichiesta(email, userIP);
-
-  // Messaggio all’utente
-  alert("Attendi approvazione dell'amministratore. Potrai solo vedere i prodotti in lettura.");
-})();
+  checkAccess(); // verifica all'avvio
+});
