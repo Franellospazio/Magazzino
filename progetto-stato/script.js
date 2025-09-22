@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeCategoryBtn = null;
   let isAdmin = false;
 
-  const ADMIN_PASSWORD = "1234";
+  const ADMIN_PASSWORD = "ori3";
   const STICKER_URL = "https://wonuzdqupujzeqhucxok.supabase.co/storage/v1/object/public/Admin/IMG_9082.webp";
 
   // Toggle admin con password
@@ -168,33 +168,38 @@ document.addEventListener("DOMContentLoaded", () => {
     modalScorta.innerHTML = `Scorta minima: <span id="scortaMinSpan" class="min-qty">${prodotto.ScortaMinima}</span>`;
 
     // Modal admin con input e +/-
-    if (isAdmin) {
-      modalScorta.innerHTML += `
-        <br>In ordine: 
-        <button type="button" id="decInOrdine" class="qty-btn minus">−</button>
-        <span id="inOrdineValue" class="qty-number" style="width:60px; display:inline-flex; justify-content:center;">${prodotto.inordine || 0}</span>
-        <button type="button" id="incInOrdine" class="qty-btn plus">+</button>
-        <br>Modifica scorta minima: <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" style="width:60px;">
-      `;
-      const decBtn = document.getElementById("decInOrdine");
-      const incBtn = document.getElementById("incInOrdine");
-      const inOrdineValue = document.getElementById("inOrdineValue");
-      decBtn.addEventListener("click", () => {
-        let val = parseInt(inOrdineValue.textContent);
-        if (val > 0) val--;
-        inOrdineValue.textContent = val;
-      });
-      incBtn.addEventListener("click", () => {
-        let val = parseInt(inOrdineValue.textContent);
-        val++;
-        inOrdineValue.textContent = val;
-      });
-    }
+  if (isAdmin) {
+  const inOrdineVal = prodotto.inordine ?? 0; // default 0 se null
+  modalScorta.innerHTML += `
+    <br>In ordine: 
+    <div style="display:flex; align-items:center; gap:5px;">
+      <button type="button" id="decInOrdine" class="qty-btn minus">−</button>
+      <span id="inOrdineValue" class="qty-number" style="width:40px; text-align:center;">${inOrdineVal}</span>
+      <button type="button" id="incInOrdine" class="qty-btn plus">+</button>
+    </div>
+    <br>Modifica scorta minima: <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" style="width:60px;">
+  `;
 
-    counterValue.textContent = prodotto.Giacenza;
-    aggiornaColore(document.getElementById("scortaMinSpan"));
-    modal.style.display = "block";
-  }
+  const decInOrdine = document.getElementById("decInOrdine");
+  const incInOrdine = document.getElementById("incInOrdine");
+  const inOrdineValue = document.getElementById("inOrdineValue");
+
+  decInOrdine.addEventListener("click", () => {
+    let val = parseInt(inOrdineValue.textContent);
+    if (val > 0) val--;
+    inOrdineValue.textContent = val;
+  });
+
+  incInOrdine.addEventListener("click", () => {
+    let val = parseInt(inOrdineValue.textContent);
+    val++;
+    inOrdineValue.textContent = val;
+  });
+}
+
+counterValue.textContent = prodotto.Giacenza;
+aggiornaColore(document.getElementById("scortaMinSpan"));
+modal.style.display = "block";
 
   function closeModal() {
     modal.style.display = "none";
@@ -275,3 +280,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadProdotti();
 });
+
