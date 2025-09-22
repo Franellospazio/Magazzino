@@ -18,13 +18,14 @@
     <ul id="results" class="results"></ul>
   </div>
 
-  <!-- Modal per aggiornare giacenza -->
+  <!-- Modal per aggiornare giacenza (utente normale) -->
   <div id="giacenzaModal" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
       <h2 id="modalTitle">Vuoi aggiornare giacenza?</h2>
       <p id="modalDescrizione"></p>
-      <p id="modalScorta"></p>
+      <!-- Qui mostriamo SOLO la scorta minima -->
+      <p id="modalScorta">Scorta minima: <span id="scortaMinValue"></span></p>
 
       <div class="counter-container">
         <button id="decrement" class="qty-btn minus" type="button">−</button>
@@ -36,26 +37,26 @@
     </div>
   </div>
 
-  <!-- Modal per aggiornare in modalità Admin -->
+  <!-- Modal per aggiornare da Admin (giacenza + scorta minima + in ordine) -->
   <div id="adminModal" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
-      <h2 id="adminModalTitle">🔧 Modifica prodotto</h2>
+      <h2 id="adminModalTitle">Modalità Amministratore</h2>
       <p id="adminModalDescrizione"></p>
 
       <!-- Giacenza -->
-      <label for="adminGiacenza">📦 Giacenza</label>
-      <input type="number" id="adminGiacenza" class="admin-input" min="0">
-
-      <!-- In ordine -->
-      <label for="adminInOrdine">🛒 In ordine</label>
-      <input type="number" id="adminInOrdine" class="admin-input" min="0">
+      <label for="adminGiacenza">Giacenza:</label>
+      <input type="number" id="adminGiacenza" min="0">
 
       <!-- Scorta minima -->
-      <label for="adminScortaMinima">⚠️ Scorta minima</label>
-      <input type="number" id="adminScortaMinima" class="admin-input" min="0">
+      <label for="adminScortaMinima">Scorta minima:</label>
+      <input type="number" id="adminScortaMinima" min="0">
 
-      <button id="adminAggiornaBtn">💾 Salva modifiche</button>
+      <!-- In ordine -->
+      <label for="adminInOrdine">In ordine:</label>
+      <input type="number" id="adminInOrdine" min="0">
+
+      <button id="adminAggiornaBtn">Aggiorna</button>
     </div>
   </div>
 
@@ -67,7 +68,7 @@
 
   <script src="script.js"></script>
 
-  <!-- Pulsante per entrare in modalità Admin -->
+  <!-- Pulsante admin -->
   <button id="adminBtn">🛠️ Admin</button>
 </body>
 </html>
