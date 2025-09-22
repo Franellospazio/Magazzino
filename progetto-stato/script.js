@@ -179,10 +179,10 @@ document.addEventListener("DOMContentLoaded", () => {
     modalTitle.textContent = isAdmin ? "Aggiorna prodotto" : "Aggiorna giacenza";
     modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
 
-    // sempre mostra scorta minima
+    // sempre mostra scorta minima con stile cerchietto
     modalScorta.innerHTML = `
-  Scorta minima: <span id="scortaMinSpan" class="min-qty">${prodotto.ScortaMinima}</span>
-`;
+      Scorta minima: <span id="scortaMinSpan" class="min-qty">${prodotto.ScortaMinima}</span>
+    `;
 
     // se admin aggiungiamo campi input
     if (isAdmin) {
@@ -215,6 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
     aggiornaColore(document.getElementById("scortaMinSpan"));
   });
 
+  // Aggiorna prodotto / giacenza
   aggiornaBtn.addEventListener("click", async () => {
     if (!selectedProdotto) return;
     const giacenzaNum = parseInt(counterValue.textContent);
@@ -251,7 +252,8 @@ document.addEventListener("DOMContentLoaded", () => {
       selectedProdotto.inordine = inOrdineNum;
       selectedProdotto.ScortaMinima = scortaMinimaNum;
 
-      if (giacenzaNum < selectedProdotto.ScortaMinima) {
+      // invia email solo se non sei in modalità admin
+      if (!isAdmin && giacenzaNum < selectedProdotto.ScortaMinima) {
         const templateParams = {
           name: "Sistema Magazzino",
           time: new Date().toLocaleString(),
@@ -292,5 +294,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadProdotti();
 });
-
-
