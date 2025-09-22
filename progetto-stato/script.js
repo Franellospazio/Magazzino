@@ -15,49 +15,36 @@ document.addEventListener("DOMContentLoaded", () => {
   const sottoscortaBtn = document.getElementById("sottoscortaBtn");
   const categorieMasterBtn = document.getElementById("categorieMasterBtn");
   const categorieContainer = document.getElementById("categorieContainer");
-
   const adminBtn = document.getElementById("adminBtn");
 
   let prodotti = [];
   let selectedProdotto = null;
-
   let showingAll = false;
   let showingSottoscorta = false;
   let showingCategorie = false;
   let activeCategoryBtn = null;
-
   let isAdmin = false;
 
-  // toggle admin con password e sticker
-  adminBtn.addEventListener("click", async () => {
-    const password = prompt("Inserisci la password di 4 caratteri per entrare in modalità admin:");
-    if (!password) return;
+  // Password per modalità admin
+  const ADMIN_PASSWORD = "1234";
+  const STICKER_URL = "https://wonuzdqupujzeqhucxok.supabase.co/storage/v1/object/public/Admin/IMG_9082.webp";
 
-    if (password === "1234") { // sostituisci "1234" con la tua password reale
-      isAdmin = !isAdmin;
-      if (isAdmin) {
-        adminBtn.textContent = "🔓 Admin ON";
-        adminBtn.style.backgroundColor = "#27ae60";
-      } else {
-        adminBtn.textContent = "🛠️ Admin";
-        adminBtn.style.backgroundColor = "#e74c3c";
-      }
+  // Toggle admin con password
+  adminBtn.addEventListener("click", () => {
+    const pw = prompt("Inserisci password admin (4 caratteri):");
+    if (pw === ADMIN_PASSWORD) {
+      isAdmin = true;
+      adminBtn.textContent = "🔓 Admin ON";
+      adminBtn.style.backgroundColor = "#27ae60";
+      alert("Modalità admin attivata!");
     } else {
-      // invia sticker su Supabase o API
-      try {
-        await fetch("/api/sticker", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ testo: "Non sei amministratore!!" })
-        });
-        alert("Password errata! Sticker inviato.");
-      } catch (err) {
-        console.error("Errore invio sticker:", err);
-      }
+      isAdmin = false;
+      adminBtn.textContent = "🛠️ Admin";
+      adminBtn.style.backgroundColor = "#e74c3c";
+      results.innerHTML = `<img src="${STICKER_URL}" alt="Non sei amministratore!!" style="max-width:200px;">`;
     }
   });
 
-  // Funzione generica per creare li con immagini e formattazione chiave
   function createProductLi(p, showGiacenza = false) {
     const li = document.createElement("li");
     li.style.borderBottom = "1px solid #ccc";
@@ -91,7 +78,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return li;
   }
 
-  // Funzione per resettare tutto
   function resetAll() {
     results.innerHTML = "";
     categorieContainer.innerHTML = "";
@@ -102,7 +88,6 @@ document.addEventListener("DOMContentLoaded", () => {
     activeCategoryBtn = null;
   }
 
-  // MOSTRA / NASCONDI TUTTI I PRODOTTI
   searchButton.addEventListener("click", () => {
     if (showingAll) resetAll();
     else {
@@ -112,11 +97,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // SOTTOSCORTA
   sottoscortaBtn.addEventListener("click", () => {
-    if (showingSottoscorta) {
-      resetAll();
-    } else {
+    if (showingSottoscorta) resetAll();
+    else {
       resetAll();
       const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
       sottoscorta.forEach(p => results.appendChild(createProductLi(p, true)));
@@ -124,17 +107,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // PULSANTE CATEGORIE
   categorieMasterBtn.addEventListener("click", () => {
-    if (showingCategorie) {
-      resetAll();
-    } else {
+    if (showingCategorie) resetAll();
+    else {
       resetAll();
       categorieContainer.style.display = "flex";
       categorieContainer.innerHTML = "";
-
       const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
-
       categorie.forEach(cat => {
         const btn = document.createElement("button");
         btn.type = "button";
@@ -142,7 +121,6 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.classList.add("categoriaBtn");
         btn.style.touchAction = "manipulation";
         btn.style.userSelect = "none";
-
         btn.addEventListener("click", () => {
           if (activeCategoryBtn === btn) {
             results.innerHTML = "";
@@ -150,27 +128,18 @@ document.addEventListener("DOMContentLoaded", () => {
             activeCategoryBtn = null;
             return;
           }
-
           if (activeCategoryBtn) activeCategoryBtn.classList.remove("active");
-
           results.innerHTML = "";
           const filtrati = prodotti.filter(p => p.categoria === cat);
           filtrati.forEach(p => results.appendChild(createProductLi(p)));
-
           btn.classList.add("active");
           activeCategoryBtn = btn;
         });
-
         categorieContainer.appendChild(btn);
       });
-
       showingCategorie = true;
     }
   });
-
-  // EmailJS config
-  const EMAILJS_SERVICE_ID = "service_487ujbw";
-  const EMAILJS_TEMPLATE_ID = "template_l5an0k5";
 
   async function loadProdotti() {
     try {
@@ -196,22 +165,39 @@ document.addEventListener("DOMContentLoaded", () => {
     modalTitle.textContent = isAdmin ? "Aggiorna prodotto" : "Aggiorna giacenza";
     modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
 
-    // sempre mostra scorta minima con stile cerchietto
+    // Scorta minima con cerchietto
     modalScorta.innerHTML = `
       Scorta minima: <span id="scortaMinSpan" class="min-qty">${prodotto.ScortaMinima}</span>
     `;
 
-    // se admin aggiungiamo campi input
+    // Se admin aggiungiamo input inordine e scorta minima con + e -
     if (isAdmin) {
       modalScorta.innerHTML += `
-        <br>In ordine: <input type="number" id="inOrdineInput" value="${prodotto.inordine || 0}" style="width:60px;">
+        <br>In ordine: 
+        <button type="button" id="decInOrdine" class="qty-btn minus">−</button>
+        <span id="inOrdineValue" class="qty-number" style="width:60px; display:inline-flex; justify-content:center; align-items:center;">${prodotto.inordine || 0}</span>
+        <button type="button" id="incInOrdine" class="qty-btn plus">+</button>
         <br>Modifica scorta minima: <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" style="width:60px;">
       `;
+
+      const decInOrdine = document.getElementById("decInOrdine");
+      const incInOrdine = document.getElementById("incInOrdine");
+      const inOrdineValue = document.getElementById("inOrdineValue");
+
+      decInOrdine.addEventListener("click", () => {
+        let val = parseInt(inOrdineValue.textContent);
+        if (val > 0) val--;
+        inOrdineValue.textContent = val;
+      });
+      incInOrdine.addEventListener("click", () => {
+        let val = parseInt(inOrdineValue.textContent);
+        val++;
+        inOrdineValue.textContent = val;
+      });
     }
 
     counterValue.textContent = prodotto.Giacenza;
     aggiornaColore(document.getElementById("scortaMinSpan"));
-
     modal.style.display = "block";
   }
 
@@ -232,7 +218,6 @@ document.addEventListener("DOMContentLoaded", () => {
     aggiornaColore(document.getElementById("scortaMinSpan"));
   });
 
-  // Aggiorna prodotto / giacenza
   aggiornaBtn.addEventListener("click", async () => {
     if (!selectedProdotto) return;
     const giacenzaNum = parseInt(counterValue.textContent);
@@ -245,9 +230,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let scortaMinimaNum = selectedProdotto.ScortaMinima;
 
     if (isAdmin) {
-      const inOrdineInput = document.getElementById("inOrdineInput");
+      const inOrdineValue = document.getElementById("inOrdineValue");
       const scortaMinimaInput = document.getElementById("scortaMinimaInput");
-      if (inOrdineInput) inOrdineNum = parseInt(inOrdineInput.value) || 0;
+      if (inOrdineValue) inOrdineNum = parseInt(inOrdineValue.textContent) || 0;
       if (scortaMinimaInput) scortaMinimaNum = parseInt(scortaMinimaInput.value) || scortaMinimaNum;
     }
 
@@ -262,28 +247,25 @@ document.addEventListener("DOMContentLoaded", () => {
           ScortaMinima: scortaMinimaNum
         })
       });
-
       if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
 
       selectedProdotto.Giacenza = giacenzaNum;
       selectedProdotto.inordine = inOrdineNum;
       selectedProdotto.ScortaMinima = scortaMinimaNum;
 
-      // invia email solo se non sei in modalità admin
       if (!isAdmin && giacenzaNum < selectedProdotto.ScortaMinima) {
         const templateParams = {
           name: "Sistema Magazzino",
-          time: new Date().toLocaleString(),
+          time: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
           prodotto: selectedProdotto.Descrizione,
           giacenza: giacenzaNum,
           scorta: selectedProdotto.ScortaMinima
         };
-        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+        emailjs.send("service_487ujbw", "template_l5an0k5", templateParams)
           .then(() => console.log("Email di allerta inviata"))
           .catch(err => console.error("Errore invio email:", err));
       }
 
-      alert("Prodotto aggiornato!");
       closeModal();
     } catch (err) {
       console.error(err);
@@ -296,19 +278,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target === modal) closeModal();
   });
 
-  // Ricerca
   search.addEventListener("input", () => {
     resetAll();
     const query = search.value.toLowerCase();
     if (query.length < 1) return;
-
-    const filtrati = prodotti.filter(p =>
-      p.Descrizione.toLowerCase().includes(query)
-    );
-
+    const filtrati = prodotti.filter(p => p.Descrizione.toLowerCase().includes(query));
     filtrati.forEach(p => results.appendChild(createProductLi(p)));
   });
 
   loadProdotti();
 });
-
