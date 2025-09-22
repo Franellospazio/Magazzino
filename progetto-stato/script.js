@@ -104,7 +104,7 @@ sottoscortaBtn.addEventListener("click", () => {
 
       // Mostra inordine se presente
       if (p.inordine !== undefined && p.inordine !== null) {
-        content += `<br>✅ In ordine: ${p.inordine}`;
+        content += `<br>	🛒 In ordine: ${p.inordine}`;
       }
 
       // Immagine
@@ -290,6 +290,7 @@ categorieMasterBtn.addEventListener("click", () => {
 
   loadProdotti();
 });
+
 
 
 
