@@ -13,7 +13,7 @@
       <button type="button" class="searchButton">🔍 Mostra tutti i prodotti</button>
       <button type="button" id="sottoscortaBtn">📦 Prodotti Sottoscorta</button>
       <button id="categorieMasterBtn" class="categoriaMasterBtn">🏷️ Filtra per categorie</button>
-     <div id="categorieContainer" class="categorie-container"></div>
+      <div id="categorieContainer" class="categorie-container"></div>
     </div>
     <ul id="results" class="results"></ul>
   </div>
@@ -36,6 +36,29 @@
     </div>
   </div>
 
+  <!-- Modal per aggiornare in modalità Admin -->
+  <div id="adminModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="adminModalTitle">🔧 Modifica prodotto</h2>
+      <p id="adminModalDescrizione"></p>
+
+      <!-- Giacenza -->
+      <label for="adminGiacenza">📦 Giacenza</label>
+      <input type="number" id="adminGiacenza" class="admin-input" min="0">
+
+      <!-- In ordine -->
+      <label for="adminInOrdine">🛒 In ordine</label>
+      <input type="number" id="adminInOrdine" class="admin-input" min="0">
+
+      <!-- Scorta minima -->
+      <label for="adminScortaMinima">⚠️ Scorta minima</label>
+      <input type="number" id="adminScortaMinima" class="admin-input" min="0">
+
+      <button id="adminAggiornaBtn">💾 Salva modifiche</button>
+    </div>
+  </div>
+
   <!-- EmailJS SDK v4 -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>
@@ -43,11 +66,8 @@
   </script>
 
   <script src="script.js"></script>
+
+  <!-- Pulsante per entrare in modalità Admin -->
   <button id="adminBtn">🛠️ Admin</button>
 </body>
 </html>
-
-
-
-
-
