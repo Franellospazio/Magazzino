@@ -108,7 +108,25 @@ html, body {
   background-color: #e0a800; /* più scuro */
   color: #fff;
 }
+#adminBtn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 10000;
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 50px;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  transition: background 0.2s;
+}
 
+#adminBtn:hover {
+  background-color: #c0392b;
+}
 /* --- Lista risultati --- */
 .results {
   list-style: none;
@@ -259,4 +277,5 @@ html, body {
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
+
 
