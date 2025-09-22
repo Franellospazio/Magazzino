@@ -1,60 +1,100 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const accessModal = document.createElement('div');
-  accessModal.innerHTML = `
-    <div id="accessModal" style="
-      position:fixed;top:0;left:0;width:100%;height:100%;
-      background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:9999;
-    ">
-      <div style="background:#fff;padding:30px;border-radius:10px;text-align:center;">
-        <h2>Accesso richiesto</h2>
-        <p>Inserisci la tua email aziendale per richiedere accesso:</p>
-        <input type="email" id="accessEmail" placeholder="email@azienda.com" style="padding:8px;width:80%;margin-bottom:10px;">
-        <button id="sendAccessBtn" style="padding:10px 20px;">Invia richiesta</button>
-        <p id="accessMsg" style="margin-top:10px;color:red;"></p>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(accessModal);
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("Accesso.js caricato ✅");
 
-  const modalDiv = document.getElementById('accessModal');
-  const emailInput = document.getElementById('accessEmail');
-  const sendBtn = document.getElementById('sendAccessBtn');
-  const msgP = document.getElementById('accessMsg');
-
-  async function checkAccess() {
-    const ip = await fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => d.ip);
-    const res = await fetch('/api/verifica-accesso', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ip })
-    });
-    const data = await res.json();
-    if (data.approved) {
-      modalDiv.style.display = 'none';
-    } else {
-      modalDiv.style.display = 'flex';
+  // Recupera IP pubblico
+  async function getIP() {
+    try {
+      const res = await fetch("https://api.ipify.org?format=json");
+      if (!res.ok) throw new Error("Errore IP");
+      const data = await res.json();
+      return data.ip;
+    } catch (e) {
+      console.error("Errore recupero IP:", e);
+      return null;
     }
   }
 
-  sendBtn.addEventListener('click', async () => {
-    const email = emailInput.value.trim();
-    if (!email) { msgP.textContent = 'Inserisci un email valida'; return; }
+  // Mostra il form di richiesta email
+  function showRequestForm(ip) {
+    document.body.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;">
+        <h2>Richiesta Accesso</h2>
+        <p>Inserisci la tua email aziendale per richiedere l’accesso.</p>
+        <input type="email" id="emailInput" placeholder="nome@azienda.com"
+               style="padding:10px;font-size:16px;width:250px;margin:10px 0;" />
+        <button id="sendAccessBtn"
+                style="padding:10px 20px;font-size:16px;cursor:pointer;">Invia</button>
+        <p id="accessMsg" style="margin-top:10px;color:red;"></p>
+      </div>
+    `;
 
-    const ip = await fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => d.ip);
+    const sendBtn = document.getElementById("sendAccessBtn");
+    const emailInput = document.getElementById("emailInput");
+    const msgP = document.getElementById("accessMsg");
+
+    sendBtn.addEventListener("click", async () => {
+      console.log("Click su Invia rilevato ✅");
+
+      const email = emailInput.value.trim();
+      if (!email) {
+        msgP.textContent = "Inserisci un'email valida";
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/richiesta-accesso", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, ip })
+        });
+
+        const data = await res.json();
+        console.log("Risposta API:", res.status, data);
+
+        if (!res.ok) {
+          msgP.textContent = data.error || "Errore invio richiesta.";
+        } else {
+          msgP.style.color = "green";
+          msgP.textContent = "Richiesta inviata ✅ Attendi approvazione.";
+        }
+      } catch (err) {
+        console.error("Errore fetch richiesta-accesso:", err);
+        msgP.textContent = "Errore server.";
+      }
+    });
+  }
+
+  // Verifica accesso al caricamento
+  async function verificaAccesso() {
+    const ip = await getIP();
+    if (!ip) {
+      document.body.innerHTML = "<h2>Impossibile ottenere il tuo IP.</h2>";
+      return;
+    }
 
     try {
-      const res = await fetch('/api/richiesta-accesso', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, ip })
+      const res = await fetch("/api/verifica-accesso", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ip })
       });
-      const data = await res.json();
-      if (!res.ok) msgP.textContent = data.error || 'Errore invio richiesta';
-      else msgP.textContent = 'Richiesta inviata. Attendi approvazione.';
-    } catch (e) {
-      msgP.textContent = 'Errore server.';
-    }
-  });
 
-  checkAccess(); // verifica all'avvio
+      const data = await res.json();
+      console.log("Risposta verifica-accesso:", res.status, data);
+
+      if (!res.ok || !data.allowed) {
+        // Non approvato → mostro form
+        showRequestForm(ip);
+      } else {
+        console.log("Accesso approvato ✅");
+        // lascia l'utente sulla pagina normale
+      }
+    } catch (err) {
+      console.error("Errore verifica-accesso:", err);
+      showRequestForm("unknown");
+    }
+  }
+
+  // Avvio
+  verificaAccesso();
 });
