@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const ADMIN_PASSWORD = "ori3";
   const STICKER_URL = "https://wonuzdqupujzeqhucxok.supabase.co/storage/v1/object/public/Admin/IMG_9082.webp";
 
-  // Toggle admin con password
+  // Password admin
   adminBtn.addEventListener("click", () => {
     const pw = prompt("Inserisci password admin (4 caratteri):");
     if (pw === ADMIN_PASSWORD) {
@@ -44,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Crea li prodotto
   function createProductLi(p, showGiacenza = false) {
     const li = document.createElement("li");
     li.style.borderBottom = "1px solid #ccc";
@@ -87,6 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
     activeCategoryBtn = null;
   }
 
+  // Mostra tutti
   searchButton.addEventListener("click", () => {
     if (showingAll) resetAll();
     else {
@@ -96,6 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Sottoscorta
   sottoscortaBtn.addEventListener("click", () => {
     if (showingSottoscorta) resetAll();
     else {
@@ -106,6 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Categorie
   categorieMasterBtn.addEventListener("click", () => {
     if (showingCategorie) resetAll();
     else {
@@ -150,6 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Aggiorna colore giacenza
   function aggiornaColore(span) {
     const current = parseInt(counterValue.textContent);
     const min = parseInt(span.textContent);
@@ -159,6 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
     else counterValue.classList.add("qty-red");
   }
 
+  // Modal
   function openModal(prodotto) {
     selectedProdotto = prodotto;
     modalTitle.textContent = isAdmin ? "Aggiorna prodotto" : "Aggiorna giacenza";
@@ -167,39 +173,40 @@ document.addEventListener("DOMContentLoaded", () => {
     // Scorta minima
     modalScorta.innerHTML = `Scorta minima: <span id="scortaMinSpan" class="min-qty">${prodotto.ScortaMinima}</span>`;
 
-    // Modal admin con input e +/-
-  if (isAdmin) {
-  const inOrdineVal = prodotto.inordine ?? 0; // default 0 se null
-  modalScorta.innerHTML += `
-    <br>In ordine: 
-    <div style="display:flex; align-items:center; gap:5px;">
-      <button type="button" id="decInOrdine" class="qty-btn minus">−</button>
-      <span id="inOrdineValue" class="qty-number" style="width:40px; text-align:center;">${inOrdineVal}</span>
-      <button type="button" id="incInOrdine" class="qty-btn plus">+</button>
-    </div>
-    <br>Modifica scorta minima: <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" style="width:60px;">
-  `;
+    // Modal admin
+    if (isAdmin) {
+      const inOrdineVal = prodotto.inordine ?? 0;
+      modalScorta.innerHTML += `
+        <br>In ordine: 
+        <div style="display:flex; align-items:center; gap:5px;">
+          <button type="button" id="decInOrdine" class="qty-btn minus">−</button>
+          <span id="inOrdineValue" class="qty-number" style="width:40px; text-align:center;">${inOrdineVal}</span>
+          <button type="button" id="incInOrdine" class="qty-btn plus">+</button>
+        </div>
+        <br>Modifica scorta minima: <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" style="width:60px;">
+      `;
 
-  const decInOrdine = document.getElementById("decInOrdine");
-  const incInOrdine = document.getElementById("incInOrdine");
-  const inOrdineValue = document.getElementById("inOrdineValue");
+      const decInOrdine = document.getElementById("decInOrdine");
+      const incInOrdine = document.getElementById("incInOrdine");
+      const inOrdineValue = document.getElementById("inOrdineValue");
 
-  decInOrdine.addEventListener("click", () => {
-    let val = parseInt(inOrdineValue.textContent);
-    if (val > 0) val--;
-    inOrdineValue.textContent = val;
-  });
+      decInOrdine.addEventListener("click", () => {
+        let val = parseInt(inOrdineValue.textContent);
+        if (val > 0) val--;
+        inOrdineValue.textContent = val;
+      });
 
-  incInOrdine.addEventListener("click", () => {
-    let val = parseInt(inOrdineValue.textContent);
-    val++;
-    inOrdineValue.textContent = val;
-  });
-}
+      incInOrdine.addEventListener("click", () => {
+        let val = parseInt(inOrdineValue.textContent);
+        val++;
+        inOrdineValue.textContent = val;
+      });
+    }
 
-counterValue.textContent = prodotto.Giacenza;
-aggiornaColore(document.getElementById("scortaMinSpan"));
-modal.style.display = "block";
+    counterValue.textContent = prodotto.Giacenza;
+    aggiornaColore(document.getElementById("scortaMinSpan"));
+    modal.style.display = "block";
+  }
 
   function closeModal() {
     modal.style.display = "none";
@@ -222,7 +229,7 @@ modal.style.display = "block";
     const giacenzaNum = parseInt(counterValue.textContent);
     if (isNaN(giacenzaNum)) { alert("Inserisci un numero valido!"); return; }
 
-    let inOrdineNum = selectedProdotto.inordine || 0;
+    let inOrdineNum = selectedProdotto.inordine ?? 0;
     let scortaMinimaNum = selectedProdotto.ScortaMinima;
 
     if (isAdmin) {
@@ -249,20 +256,6 @@ modal.style.display = "block";
       selectedProdotto.inordine = inOrdineNum;
       selectedProdotto.ScortaMinima = scortaMinimaNum;
 
-      // invia email solo se non admin e giacenza < scorta minima
-      if (!isAdmin && giacenzaNum < selectedProdotto.ScortaMinima) {
-        const templateParams = {
-          name: "Sistema Magazzino",
-          time: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
-          prodotto: selectedProdotto.Descrizione,
-          giacenza: giacenzaNum,
-          scorta: selectedProdotto.ScortaMinima
-        };
-        emailjs.send("service_487ujbw","template_l5an0k5",templateParams)
-          .then(()=>console.log("Email inviata"))
-          .catch(err=>console.error("Errore invio email:",err));
-      }
-
       closeModal();
     } catch (err) { console.error(err); alert("Errore aggiornamento prodotto!"); }
   });
@@ -280,4 +273,3 @@ modal.style.display = "block";
 
   loadProdotti();
 });
-
