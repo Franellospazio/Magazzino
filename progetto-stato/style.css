@@ -277,5 +277,30 @@ html, body {
   .qty-btn { width: 60px; height: 60px; font-size: 32px; }
   .qty-number { width: 70px; height: 70px; font-size: 24px; }
 }
+/* --- Modal Admin: input aggiuntivi --- */
+.modal-content input[type="number"] {
+  margin-top: 10px;
+  padding: 8px;
+  width: 100px;
+  border: 2px solid #00B4CC;
+  border-radius: 5px;
+  font-size: 16px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.modal-content input[type="number"]:focus {
+  border-color: #007B9E;
+}
+
+/* Etichette admin */
+.modal-content label {
+  display: block;
+  margin-top: 12px;
+  font-weight: bold;
+  color: #333;
+  font-size: 14px;
+}
 
 
