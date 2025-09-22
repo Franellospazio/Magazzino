@@ -1,54 +1,78 @@
-// api/accesso.js
-import { createClient } from "@supabase/supabase-js";
+// accesso.js
+document.addEventListener("DOMContentLoaded", () => {
+  const STORAGE_KEY = "userApprovedIP";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
-
-export default async function handler(req, res) {
-  if (req.method === "POST") {
-    // Nuova richiesta di accesso
-    const { email, ip } = req.body;
-
-    if (!email || !ip) {
-      return res.status(400).json({ error: "Email e IP richiesti" });
-    }
-
-    const { data, error } = await supabase
-      .from("richieste_accesso")
-      .insert([{ email, ip }]);
-
-    if (error) {
-      console.error("Errore inserimento:", error);
-      return res.status(500).json({ error: error.message });
-    }
-
-    return res.status(200).json({ message: "Richiesta inviata", data });
-  }
-
-  if (req.method === "GET") {
-    // Verifica se IP approvato
-    const { ip } = req.query;
-    if (!ip) return res.status(400).json({ error: "IP richiesto" });
-
-    const { data, error } = await supabase
-      .from("richieste_accesso")
-      .select("*")
-      .eq("ip", ip)
-      .eq("approvato", true);
-
-    if (error) {
-      console.error("Errore verifica:", error);
-      return res.status(500).json({ error: error.message });
-    }
-
-    if (data.length > 0) {
-      return res.status(200).json({ autorizzato: true, utente: data[0] });
-    } else {
-      return res.status(200).json({ autorizzato: false });
+  async function getUserIP() {
+    // Richiesta IP pubblico tramite servizio esterno
+    try {
+      const res = await fetch("https://api.ipify.org?format=json");
+      const data = await res.json();
+      return data.ip;
+    } catch (err) {
+      console.error("Impossibile ottenere IP:", err);
+      return null;
     }
   }
 
-  return res.status(405).json({ error: "Metodo non consentito" });
-}
+  async function checkApproval(ip) {
+    // Chiama un endpoint API per verificare se questo IP è approvato
+    try {
+      const res = await fetch("/api/check-ip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ip })
+      });
+      const data = await res.json();
+      return data.approved;
+    } catch (err) {
+      console.error("Errore controllo approvazione IP:", err);
+      return false;
+    }
+  }
+
+  async function requestApproval(email, ip) {
+    // Chiama un endpoint API per inviare la richiesta di approvazione via email
+    try {
+      const res = await fetch("/api/request-approval", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, ip })
+      });
+      const data = await res.json();
+      if (data.success) alert("Richiesta inviata! Attendi approvazione.");
+      else alert("Errore invio richiesta.");
+    } catch (err) {
+      console.error("Errore richiesta approvazione:", err);
+      alert("Errore invio richiesta.");
+    }
+  }
+
+  async function initAccess() {
+    let ip = await getUserIP();
+    if (!ip) return;
+
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === ip) {
+      console.log("IP già approvato, accesso normale");
+      return; // accesso già approvato
+    }
+
+    const approved = await checkApproval(ip);
+    if (approved) {
+      localStorage.setItem(STORAGE_KEY, ip);
+      console.log("IP approvato dal server");
+      return;
+    }
+
+    // IP non approvato → chiedi email
+    const email = prompt("Inserisci la tua mail aziendale per richiedere accesso:");
+    if (!email) {
+      alert("Email richiesta per procedere");
+      return;
+    }
+
+    await requestApproval(email, ip);
+  }
+
+  initAccess();
+});
