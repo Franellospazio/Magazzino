@@ -13,8 +13,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const searchButton = document.querySelector(".searchButton");
   const sottoscortaBtn = document.getElementById("sottoscortaBtn");
-  const categorieMasterBtn = document.getElementById("categorieMasterBtn"); // pulsante HTML
-  const categorieContainer = document.getElementById("categorieContainer"); // container HTML
+  const categorieMasterBtn = document.getElementById("categorieMasterBtn"); 
+  const categorieContainer = document.getElementById("categorieContainer"); 
+
+  const adminBtn = document.getElementById("adminBtn"); // nuovo pulsante admin
 
   let prodotti = [];
   let selectedProdotto = null;
@@ -22,8 +24,21 @@ document.addEventListener("DOMContentLoaded", () => {
   let showingAll = false;
   let showingSottoscorta = false;
   let showingCategorie = false;
+  let activeCategoryBtn = null; 
 
-  let activeCategoryBtn = null; // riferimento categoria attiva
+  let isAdmin = false; // modalità amministratore
+
+  // toggle admin
+  adminBtn.addEventListener("click", () => {
+    isAdmin = !isAdmin;
+    if (isAdmin) {
+      adminBtn.textContent = "🔓 Admin ON";
+      adminBtn.style.backgroundColor = "#27ae60";
+    } else {
+      adminBtn.textContent = "🛠️ Admin";
+      adminBtn.style.backgroundColor = "#e74c3c";
+    }
+  });
 
   // Funzione generica per creare li con immagini e formattazione chiave
   function createProductLi(p, showGiacenza = false) {
@@ -42,6 +57,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (showGiacenza) {
       content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
+    }
+
+    // Mostra in ordine se presente
+    if (p.inordine !== undefined && p.inordine !== null && p.inordine > 0) {
+      content += `<br>🛒 In ordine: ${p.inordine}`;
     }
 
     if (p.ImageURL) {
@@ -76,97 +96,92 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
- // SOTTOSCORTA
-sottoscortaBtn.addEventListener("click", () => {
-  if (showingSottoscorta) {
-    resetAll();
-  } else {
-    resetAll();
-    const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
+  // SOTTOSCORTA
+  sottoscortaBtn.addEventListener("click", () => {
+    if (showingSottoscorta) {
+      resetAll();
+    } else {
+      resetAll();
+      const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
 
-    sottoscorta.forEach(p => {
-      const li = document.createElement("li");
-      li.style.borderBottom = "1px solid #ccc";
-      li.style.padding = "5px 0";
+      sottoscorta.forEach(p => {
+        const li = document.createElement("li");
+        li.style.borderBottom = "1px solid #ccc";
+        li.style.padding = "5px 0";
 
-      // Suddividiamo il testo
-      const keyParts = p.Descrizione.split("_");
-      const nome = keyParts[0];
-      const taglio = keyParts[keyParts.length - 1];
-      const middle = keyParts.slice(1, keyParts.length - 1).join("_");
+        const keyParts = p.Descrizione.split("_");
+        const nome = keyParts[0];
+        const taglio = keyParts[keyParts.length - 1];
+        const middle = keyParts.slice(1, keyParts.length - 1).join("_");
 
-      let content = `<strong style="color:black;">${nome}</strong>`;
-      if (middle) content += ` <span style="color:#999;">${middle}</span>`;
-      content += ` <span style="color:#2ecc71;">${taglio}</span>`;
+        let content = `<strong style="color:black;">${nome}</strong>`;
+        if (middle) content += ` <span style="color:#999;">${middle}</span>`;
+        content += ` <span style="color:#2ecc71;">${taglio}</span>`;
 
-      // Mostra giacenza
-      content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
+        content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
 
-      // Mostra inordine se presente
-      if (p.inordine !== undefined && p.inordine !== null) {
-        content += `<br>	🛒 In ordine: ${p.inordine}`;
-      }
-
-      // Immagine
-      if (p.ImageURL) {
-        content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
-      } else {
-        content += `<br><em>(img non presente)</em>`;
-      }
-
-      li.innerHTML = content;
-      li.addEventListener("click", () => openModal(p));
-      results.appendChild(li);
-    });
-
-    showingSottoscorta = true;
-  }
-});
-
-// PULSANTE CATEGORIE
-categorieMasterBtn.addEventListener("click", () => {
-  if (showingCategorie) {
-    // chiudi tutto: categorie + prodotti
-    resetAll();
-  } else {
-    resetAll(); // chiude tutto prima
-    categorieContainer.style.display = "flex";
-    categorieContainer.innerHTML = "";
-
-    const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
-
-    categorie.forEach(cat => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.textContent = cat;
-      btn.classList.add("categoriaBtn");
-      btn.style.touchAction = "manipulation"; // evita zoom mobile
-      btn.style.userSelect = "none";
-
-      btn.addEventListener("click", () => {
-        if (activeCategoryBtn === btn) {
-          results.innerHTML = "";
-          btn.classList.remove("active");
-          activeCategoryBtn = null;
-          return;
+        if (p.inordine !== undefined && p.inordine !== null && p.inordine > 0) {
+          content += `<br>🛒 In ordine: ${p.inordine}`;
         }
 
-        if (activeCategoryBtn) activeCategoryBtn.classList.remove("active");
+        if (p.ImageURL) {
+          content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
+        } else {
+          content += `<br><em>(img non presente)</em>`;
+        }
 
-        results.innerHTML = "";
-        const filtrati = prodotti.filter(p => p.categoria === cat);
-        filtrati.forEach(p => results.appendChild(createProductLi(p)));
-
-        btn.classList.add("active");
-        activeCategoryBtn = btn;
+        li.innerHTML = content;
+        li.addEventListener("click", () => openModal(p));
+        results.appendChild(li);
       });
 
-      categorieContainer.appendChild(btn);
-    });
+      showingSottoscorta = true;
+    }
+  });
 
-    showingCategorie = true;
-  }
-});
+  // PULSANTE CATEGORIE
+  categorieMasterBtn.addEventListener("click", () => {
+    if (showingCategorie) {
+      resetAll();
+    } else {
+      resetAll();
+      categorieContainer.style.display = "flex";
+      categorieContainer.innerHTML = "";
+
+      const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
+
+      categorie.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = cat;
+        btn.classList.add("categoriaBtn");
+        btn.style.touchAction = "manipulation";
+        btn.style.userSelect = "none";
+
+        btn.addEventListener("click", () => {
+          if (activeCategoryBtn === btn) {
+            results.innerHTML = "";
+            btn.classList.remove("active");
+            activeCategoryBtn = null;
+            return;
+          }
+
+          if (activeCategoryBtn) activeCategoryBtn.classList.remove("active");
+
+          results.innerHTML = "";
+          const filtrati = prodotti.filter(p => p.categoria === cat);
+          filtrati.forEach(p => results.appendChild(createProductLi(p)));
+
+          btn.classList.add("active");
+          activeCategoryBtn = btn;
+        });
+
+        categorieContainer.appendChild(btn);
+      });
+
+      showingCategorie = true;
+    }
+  });
 
   // EmailJS config
   const EMAILJS_SERVICE_ID = "service_487ujbw";
@@ -193,13 +208,24 @@ categorieMasterBtn.addEventListener("click", () => {
 
   function openModal(prodotto) {
     selectedProdotto = prodotto;
-    modalTitle.textContent = "Vuoi aggiornare giacenza?";
+    modalTitle.textContent = isAdmin ? "Vuoi aggiornare prodotto?" : "Vuoi aggiornare giacenza?";
     modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
-    modalScorta.innerHTML = `Scorta minima: <span class="min-qty" id="minGiacenza">${prodotto.ScortaMinima}</span>`;
 
-    const minGiacenzaSpan = document.getElementById("minGiacenza");
+    modalScorta.innerHTML = `
+      Giacenza: <span id="minGiacenza">${prodotto.Giacenza}</span>
+    `;
+
+    if (isAdmin) {
+      modalScorta.innerHTML += `
+        <br>In Ordine: <input type="number" id="inOrdineInput" value="${prodotto.inordine || 0}" style="width:60px;">
+        <br>Scorta Minima: <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" style="width:60px;">
+      `;
+    } else {
+      modalScorta.innerHTML += ` (min: <span>${prodotto.ScortaMinima}</span>)`;
+    }
+
     counterValue.textContent = prodotto.Giacenza;
-    aggiornaColore(minGiacenzaSpan);
+    aggiornaColore(document.getElementById("minGiacenza"));
 
     modal.style.display = "block";
   }
@@ -212,15 +238,13 @@ categorieMasterBtn.addEventListener("click", () => {
   decrementBtn.addEventListener("click", () => {
     let current = parseInt(counterValue.textContent);
     if (current > 0) counterValue.textContent = current - 1;
-    const minGiacenzaSpan = document.getElementById("minGiacenza");
-    aggiornaColore(minGiacenzaSpan);
+    aggiornaColore(document.getElementById("minGiacenza"));
   });
 
   incrementBtn.addEventListener("click", () => {
     let current = parseInt(counterValue.textContent);
     counterValue.textContent = current + 1;
-    const minGiacenzaSpan = document.getElementById("minGiacenza");
-    aggiornaColore(minGiacenzaSpan);
+    aggiornaColore(document.getElementById("minGiacenza"));
   });
 
   aggiornaBtn.addEventListener("click", async () => {
@@ -231,23 +255,33 @@ categorieMasterBtn.addEventListener("click", () => {
       return;
     }
 
+    let inOrdineNum = selectedProdotto.inordine || 0;
+    let scortaMinimaNum = selectedProdotto.ScortaMinima;
+
+    if (isAdmin) {
+      const inOrdineInput = document.getElementById("inOrdineInput");
+      const scortaMinimaInput = document.getElementById("scortaMinimaInput");
+      if (inOrdineInput) inOrdineNum = parseInt(inOrdineInput.value) || 0;
+      if (scortaMinimaInput) scortaMinimaNum = parseInt(scortaMinimaInput.value) || scortaMinimaNum;
+    }
+
     try {
       const res = await fetch("/api/prodotti", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           descrizione: selectedProdotto.Descrizione,
-          Giacenza: giacenzaNum
+          Giacenza: giacenzaNum,
+          inordine: inOrdineNum,
+          ScortaMinima: scortaMinimaNum
         })
       });
 
       if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
-      selectedProdotto.Giacenza = giacenzaNum;
 
-      const li = [...results.children].find(
-        li => li.textContent.startsWith(selectedProdotto.Descrizione)
-      );
-      if (li) li.textContent = `${selectedProdotto.Descrizione} - Giacenza: ${giacenzaNum}`;
+      selectedProdotto.Giacenza = giacenzaNum;
+      selectedProdotto.inordine = inOrdineNum;
+      selectedProdotto.ScortaMinima = scortaMinimaNum;
 
       if (giacenzaNum < selectedProdotto.ScortaMinima) {
         const templateParams = {
@@ -262,11 +296,11 @@ categorieMasterBtn.addEventListener("click", () => {
           .catch(err => console.error("Errore invio email:", err));
       }
 
-      alert(`Giacenza aggiornata a ${giacenzaNum}`);
+      alert(`Prodotto aggiornato!`);
       closeModal();
     } catch (err) {
       console.error(err);
-      alert("Errore aggiornamento giacenza!");
+      alert("Errore aggiornamento prodotto!");
     }
   });
 
@@ -290,7 +324,3 @@ categorieMasterBtn.addEventListener("click", () => {
 
   loadProdotti();
 });
-
-
-
-
