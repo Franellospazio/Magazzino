@@ -28,15 +28,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let isAdmin = false;
 
-  // toggle admin
-  adminBtn.addEventListener("click", () => {
-    isAdmin = !isAdmin;
-    if (isAdmin) {
-      adminBtn.textContent = "🔓 Admin ON";
-      adminBtn.style.backgroundColor = "#27ae60";
+  // toggle admin con password e sticker
+  adminBtn.addEventListener("click", async () => {
+    const password = prompt("Inserisci la password di 4 caratteri per entrare in modalità admin:");
+    if (!password) return;
+
+    if (password === "1234") { // sostituisci "1234" con la tua password reale
+      isAdmin = !isAdmin;
+      if (isAdmin) {
+        adminBtn.textContent = "🔓 Admin ON";
+        adminBtn.style.backgroundColor = "#27ae60";
+      } else {
+        adminBtn.textContent = "🛠️ Admin";
+        adminBtn.style.backgroundColor = "#e74c3c";
+      }
     } else {
-      adminBtn.textContent = "🛠️ Admin";
-      adminBtn.style.backgroundColor = "#e74c3c";
+      // invia sticker su Supabase o API
+      try {
+        await fetch("/api/sticker", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ testo: "Non sei amministratore!!" })
+        });
+        alert("Password errata! Sticker inviato.");
+      } catch (err) {
+        console.error("Errore invio sticker:", err);
+      }
     }
   });
 
