@@ -303,20 +303,23 @@ html, body {
   font-size: 14px;
 }
 
-/* Modal Admin: In ordine layout orizzontale */
-#inOrdineValue {
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-  width: 50px;
+/* Modal Admin: layout orizzontale per In ordine */
+#adminInOrdine {
+  width: 60px;
   height: 50px;
+  text-align: center;
   font-size: 20px;
-  border-radius: 50%;
-  background-color: #3498db;
-  color: white;
 }
 
-#decInOrdine, #incInOrdine {
+#adminInOrdineContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+#adminInOrdineContainer button {
   width: 50px;
   height: 50px;
   font-size: 28px;
@@ -324,19 +327,23 @@ html, body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  border: none;
+  background: transparent;
 }
 
-#decInOrdine { color: #e74c3c; }
-#incInOrdine { color: #2ecc71; }
+#adminInOrdineContainer button.minus { color: #e74c3c; }
+#adminInOrdineContainer button.plus { color: #2ecc71; }
 
-#inOrdineValue, #decInOrdine, #incInOrdine {
-  margin: 0 5px;
-}
-
-#inOrdineContainer {
-  display: flex !important;
+#adminInOrdineValue {
+  width: 60px;
+  height: 50px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  border-radius: 8px;
+  background-color: #3498db;
+  color: white;
+  font-weight: bold;
+  font-size: 20px;
 }
 
