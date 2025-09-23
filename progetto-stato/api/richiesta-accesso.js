@@ -2,13 +2,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
-// Supabase client con Service Role Key
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
-
-// Resend client
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req, res) {
@@ -17,26 +14,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Parsing sicuro del body (Next.js lo fa già, ma mettiamo fallback)
-    let body = req.body;
-    if (typeof body === "string") {
-      try {
-        body = JSON.parse(body);
-      } catch (err) {
-        console.error("Errore parsing JSON:", err);
-        return res.status(400).json({ error: "Body non valido" });
-      }
-    }
-
-    const { email, ip } = body;
-
+    const { email, ip } = req.body;
     if (!email || !ip) {
       return res.status(400).json({ error: "Email e IP richiesti" });
     }
 
-    console.log("Richiesta accesso:", email, ip);
-
-    // Inserimento in Supabase
+    // Inserisci richiesta in Supabase
     const { error: insertError } = await supabase
       .from("richieste_accesso")
       .insert([{ email, ip }]);
@@ -46,20 +29,38 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: insertError.message });
     }
 
-    // Invio mail all'amministratore
+    console.log(`Richiesta accesso: ${email} ${ip}`);
+
+    // Invia mail all'admin
     try {
       await resend.emails.send({
-        from: "noreply@tuodominio.com", // sostituire con il dominio valido
+        from: "noreply@tuodominio.com",
         to: process.env.ADMIN_EMAIL,
         subject: "Nuova richiesta accesso",
-        html: `<p>Richiesta da: <strong>${email}</strong><br>IP: ${ip}</p>`,
+        html: `<p>Richiesta da: ${email}<br>IP: ${ip}</p>`,
       });
     } catch (mailErr) {
-      console.error("Errore invio mail Resend:", mailErr);
-      // Non bloccare l’inserimento in Supabase, ma logga l’errore
+      console.error("Errore invio email:", mailErr);
+      // non bloccare la risposta, solo log
     }
 
-    return res.status(200).json({ message: "Richiesta inviata con successo" });
+    // Controlla subito se l'IP è approvato (utile se l'admin ha già approvato)
+    const { data: checkData, error: checkError } = await supabase
+      .from("richieste_accesso")
+      .select("*")
+      .eq("ip", ip)
+      .eq("approvato", true)
+      .single();
+
+    if (checkError && checkError.code !== "PGRST116") {
+      console.error("Errore controllo IP:", checkError);
+      return res.status(500).json({ error: "Errore interno server" });
+    }
+
+    return res.status(200).json({
+      message: "Richiesta inviata",
+      allowed: !!checkData, // true se già approvato
+    });
   } catch (err) {
     console.error("Errore API richiesta-accesso:", err);
     return res.status(500).json({ error: "Errore interno server" });
