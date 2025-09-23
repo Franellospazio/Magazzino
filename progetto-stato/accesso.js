@@ -20,10 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;">
         <h2>Richiesta Accesso</h2>
         <p>Inserisci la tua email aziendale per richiedere l’accesso.</p>
-        <input type="email" id="emailInput" placeholder="nome@azienda.com"
-               style="padding:10px;font-size:16px;width:250px;margin:10px 0;" />
-        <button id="sendAccessBtn"
-                style="padding:10px 20px;font-size:16px;cursor:pointer;">Invia</button>
+        <input type="email" id="emailInput" placeholder="nome@azienda.com" style="padding:10px;font-size:16px;width:250px;margin:10px 0;" />
+        <button id="sendAccessBtn" style="padding:10px 20px;font-size:16px;cursor:pointer;">Invia</button>
         <p id="accessMsg" style="margin-top:10px;color:red;"></p>
       </div>
     `;
@@ -46,18 +44,11 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ email, ip })
         });
 
-        const data = await res.json();
-        console.log("Risposta richiesta-accesso:", res.status, data);
-
         if (!res.ok) {
+          const data = await res.json();
           msgP.textContent = data.error || "Errore invio richiesta.";
-        } else if (data.allowed) {
-          msgP.style.color = "green";
-          msgP.textContent = "Accesso approvato ✅ Puoi navigare!";
-          // Puoi ricaricare la pagina normale qui se vuoi
-          setTimeout(() => location.reload(), 1500);
         } else {
-          msgP.style.color = "orange";
+          msgP.style.color = "green";
           msgP.textContent = "Richiesta inviata ✅ Attendi approvazione.";
         }
       } catch (err) {
@@ -85,22 +76,17 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       console.log("Risposta verifica-accesso:", res.status, data);
 
-      if (!res.ok) {
-        console.error("Errore verifica-accesso:", data.error);
-        showRequestForm(ip);
-      } else if (!data.allowed) {
-        // IP non approvato → mostra form
-        showRequestForm(ip);
+      if (!res.ok || !data.allowed) {
+        showRequestForm(ip); // Non approvato → mostro form
       } else {
         console.log("Accesso approvato ✅");
-        // L’utente può navigare normalmente → non fare nulla
+        // L'utente continua normalmente sul sito
       }
     } catch (err) {
       console.error("Errore verifica-accesso:", err);
-      showRequestForm(ip);
+      showRequestForm("unknown");
     }
   }
 
-  // Avvio
-  verificaAccesso();
+  verificaAccesso(); // Avvio
 });
