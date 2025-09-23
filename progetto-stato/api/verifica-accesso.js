@@ -1,4 +1,3 @@
-// api/verifica-accesso.js
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -13,9 +12,7 @@ export default async function handler(req, res) {
 
   try {
     const { ip } = req.body;
-    if (!ip) {
-      return res.status(400).json({ error: "IP richiesto" });
-    }
+    if (!ip) return res.status(400).json({ error: "IP richiesto" });
 
     const { data, error } = await supabase
       .from("richieste_accesso")
@@ -23,7 +20,7 @@ export default async function handler(req, res) {
       .eq("ip", ip)
       .single();
 
-    if (error && error.code !== "PGRST116") { // PGRST116 = nessuna riga
+    if (error && error.code !== "PGRST116") {
       console.error("Errore Supabase:", error);
       return res.status(500).json({ error: "Errore interno server" });
     }
