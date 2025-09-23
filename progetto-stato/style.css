@@ -346,4 +346,57 @@ html, body {
   font-weight: bold;
   font-size: 20px;
 }
+/* --- Container In ordine dinamico nella modal admin --- */
+.admin-in-ordine-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 5px;
+  margin-bottom: 15px;
+}
+
+.admin-in-ordine-container button {
+  width: 50px;
+  height: 50px;
+  font-size: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+
+.admin-in-ordine-container button.minus { color: #e74c3c; }
+.admin-in-ordine-container button.plus { color: #2ecc71; }
+
+/* Numero In ordine centrato */
+.qty-blue {
+  width: 60px;
+  height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background-color: #3498db;
+  color: white;
+  font-weight: bold;
+  font-size: 20px;
+  text-align: center;
+}
+
+/* Input scorta minima con stile uniforme */
+.admin-scorta-input {
+  width: 60px;
+  text-align: center;
+  padding: 5px;
+  font-size: 16px;
+  margin-top: 5px;
+  border: 2px solid #00B4CC;
+  border-radius: 5px;
+  outline: none;
+}
+.admin-scorta-input:focus { border-color: #007B9E; }
+
 
