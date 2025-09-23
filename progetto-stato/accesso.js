@@ -33,8 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const msgP = document.getElementById("accessMsg");
 
     sendBtn.addEventListener("click", async () => {
-      console.log("Click su Invia rilevato ✅");
-
       const email = emailInput.value.trim();
       if (!email) {
         msgP.textContent = "Inserisci un'email valida";
@@ -49,12 +47,17 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         const data = await res.json();
-        console.log("Risposta API:", res.status, data);
+        console.log("Risposta richiesta-accesso:", res.status, data);
 
         if (!res.ok) {
           msgP.textContent = data.error || "Errore invio richiesta.";
-        } else {
+        } else if (data.allowed) {
           msgP.style.color = "green";
+          msgP.textContent = "Accesso approvato ✅ Puoi navigare!";
+          // Puoi ricaricare la pagina normale qui se vuoi
+          setTimeout(() => location.reload(), 1500);
+        } else {
+          msgP.style.color = "orange";
           msgP.textContent = "Richiesta inviata ✅ Attendi approvazione.";
         }
       } catch (err) {
@@ -82,16 +85,19 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       console.log("Risposta verifica-accesso:", res.status, data);
 
-      if (!res.ok || !data.allowed) {
-        // Non approvato → mostro form
+      if (!res.ok) {
+        console.error("Errore verifica-accesso:", data.error);
+        showRequestForm(ip);
+      } else if (!data.allowed) {
+        // IP non approvato → mostra form
         showRequestForm(ip);
       } else {
         console.log("Accesso approvato ✅");
-        // lascia l'utente sulla pagina normale
+        // L’utente può navigare normalmente → non fare nulla
       }
     } catch (err) {
       console.error("Errore verifica-accesso:", err);
-      showRequestForm("unknown");
+      showRequestForm(ip);
     }
   }
 
