@@ -174,34 +174,37 @@ document.addEventListener("DOMContentLoaded", () => {
     modalScorta.innerHTML = `Scorta minima: <span id="scortaMinSpan" class="min-qty">${prodotto.ScortaMinima}</span>`;
 
     // Modal admin
-    if (isAdmin) {
-      const inOrdineVal = prodotto.inordine ?? 0;
-      modalScorta.innerHTML += `
-        <br>In ordine: 
-        <div style="display:flex; align-items:center; gap:5px;">
-          <button type="button" id="decInOrdine" class="qty-btn minus">−</button>
-          <span id="inOrdineValue" class="qty-number" style="width:40px; text-align:center;">${inOrdineVal}</span>
-          <button type="button" id="incInOrdine" class="qty-btn plus">+</button>
-        </div>
-        <br>Modifica scorta minima: <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" style="width:60px;">
-      `;
+if (isAdmin) {
+  const inOrdineVal = prodotto.inordine ?? 0;
 
-      const decInOrdine = document.getElementById("decInOrdine");
-      const incInOrdine = document.getElementById("incInOrdine");
-      const inOrdineValue = document.getElementById("inOrdineValue");
+  // Inserisci markup con classi CSS già definite
+  modalScorta.innerHTML += `
+    <br>In ordine:
+    <div id="adminInOrdineContainerDynamic" class="admin-in-ordine-container">
+      <button type="button" id="decInOrdine" class="qty-btn minus">−</button>
+      <span id="inOrdineValue" class="qty-number qty-blue">${inOrdineVal}</span>
+      <button type="button" id="incInOrdine" class="qty-btn plus">+</button>
+    </div>
+    <br>Modifica scorta minima: 
+    <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" class="admin-scorta-input">
+  `;
 
-      decInOrdine.addEventListener("click", () => {
-        let val = parseInt(inOrdineValue.textContent);
-        if (val > 0) val--;
-        inOrdineValue.textContent = val;
-      });
+  const decInOrdine = document.getElementById("decInOrdine");
+  const incInOrdine = document.getElementById("incInOrdine");
+  const inOrdineValue = document.getElementById("inOrdineValue");
 
-      incInOrdine.addEventListener("click", () => {
-        let val = parseInt(inOrdineValue.textContent);
-        val++;
-        inOrdineValue.textContent = val;
-      });
-    }
+  decInOrdine.addEventListener("click", () => {
+    let val = parseInt(inOrdineValue.textContent);
+    if (val > 0) val--;
+    inOrdineValue.textContent = val;
+  });
+
+  incInOrdine.addEventListener("click", () => {
+    let val = parseInt(inOrdineValue.textContent);
+    val++;
+    inOrdineValue.textContent = val;
+  });
+}
 
     counterValue.textContent = prodotto.Giacenza;
     aggiornaColore(document.getElementById("scortaMinSpan"));
@@ -273,3 +276,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadProdotti();
 });
+
