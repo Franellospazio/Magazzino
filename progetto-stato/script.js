@@ -1,11 +1,31 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  // --- BLOCCO ACCESSO ---
-  const accessModal = document.createElement('div');
-  accessModal.innerHTML = `
-    <div id="accessModal" style="
+
+  // -----------------------------
+  // Recupero IP pubblico
+  // -----------------------------
+  async function getIP() {
+    try {
+      const res = await fetch("https://api.ipify.org?format=json");
+      if (!res.ok) throw new Error("Errore recupero IP");
+      const data = await res.json();
+      return data.ip;
+    } catch (e) {
+      console.error("Errore recupero IP:", e);
+      return null;
+    }
+  }
+
+  // -----------------------------
+  // Mostra il form di richiesta accesso
+  // -----------------------------
+  function showRequestForm(ip) {
+    const accessModal = document.createElement('div');
+    accessModal.id = "accessModal";
+    accessModal.style = `
       position:fixed;top:0;left:0;width:100%;height:100%;
       background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:9999;
-    ">
+    `;
+    accessModal.innerHTML = `
       <div style="background:#fff;padding:30px;border-radius:10px;text-align:center;">
         <h2>Accesso richiesto</h2>
         <p>Inserisci la tua email aziendale per richiedere accesso:</p>
@@ -13,29 +33,41 @@ document.addEventListener("DOMContentLoaded", async () => {
         <button id="sendAccessBtn" style="padding:10px 20px;">Invia richiesta</button>
         <p id="accessMsg" style="margin-top:10px;color:red;"></p>
       </div>
-    </div>
-  `;
-  document.body.appendChild(accessModal);
+    `;
+    document.body.appendChild(accessModal);
 
-  const modalDiv = document.getElementById('accessModal');
-  const emailInput = document.getElementById('accessEmail');
-  const sendBtn = document.getElementById('sendAccessBtn');
-  const msgP = document.getElementById('accessMsg');
+    const emailInput = document.getElementById('accessEmail');
+    const sendBtn = document.getElementById('sendAccessBtn');
+    const msgP = document.getElementById('accessMsg');
 
-  async function getIP() {
-    try {
-      const ipRes = await fetch('https://api.ipify.org?format=json');
-      const ipData = await ipRes.json();
-      return ipData.ip;
-    } catch (e) {
-      console.error("Errore ottenimento IP:", e);
-      return null;
-    }
+    sendBtn.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      if (!email) { msgP.textContent = 'Inserisci un email valida'; return; }
+
+      try {
+        const res = await fetch('/api/richiesta-accesso', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, ip })
+        });
+        const data = await res.json();
+        if (!res.ok) msgP.textContent = data.error || 'Errore invio richiesta';
+        else msgP.textContent = 'Richiesta inviata. Attendi approvazione.';
+      } catch (e) {
+        msgP.textContent = 'Errore server.';
+      }
+    });
   }
 
+  // -----------------------------
+  // Controllo accesso al caricamento
+  // -----------------------------
   async function checkAccess() {
     const ip = await getIP();
-    if (!ip) return; // blocco se non si riesce a ottenere IP
+    if (!ip) {
+      document.body.innerHTML = "<h2>Impossibile ottenere il tuo IP.</h2>";
+      return;
+    }
 
     try {
       const res = await fetch('/api/verifica-accesso', {
@@ -44,41 +76,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         body: JSON.stringify({ ip })
       });
       const data = await res.json();
-      if (data.approved) {
-        modalDiv.style.display = 'none';
-        initApp(); // se approvato avvia app
+
+      if (data.allowed) {
+        // IP approvato → avvia app
+        initApp();
       } else {
-        modalDiv.style.display = 'flex';
+        // Non approvato → mostra richiesta accesso
+        showRequestForm(ip);
       }
     } catch (e) {
       console.error("Errore verifica accesso:", e);
+      showRequestForm(ip);
     }
   }
 
-  sendBtn.addEventListener('click', async () => {
-    const email = emailInput.value.trim();
-    if (!email) { msgP.textContent = 'Inserisci un email valida'; return; }
-
-    const ip = await getIP();
-    if (!ip) { msgP.textContent = 'Impossibile ottenere IP'; return; }
-
-    try {
-      const res = await fetch('/api/richiesta-accesso', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, ip })
-      });
-      const data = await res.json();
-      if (!res.ok) msgP.textContent = data.error || 'Errore invio richiesta';
-      else msgP.textContent = 'Richiesta inviata. Attendi approvazione.';
-    } catch (e) {
-      msgP.textContent = 'Errore server.';
-    }
-  });
-
-  await checkAccess();
-
-  // --- APP PRINCIPALE (funzioni sui prodotti) ---
+  // -----------------------------
+  // Funzioni principali app prodotti
+  // -----------------------------
   function initApp() {
     const search = document.getElementById("search");
     const results = document.getElementById("results");
@@ -125,7 +139,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
 
-    // --- Funzioni prodotti ---
+    // --- Creazione lista prodotti ---
     function createProductLi(p, showGiacenza = false) {
       const li = document.createElement("li");
       li.style.borderBottom = "1px solid #ccc";
@@ -140,19 +154,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (middle) content += ` <span style="color:#999;">${middle}</span>`;
       content += ` <span style="color:#2ecc71;">${taglio}</span>`;
 
-      if (showGiacenza) {
-        content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
-      }
-
-      if (p.inordine && p.inordine > 0) {
-        content += `<br>🛒 In ordine: ${p.inordine}`;
-      }
-
-      if (p.ImageURL) {
-        content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
-      } else {
-        content += `<br><em>(img non presente)</em>`;
-      }
+      if (showGiacenza) content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
+      if (p.inordine && p.inordine > 0) content += `<br>🛒 In ordine: ${p.inordine}`;
+      if (p.ImageURL) content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
+      else content += `<br><em>(img non presente)</em>`;
 
       li.innerHTML = content;
       li.addEventListener("click", () => openModal(p));
@@ -223,6 +228,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
 
+    // --- Caricamento prodotti ---
     async function loadProdotti() {
       try {
         const res = await fetch("/api/prodotti");
@@ -233,7 +239,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    // --- Modal e giacenza ---
+    // --- Modal e gestione giacenza ---
     function aggiornaColore(span) {
       const current = parseInt(counterValue.textContent);
       const min = parseInt(span.textContent);
@@ -247,50 +253,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       selectedProdotto = prodotto;
       modalTitle.textContent = isAdmin ? "Aggiorna prodotto" : "Aggiorna giacenza";
       modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
-
       modalScorta.innerHTML = `Scorta minima: <span id="scortaMinSpan" class="min-qty">${prodotto.ScortaMinima}</span>`;
-
-      if (isAdmin) {
-        const inOrdineVal = prodotto.inordine ?? 0;
-        modalScorta.innerHTML += `
-          <br>In ordine: 
-          <div style="display:flex; align-items:center; gap:5px;">
-            <button type="button" id="decInOrdine" class="qty-btn minus">−</button>
-            <span id="inOrdineValue" class="qty-number" style="width:40px; text-align:center;">${inOrdineVal}</span>
-            <button type="button" id="incInOrdine" class="qty-btn plus">+</button>
-          </div>
-          <br>Modifica scorta minima: <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" style="width:60px;">
-        `;
-
-        const decInOrdine = document.getElementById("decInOrdine");
-        const incInOrdine = document.getElementById("incInOrdine");
-        const inOrdineValue = document.getElementById("inOrdineValue");
-
-        decInOrdine.addEventListener("click", () => {
-          let val = parseInt(inOrdineValue.textContent);
-          if (val > 0) val--;
-          inOrdineValue.textContent = val;
-        });
-
-        incInOrdine.addEventListener("click", () => {
-          let val = parseInt(inOrdineValue.textContent);
-          val++;
-          inOrdineValue.textContent = val;
-        });
-      }
-
       counterValue.textContent = prodotto.Giacenza;
       aggiornaColore(document.getElementById("scortaMinSpan"));
       modal.style.display = "block";
     }
 
-    function closeModal() {
-      modal.style.display = "none";
-      selectedProdotto = null;
-    }
+    function closeModal() { modal.style.display = "none"; selectedProdotto = null; }
 
     decrementBtn.addEventListener("click", () => {
-      let val = parseInt(counterValue.textContent);
+      let val = parse
+      Int(counterValue.textContent);
       if (val > 0) counterValue.textContent = val - 1;
       aggiornaColore(document.getElementById("scortaMinSpan"));
     });
@@ -305,33 +278,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       const giacenzaNum = parseInt(counterValue.textContent);
       if (isNaN(giacenzaNum)) { alert("Inserisci un numero valido!"); return; }
 
-      let inOrdineNum = selectedProdotto.inordine ?? 0;
-      let scortaMinimaNum = selectedProdotto.ScortaMinima;
-
-      if (isAdmin) {
-        const inOrdineValue = document.getElementById("inOrdineValue");
-        const scortaMinimaInput = document.getElementById("scortaMinimaInput");
-        if (inOrdineValue) inOrdineNum = parseInt(inOrdineValue.textContent) || 0;
-        if (scortaMinimaInput) scortaMinimaNum = parseInt(scortaMinimaInput.value) || scortaMinimaNum;
-      }
-
       try {
         const res = await fetch("/api/prodotti", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             descrizione: selectedProdotto.Descrizione,
-            Giacenza: giacenzaNum,
-            inordine: inOrdineNum,
-            ScortaMinima: scortaMinimaNum
+            Giacenza: giacenzaNum
           })
         });
         if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
-
         selectedProdotto.Giacenza = giacenzaNum;
-        selectedProdotto.inordine = inOrdineNum;
-        selectedProdotto.ScortaMinima = scortaMinimaNum;
-
         closeModal();
       } catch (err) { console.error(err); alert("Errore aggiornamento prodotto!"); }
     });
@@ -349,4 +306,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     loadProdotti();
   }
+
+  // Avvio controllo accesso
+  await checkAccess();
+
 });
+
