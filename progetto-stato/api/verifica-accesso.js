@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+// api/verifica-accesso.js
+import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -6,20 +7,35 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo non consentito' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Metodo non consentito" });
+  }
 
-  const { ip } = req.body;
-  if (!ip) return res.status(400).json({ error: 'IP richiesto' });
+  try {
+    const { email, ip } = req.body;
+    if (!email || !ip) {
+      return res.status(400).json({ error: "Email e IP richiesti" });
+    }
 
-  const { data, error } = await supabase
-    .from('richieste_accesso')
-    .select('*')
-    .eq('ip', ip)
-    .eq('approved', true)
-    .single();
+    const { data, error } = await supabase
+      .from("richieste_accesso")
+      .select("approvato")
+      .eq("email", email)
+      .eq("ip", ip)
+      .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') return res.status(500).json({ error: error.message });
+    if (error) {
+      console.error("Errore Supabase SELECT:", error);
+      return res.status(500).json({ error: error.message });
+    }
 
-  if (data) return res.status(200).json({ approved: true });
-  return res.status(200).json({ approved: false });
+    if (!data) {
+      return res.status(404).json({ error: "Richiesta non trovata" });
+    }
+
+    return res.status(200).json({ approvato: data.approvato });
+  } catch (err) {
+    console.error("Errore API verifica-accesso:", err);
+    return res.status(500).json({ error: "Errore interno server" });
+  }
 }
