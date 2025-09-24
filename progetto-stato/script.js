@@ -84,6 +84,7 @@ function createProductLi(p, showGiacenza = false) {
 
 
 
+
   function resetAll() {
     results.innerHTML = "";
     categorieContainer.innerHTML = "";
@@ -282,6 +283,7 @@ if (isAdmin) {
 
   loadProdotti();
 });
+
 
 
 
