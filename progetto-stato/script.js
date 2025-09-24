@@ -44,39 +44,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Crea li prodotto
-  function createProductLi(p, showGiacenza = false) {
-    const li = document.createElement("li");
-    li.style.borderBottom = "1px solid #ccc";
-    li.style.padding = "5px 0";
+// Crea li prodotto
+function createProductLi(p, showGiacenza = false) {
+  const li = document.createElement("li");
+  li.style.borderBottom = "1px solid #ccc";
+  li.style.padding = "5px 0";
 
-    const keyParts = p.Descrizione.split("_");
-    const nome = keyParts[0];
-    const taglio = keyParts[keyParts.length - 1];
-    const middle = keyParts.slice(1, keyParts.length - 1).join("_");
+  const keyParts = p.Descrizione.split("_");
+  const nome = keyParts[0];
+  const taglio = keyParts[keyParts.length - 1];
+  const middle = keyParts.slice(1, keyParts.length - 1).join("_");
 
-    let content = `<strong style="color:black;">${nome}</strong>`;
-    if (middle) content += ` <span style="color:#999;">${middle}</span>`;
-    content += ` <span style="color:#2ecc71;">${taglio}</span>`;
+  let content = `<strong style="color:black;">${nome}</strong>`;
+  if (middle) content += ` <span style="color:#999;">${middle}</span>`;
+  content += ` <span style="color:#2ecc71;">${taglio}</span>`;
 
-    if (showGiacenza) {
-      content += ` — <span style="color:red;">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
-    }
+  // 👇 Mostra SEMPRE giacenza / scorta minima
+  content += ` — <span style="color:red;">${p.Giacenza}</span>/<span style="color:blue;">${p.ScortaMinima}</span>`;
 
-    if (p.inordine && p.inordine > 0) {
-      content += `<br>🛒 In ordine: ${p.inordine}`;
-    }
-
-    if (p.ImageURL) {
-      content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
-    } else {
-      content += `<br><em>(img non presente)</em>`;
-    }
-
-    li.innerHTML = content;
-    li.addEventListener("click", () => openModal(p));
-    return li;
+  if (p.inordine && p.inordine > 0) {
+    content += `<br>🛒 In ordine: ${p.inordine}`;
   }
+
+  if (p.ImageURL) {
+    content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
+  } else {
+    content += `<br><em>(img non presente)</em>`;
+  }
+
+  li.innerHTML = content;
+  li.addEventListener("click", () => openModal(p));
+  return li;
+}
+
 
   function resetAll() {
     results.innerHTML = "";
@@ -276,4 +276,5 @@ if (isAdmin) {
 
   loadProdotti();
 });
+
 
