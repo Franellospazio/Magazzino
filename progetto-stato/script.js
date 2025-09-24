@@ -59,8 +59,13 @@ function createProductLi(p, showGiacenza = false) {
   if (middle) content += ` <span style="color:#999;">${middle}</span>`;
   content += ` <span style="color:#2ecc71;">${taglio}</span>`;
 
-  // 👇 Mostra SEMPRE giacenza / scorta minima
-  content += ` — <span style="color:red;">${p.Giacenza}</span>/<span style="color:blue;">${p.ScortaMinima}</span>`;
+  // 👇 Colore dinamico per la giacenza
+  let giacenzaColor = "green";
+  if (p.Giacenza < p.ScortaMinima) giacenzaColor = "red";
+  else if (p.Giacenza === p.ScortaMinima) giacenzaColor = "orange";
+
+  // 👇 Giacenza (Scorta Minima)
+  content += ` — <span style="color:${giacenzaColor};">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
 
   if (p.inordine && p.inordine > 0) {
     content += `<br>🛒 In ordine: ${p.inordine}`;
@@ -76,6 +81,7 @@ function createProductLi(p, showGiacenza = false) {
   li.addEventListener("click", () => openModal(p));
   return li;
 }
+
 
 
   function resetAll() {
@@ -276,5 +282,6 @@ if (isAdmin) {
 
   loadProdotti();
 });
+
 
 
