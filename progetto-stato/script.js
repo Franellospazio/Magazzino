@@ -224,6 +224,8 @@ document.addEventListener("DOMContentLoaded", () => {
         minute: '2-digit'
       });
       descrizioneText += ` <span style="color:#666; font-size:14px;">(${dataOra})</span>`;
+    } else {
+      descrizioneText += ` <span style="color:#999; font-size:14px; font-style:italic;">(mai aggiornato)</span>`;
     }
     modalDescrizione.innerHTML = descrizioneText;
 
@@ -311,11 +313,42 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
 
-      // 👇 NUOVO: Aggiorna anche il timestamp locale
+      // Aggiorna il timestamp locale
       selectedProdotto.Giacenza = giacenzaNum;
       selectedProdotto.inordine = inOrdineNum;
       selectedProdotto.ScortaMinima = scortaMinimaNum;
       selectedProdotto.ultimo_aggiornamento = new Date().toISOString();
+
+      // 👇 NUOVO: Invia email se NON admin e giacenza < scorta minima
+      if (!isAdmin && giacenzaNum < scortaMinimaNum) {
+        const now = new Date();
+        const dataOra = now.toLocaleString('it-IT', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        try {
+          await emailjs.send(
+            'service_487ujbw',      // Service ID
+            'template_l5an0k5',     // Template ID
+            {
+              title: 'Update Magazzino',
+              prodotto: selectedProdotto.Descrizione,
+              giacenza: giacenzaNum,
+              scorta: scortaMinimaNum,
+              time: dataOra,
+              to_email: 'f.disabatino@sepack-lab.it'
+            }
+          );
+          console.log('Email sottoscorta inviata con successo');
+        } catch (emailErr) {
+          console.error('Errore invio email:', emailErr);
+          // Non bloccare il flusso se l'email fallisce
+        }
+      }
 
       closeModal();
       
