@@ -28,6 +28,39 @@ document.addEventListener("DOMContentLoaded", () => {
   const ADMIN_PASSWORD = "ori3";
   const STICKER_URL = "https://wonuzdqupujzeqhucxok.supabase.co/storage/v1/object/public/Admin/IMG_9082.webp";
 
+  // Funzione per formattare la data in modo leggibile
+  function formatData(timestamp) {
+    if (!timestamp) return "Mai aggiornato";
+    
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    // Se è stato aggiornato oggi
+    if (diffDays === 0) {
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      if (diffHours === 0) {
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        return diffMins <= 1 ? "Adesso" : `${diffMins} minuti fa`;
+      }
+      return diffHours === 1 ? "1 ora fa" : `${diffHours} ore fa`;
+    }
+    
+    // Se è stato aggiornato ieri
+    if (diffDays === 1) return "Ieri";
+    
+    // Se è stato aggiornato questa settimana
+    if (diffDays < 7) return `${diffDays} giorni fa`;
+    
+    // Altrimenti mostra la data completa
+    return date.toLocaleDateString('it-IT', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    });
+  }
+
   // Password admin
   adminBtn.addEventListener("click", () => {
     const pw = prompt("Inserisci password admin (4 caratteri):");
@@ -44,46 +77,49 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-// Crea li prodotto
-function createProductLi(p, showGiacenza = false) {
-  const li = document.createElement("li");
-  li.style.borderBottom = "1px solid #ccc";
-  li.style.padding = "5px 0";
+  // Crea li prodotto
+  function createProductLi(p, showGiacenza = false) {
+    const li = document.createElement("li");
+    li.style.borderBottom = "1px solid #ccc";
+    li.style.padding = "5px 0";
 
-  const keyParts = p.Descrizione.split("_");
-  const nome = keyParts[0];
-  const taglio = keyParts[keyParts.length - 1];
-  const middle = keyParts.slice(1, keyParts.length - 1).join("_");
+    const keyParts = p.Descrizione.split("_");
+    const nome = keyParts[0];
+    const taglio = keyParts[keyParts.length - 1];
+    const middle = keyParts.slice(1, keyParts.length - 1).join("_");
 
-  let content = `<strong style="color:black;">${nome}</strong>`;
-  if (middle) content += ` <span style="color:#999;">${middle}</span>`;
-  content += ` <span style="color:#2ecc71;">${taglio}</span>`;
+    let content = `<strong style="color:black;">${nome}</strong>`;
+    if (middle) content += ` <span style="color:#999;">${middle}</span>`;
+    content += ` <span style="color:#2ecc71;">${taglio}</span>`;
 
-  // 👇 Colore dinamico per la giacenza
-  let giacenzaColor = "green";
-  if (p.Giacenza < p.ScortaMinima) giacenzaColor = "red";
-  else if (p.Giacenza === p.ScortaMinima) giacenzaColor = "orange";
+    // Colore dinamico per la giacenza
+    let giacenzaColor = "green";
+    if (p.Giacenza < p.ScortaMinima) giacenzaColor = "red";
+    else if (p.Giacenza === p.ScortaMinima) giacenzaColor = "orange";
 
-  // 👇 Giacenza (Scorta Minima)
-  content += ` — <span style="color:${giacenzaColor};">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
+    // Giacenza (Scorta Minima)
+    content += ` — <span style="color:${giacenzaColor};">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
 
-  if (p.inordine && p.inordine > 0) {
-    content += `<br>🛒 In ordine: ${p.inordine}`;
+    if (p.inordine && p.inordine > 0) {
+      content += `<br>🛒 In ordine: ${p.inordine}`;
+    }
+
+    // 👇 NUOVO: Aggiungi data ultimo aggiornamento
+    if (p.ultimo_aggiornamento) {
+      const dataFormatted = formatData(p.ultimo_aggiornamento);
+      content += `<br><span style="color:#666; font-size:12px;">📅 Aggiornato: ${dataFormatted}</span>`;
+    }
+
+    if (p.ImageURL) {
+      content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
+    } else {
+      content += `<br><em>(img non presente)</em>`;
+    }
+
+    li.innerHTML = content;
+    li.addEventListener("click", () => openModal(p));
+    return li;
   }
-
-  if (p.ImageURL) {
-    content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
-  } else {
-    content += `<br><em>(img non presente)</em>`;
-  }
-
-  li.innerHTML = content;
-  li.addEventListener("click", () => openModal(p));
-  return li;
-}
-
-
-
 
   function resetAll() {
     results.innerHTML = "";
@@ -175,43 +211,56 @@ function createProductLi(p, showGiacenza = false) {
   function openModal(prodotto) {
     selectedProdotto = prodotto;
     modalTitle.textContent = isAdmin ? "Aggiorna prodotto" : "Aggiorna giacenza";
-    modalDescrizione.textContent = `Prodotto: ${prodotto.Descrizione}`;
+    
+    // 👇 Mostra data e ora accanto al nome prodotto
+    let descrizioneText = `Prodotto: ${prodotto.Descrizione}`;
+    if (prodotto.ultimo_aggiornamento) {
+      const date = new Date(prodotto.ultimo_aggiornamento);
+      const dataOra = date.toLocaleString('it-IT', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      descrizioneText += ` <span style="color:#666; font-size:14px;">(${dataOra})</span>`;
+    }
+    modalDescrizione.innerHTML = descrizioneText;
 
     // Scorta minima
     modalScorta.innerHTML = `Scorta minima: <span id="scortaMinSpan" class="min-qty">${prodotto.ScortaMinima}</span>`;
 
     // Modal admin
-if (isAdmin) {
-  const inOrdineVal = prodotto.inordine ?? 0;
+    if (isAdmin) {
+      const inOrdineVal = prodotto.inordine ?? 0;
 
-  // Inserisci markup con classi CSS già definite
-  modalScorta.innerHTML += `
-    <br>In ordine:
-    <div id="adminInOrdineContainerDynamic" class="admin-in-ordine-container">
-      <button type="button" id="decInOrdine" class="qty-btn minus">−</button>
-      <span id="inOrdineValue" class="qty-number qty-blue">${inOrdineVal}</span>
-      <button type="button" id="incInOrdine" class="qty-btn plus">+</button>
-    </div>
-    <br>Modifica scorta minima: 
-    <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" class="admin-scorta-input">
-  `;
+      modalScorta.innerHTML += `
+        <br>In ordine:
+        <div id="adminInOrdineContainerDynamic" class="admin-in-ordine-container">
+          <button type="button" id="decInOrdine" class="qty-btn minus">−</button>
+          <span id="inOrdineValue" class="qty-number qty-blue">${inOrdineVal}</span>
+          <button type="button" id="incInOrdine" class="qty-btn plus">+</button>
+        </div>
+        <br>Modifica scorta minima: 
+        <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" class="admin-scorta-input">
+      `;
 
-  const decInOrdine = document.getElementById("decInOrdine");
-  const incInOrdine = document.getElementById("incInOrdine");
-  const inOrdineValue = document.getElementById("inOrdineValue");
+      const decInOrdine = document.getElementById("decInOrdine");
+      const incInOrdine = document.getElementById("incInOrdine");
+      const inOrdineValue = document.getElementById("inOrdineValue");
 
-  decInOrdine.addEventListener("click", () => {
-    let val = parseInt(inOrdineValue.textContent);
-    if (val > 0) val--;
-    inOrdineValue.textContent = val;
-  });
+      decInOrdine.addEventListener("click", () => {
+        let val = parseInt(inOrdineValue.textContent);
+        if (val > 0) val--;
+        inOrdineValue.textContent = val;
+      });
 
-  incInOrdine.addEventListener("click", () => {
-    let val = parseInt(inOrdineValue.textContent);
-    val++;
-    inOrdineValue.textContent = val;
-  });
-}
+      incInOrdine.addEventListener("click", () => {
+        let val = parseInt(inOrdineValue.textContent);
+        val++;
+        inOrdineValue.textContent = val;
+      });
+    }
 
     counterValue.textContent = prodotto.Giacenza;
     aggiornaColore(document.getElementById("scortaMinSpan"));
@@ -262,12 +311,33 @@ if (isAdmin) {
       });
       if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
 
+      // 👇 NUOVO: Aggiorna anche il timestamp locale
       selectedProdotto.Giacenza = giacenzaNum;
       selectedProdotto.inordine = inOrdineNum;
       selectedProdotto.ScortaMinima = scortaMinimaNum;
+      selectedProdotto.ultimo_aggiornamento = new Date().toISOString();
 
       closeModal();
-    } catch (err) { console.error(err); alert("Errore aggiornamento prodotto!"); }
+      
+      // Ricarica i risultati se stai visualizzando qualcosa
+      if (showingAll) {
+        results.innerHTML = "";
+        prodotti.forEach(p => results.appendChild(createProductLi(p)));
+      } else if (showingSottoscorta) {
+        results.innerHTML = "";
+        const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
+        sottoscorta.forEach(p => results.appendChild(createProductLi(p, true)));
+      } else if (showingCategorie && activeCategoryBtn) {
+        results.innerHTML = "";
+        const cat = activeCategoryBtn.textContent;
+        const filtrati = prodotti.filter(p => p.categoria === cat);
+        filtrati.forEach(p => results.appendChild(createProductLi(p)));
+      }
+      
+    } catch (err) { 
+      console.error(err); 
+      alert("Errore aggiornamento prodotto!"); 
+    }
   });
 
   closeBtn.addEventListener("click", closeModal);
@@ -283,7 +353,3 @@ if (isAdmin) {
 
   loadProdotti();
 });
-
-
-
-
