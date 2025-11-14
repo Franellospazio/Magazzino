@@ -14,23 +14,27 @@ export default async function handler(req, res) {
       .from("Magazzino")
       .select("*")
       .order("Descrizione", { ascending: true });
-
+    
     if (error) {
       console.error("Errore GET Supabase:", error);
       return res.status(500).json({ error: error.message });
     }
-
     return res.status(200).json(data);
   }
 
   if (req.method === "PATCH") {
     const { descrizione, Giacenza, ScortaMinima, inordine } = req.body;
-
+    
     if (!descrizione || Giacenza === undefined) {
       return res.status(400).json({ error: "descrizione e Giacenza richiesti" });
     }
 
-    const updateData = { Giacenza };
+    // Prepara i dati da aggiornare includendo il timestamp
+    const updateData = { 
+      Giacenza,
+      ultimo_aggiornamento: new Date().toISOString() // 👈 Aggiungi timestamp
+    };
+    
     if (ScortaMinima !== undefined) updateData.ScortaMinima = ScortaMinima;
     if (inordine !== undefined) updateData.inordine = inordine;
 
