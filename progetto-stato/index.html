@@ -11,7 +11,7 @@
       bottom: 20px;
       left: 20px;
       z-index: 10000;
-      background-color: #e67e22;
+      background-color: #27ae60;
       color: white;
       border: none;
       padding: 12px 20px;
@@ -26,7 +26,7 @@
       gap: 6px;
     }
     #adrBtn:hover {
-      background-color: #d35400;
+      background-color: #1e8449;
     }
   </style>
 </head>
@@ -62,13 +62,10 @@
       <span class="close">&times;</span>
       <h2 id="adminModalTitle">Modalità Amministratore</h2>
       <p id="adminModalDescrizione"></p>
-      <!-- Giacenza -->
       <label for="adminGiacenza">Giacenza:</label>
       <input type="number" id="adminGiacenza" min="0">
-      <!-- Scorta minima -->
       <label for="adminScortaMinima">Scorta minima:</label>
       <input type="number" id="adminScortaMinima" min="0">
-      <!-- In ordine con layout orizzontale -->
       <label for="adminInOrdine">In ordine:</label>
       <div id="adminInOrdineContainer">
         <button class="minus" type="button">−</button>
@@ -81,12 +78,12 @@
   <!-- EmailJS SDK v4 -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>
-    emailjs.init("BnJLQgx-iX-2J45cy"); // inserisci la tua Public Key
+    emailjs.init("BnJLQgx-iX-2J45cy");
   </script>
   <script src="script.js"></script>
   <!-- Pulsante admin -->
   <button id="adminBtn">🛠️ Admin</button>
-  <!-- Pulsante etichette ADR -->
-  <a id="adrBtn" href="etichette_adr.html" target="_blank">🚨 Etichette ADR</a>
+  <!-- Pulsante etichette -->
+  <a id="adrBtn" href="etichette_adr.html" target="_blank">🏷️ Etichette</a>
 </body>
 </html>
