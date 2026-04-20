@@ -5,6 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stato Magazzino</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    #adrBtn {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      z-index: 10000;
+      background-color: #e67e22;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 50px;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      transition: background 0.2s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #adrBtn:hover {
+      background-color: #d35400;
+    }
+  </style>
 </head>
 <body>
   <div class="wrap">
@@ -17,7 +41,6 @@
     </div>
     <ul id="results" class="results"></ul>
   </div>
-
   <!-- Modal per aggiornare giacenza (utente normale) -->
   <div id="giacenzaModal" class="modal">
     <div class="modal-content">
@@ -25,32 +48,26 @@
       <h2 id="modalTitle">Vuoi aggiornare giacenza?</h2>
       <p id="modalDescrizione"></p>
       <p id="modalScorta">Scorta minima: <span id="scortaMinValue"></span></p>
-
       <div class="counter-container">
         <button id="decrement" class="qty-btn minus" type="button">−</button>
         <span id="counterValue" class="qty-number">0</span>
         <button id="increment" class="qty-btn plus" type="button">+</button>
       </div>
-
       <button id="aggiornaBtn">Aggiorna</button>
     </div>
   </div>
-
   <!-- Modal Admin -->
   <div id="adminModal" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
       <h2 id="adminModalTitle">Modalità Amministratore</h2>
       <p id="adminModalDescrizione"></p>
-
       <!-- Giacenza -->
       <label for="adminGiacenza">Giacenza:</label>
       <input type="number" id="adminGiacenza" min="0">
-
       <!-- Scorta minima -->
       <label for="adminScortaMinima">Scorta minima:</label>
       <input type="number" id="adminScortaMinima" min="0">
-
       <!-- In ordine con layout orizzontale -->
       <label for="adminInOrdine">In ordine:</label>
       <div id="adminInOrdineContainer">
@@ -58,20 +75,18 @@
         <span id="adminInOrdineValue">0</span>
         <button class="plus" type="button">+</button>
       </div>
-
       <button id="adminAggiornaBtn">Aggiorna</button>
     </div>
   </div>
-
   <!-- EmailJS SDK v4 -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>
     emailjs.init("BnJLQgx-iX-2J45cy"); // inserisci la tua Public Key
   </script>
-
   <script src="script.js"></script>
-
   <!-- Pulsante admin -->
   <button id="adminBtn">🛠️ Admin</button>
+  <!-- Pulsante etichette ADR -->
+  <a id="adrBtn" href="etichette_adr.html" target="_blank">🚨 Etichette ADR</a>
 </body>
 </html>
