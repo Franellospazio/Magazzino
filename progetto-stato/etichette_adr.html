@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Etichette ADR Rifiuti</title>
+  <title>Etichette Rifiuti</title>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -104,8 +104,9 @@
     }
     .card:hover { border-color: var(--accent); transform: translateY(-1px); }
 
+    /* HEADER CARD */
     .card-header {
-      padding: 14px 18px;
+      padding: 16px 18px;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -115,25 +116,40 @@
     }
 
     .cer-badge {
-      background: var(--bg);
-      border: 1.5px solid var(--border);
+      background: #1e3a5f;
+      border: 1.5px solid #2d5a9e;
       border-radius: 6px;
-      padding: 4px 10px;
+      padding: 5px 11px;
       font-family: 'Barlow Condensed', sans-serif;
       font-size: 13px;
       font-weight: 700;
-      color: var(--accent);
-      letter-spacing: 0.05em;
+      color: #7eb8f7;
+      letter-spacing: 0.06em;
       white-space: nowrap;
     }
 
     .card-name {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 20px;
+      font-size: 28px;
       font-weight: 800;
       color: var(--white);
-      letter-spacing: 0.02em;
+      letter-spacing: 0.03em;
       flex: 1;
+      text-transform: uppercase;
+      text-shadow: 0 1px 8px rgba(240,192,64,0.15);
+    }
+
+    .sepack-badge {
+      background: #1a3a2a;
+      border: 1.5px solid #2d7a4f;
+      border-radius: 6px;
+      padding: 5px 11px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: #5fbb85;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
     }
 
     .packaging {
@@ -147,6 +163,7 @@
       border: 1px solid var(--border);
     }
 
+    /* BODY CARD */
     .card-body {
       padding: 16px 18px;
       display: flex;
@@ -197,6 +214,7 @@
       line-height: 1.2;
     }
 
+    /* ONU box */
     .info-strip {
       display: flex;
       flex-direction: column;
@@ -204,40 +222,38 @@
       align-items: center;
     }
 
-    .un-badge {
+    .onu-badge {
       background: var(--bg);
-      border: 1.5px solid var(--accent);
+      border: 2px solid var(--accent);
       border-radius: 8px;
-      padding: 8px 16px;
+      padding: 10px 18px;
       text-align: center;
+      min-width: 90px;
     }
-    .un-badge .un-label {
+    .onu-badge .onu-label {
       font-size: 9px;
       font-weight: 700;
       letter-spacing: 0.15em;
       text-transform: uppercase;
       color: var(--muted);
+      display: block;
+      margin-bottom: 2px;
     }
-    .un-badge .un-number {
+    .onu-badge .onu-number {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 26px;
+      font-size: 30px;
       font-weight: 800;
       color: var(--accent);
       letter-spacing: 0.05em;
       display: block;
-    }
-
-    .uni-img {
-      width: 72px;
-      height: 72px;
-      object-fit: contain;
-      opacity: 0.9;
+      line-height: 1;
     }
 
     @media (max-width: 500px) {
-      .label-item img, .uni-img { width: 56px; height: 56px; }
+      .label-item img { width: 56px; height: 56px; }
       .subtitle { display: none; }
       header h1 { font-size: 18px; }
+      .card-name { font-size: 22px; }
     }
   </style>
 </head>
@@ -245,7 +261,7 @@
 
 <header>
   <a class="back-btn" href="javascript:history.back()">← Indietro</a>
-  <h1>Etichette <span>ADR</span> Rifiuti</h1>
+  <h1>🏷️ <span>Etichette</span> Rifiuti</h1>
   <span class="subtitle">Sepack · Riferimento interno</span>
 </header>
 
@@ -258,6 +274,7 @@
       <div class="card-header">
         <span class="cer-badge">CER 15.01.10*</span>
         <span class="card-name">Vetro</span>
+        <span class="sepack-badge">Sepack</span>
         <span class="packaging">📦 Fusti 200 L</span>
       </div>
       <div class="card-body">
@@ -281,21 +298,20 @@
               <span>Infiammabile</span>
             </div>
             <div class="label-item">
-              <img src="/images/9.png" alt="Classe 9">
-              <span>Cl. 9</span>
+              <img src="/images/teschio.png" alt="Tossico">
+              <span>Tossico</span>
             </div>
             <div class="label-item">
-              <img src="/images/sepack.png" alt="Sepack">
-              <span>Sepack</span>
+              <img src="/images/9.png" alt="Classe 9">
+              <span>Cl. 9</span>
             </div>
           </div>
         </div>
         <div class="info-strip">
-          <div class="un-badge">
-            <div class="un-label">N° ONU</div>
-            <span class="un-number">3509</span>
+          <div class="onu-badge">
+            <span class="onu-label">N° ONU</span>
+            <span class="onu-number">3509</span>
           </div>
-          <img class="uni-img" src="/images/uni.png" alt="UNI">
         </div>
       </div>
     </div>
@@ -305,6 +321,7 @@
       <div class="card-header">
         <span class="cer-badge">CER 15.02.02*</span>
         <span class="card-name">Assorbenti</span>
+        <span class="sepack-badge">Sepack</span>
         <span class="packaging">📦 Fusti 60 L</span>
       </div>
       <div class="card-body">
@@ -323,18 +340,13 @@
               <img src="/images/9.png" alt="Classe 9">
               <span>Cl. 9</span>
             </div>
-            <div class="label-item">
-              <img src="/images/sepack.png" alt="Sepack">
-              <span>Sepack</span>
-            </div>
           </div>
         </div>
         <div class="info-strip">
-          <div class="un-badge">
-            <div class="un-label">N° ONU</div>
-            <span class="un-number">3077</span>
+          <div class="onu-badge">
+            <span class="onu-label">N° ONU</span>
+            <span class="onu-number">3077</span>
           </div>
-          <img class="uni-img" src="/images/uni.png" alt="UNI">
         </div>
       </div>
     </div>
@@ -344,6 +356,7 @@
       <div class="card-header">
         <span class="cer-badge">CER 16.05.06*</span>
         <span class="card-name">ACIDI</span>
+        <span class="sepack-badge">Sepack</span>
         <span class="packaging">🧴 Taniche 30 L</span>
       </div>
       <div class="card-body">
@@ -362,18 +375,13 @@
               <img src="/images/9.png" alt="Classe 9">
               <span>Cl. 9</span>
             </div>
-            <div class="label-item">
-              <img src="/images/sepack.png" alt="Sepack">
-              <span>Sepack</span>
-            </div>
           </div>
         </div>
         <div class="info-strip">
-          <div class="un-badge">
-            <div class="un-label">N° ONU</div>
-            <span class="un-number">3289</span>
+          <div class="onu-badge">
+            <span class="onu-label">N° ONU</span>
+            <span class="onu-number">3289</span>
           </div>
-          <img class="uni-img" src="/images/uni.png" alt="UNI">
         </div>
       </div>
     </div>
@@ -383,6 +391,7 @@
       <div class="card-header">
         <span class="cer-badge">CER 16.05.06*</span>
         <span class="card-name">SOLVENTI</span>
+        <span class="sepack-badge">Sepack</span>
         <span class="packaging">🧴 Taniche 10 L</span>
       </div>
       <div class="card-body">
@@ -402,21 +411,20 @@
               <span>Infiammabile</span>
             </div>
             <div class="label-item">
-              <img src="/images/9.png" alt="Classe 9">
-              <span>Cl. 9</span>
+              <img src="/images/teschio.png" alt="Tossico">
+              <span>Tossico</span>
             </div>
             <div class="label-item">
-              <img src="/images/sepack.png" alt="Sepack">
-              <span>Sepack</span>
+              <img src="/images/9.png" alt="Classe 9">
+              <span>Cl. 9</span>
             </div>
           </div>
         </div>
         <div class="info-strip">
-          <div class="un-badge">
-            <div class="un-label">N° ONU</div>
-            <span class="un-number">1992</span>
+          <div class="onu-badge">
+            <span class="onu-label">N° ONU</span>
+            <span class="onu-number">1992</span>
           </div>
-          <img class="uni-img" src="/images/uni.png" alt="UNI">
         </div>
       </div>
     </div>
@@ -426,6 +434,7 @@
       <div class="card-header">
         <span class="cer-badge">CER 16.05.06*</span>
         <span class="card-name">Vials Varie</span>
+        <span class="sepack-badge">Sepack</span>
         <span class="packaging">📦 Fusti 30 L</span>
       </div>
       <div class="card-body">
@@ -444,18 +453,13 @@
               <img src="/images/9.png" alt="Classe 9">
               <span>Cl. 9</span>
             </div>
-            <div class="label-item">
-              <img src="/images/sepack.png" alt="Sepack">
-              <span>Sepack</span>
-            </div>
           </div>
         </div>
         <div class="info-strip">
-          <div class="un-badge">
-            <div class="un-label">N° ONU</div>
-            <span class="un-number">3316</span>
+          <div class="onu-badge">
+            <span class="onu-label">N° ONU</span>
+            <span class="onu-number">3316</span>
           </div>
-          <img class="uni-img" src="/images/uni.png" alt="UNI">
         </div>
       </div>
     </div>
@@ -465,6 +469,7 @@
       <div class="card-header">
         <span class="cer-badge">CER 16.05.06*</span>
         <span class="card-name">SOLIDO</span>
+        <span class="sepack-badge">Sepack</span>
         <span class="packaging">📦 Fusti 60 L</span>
       </div>
       <div class="card-body">
@@ -483,18 +488,13 @@
               <img src="/images/9.png" alt="Classe 9">
               <span>Cl. 9</span>
             </div>
-            <div class="label-item">
-              <img src="/images/sepack.png" alt="Sepack">
-              <span>Sepack</span>
-            </div>
           </div>
         </div>
         <div class="info-strip">
-          <div class="un-badge">
-            <div class="un-label">N° ONU</div>
-            <span class="un-number">3316</span>
+          <div class="onu-badge">
+            <span class="onu-label">N° ONU</span>
+            <span class="onu-number">3316</span>
           </div>
-          <img class="uni-img" src="/images/uni.png" alt="UNI">
         </div>
       </div>
     </div>
