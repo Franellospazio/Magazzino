@@ -138,13 +138,7 @@
     /* CORPO CARD */
     .card-body {
       padding: 16px 18px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      align-items: center;
     }
-
-    .labels-section { flex: 1; min-width: 220px; }
 
     .labels-section h4 {
       font-size: 10px;
@@ -155,6 +149,7 @@
       margin-bottom: 12px;
     }
 
+    /* Unica riga per tutte le etichette */
     .labels-row {
       display: flex;
       flex-wrap: wrap;
@@ -162,22 +157,29 @@
       align-items: flex-end;
     }
 
-    /* Etichetta immagine */
-    .label-item {
+    /* Box base — stessa dimensione per tutti */
+    .lbl {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 5px;
+      flex-shrink: 0;
     }
 
-    .label-item img {
+    .lbl-box {
       width: 72px;
       height: 72px;
-      object-fit: contain;
-      border-radius: 4px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 6px;
+      overflow: hidden;
     }
 
-    .label-item span {
+    .lbl-caption {
       font-size: 9px;
       font-weight: 600;
       letter-spacing: 0.08em;
@@ -187,125 +189,83 @@
       line-height: 1.2;
     }
 
-    /* Etichette testo (CER, Sepack, ONU) — stesso stile visivo */
-    .label-text {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 5px;
+    /* Immagine */
+    .lbl-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 4px;
     }
 
-    .label-text-box {
-      width: 72px;
-      height: 72px;
-      border-radius: 6px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 4px;
-    }
-
-    .label-text-box.cer {
+    /* CER */
+    .lbl-box.cer {
       background: #1e3a5f;
       border: 1.5px solid #2d5a9e;
     }
-    .label-text-box.cer .lbl-title {
+    .lbl-box.cer .t1 {
       font-size: 9px;
       font-weight: 700;
       letter-spacing: 0.1em;
       color: #7eb8f7;
       text-transform: uppercase;
+      line-height: 1;
     }
-    .label-text-box.cer .lbl-value {
+    .lbl-box.cer .t2 {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 800;
       color: #ffffff;
-      line-height: 1.1;
-      margin-top: 2px;
+      line-height: 1.2;
+      margin-top: 3px;
+      word-break: break-all;
     }
 
-    .label-text-box.sepack {
+    /* Sepack */
+    .lbl-box.sepack {
       background: #1a3a2a;
       border: 1.5px solid #2d7a4f;
     }
-    .label-text-box.sepack .lbl-title {
-      font-size: 9px;
+    .lbl-box.sepack .t1 {
+      font-size: 8px;
       font-weight: 700;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.08em;
       color: #5fbb85;
       text-transform: uppercase;
+      line-height: 1;
     }
-    .label-text-box.sepack .lbl-value {
+    .lbl-box.sepack .t2 {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 800;
       color: #ffffff;
       line-height: 1.1;
-      margin-top: 2px;
+      margin-top: 3px;
     }
 
-    .label-text span {
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      text-align: center;
-    }
-
-    /* ONU — stesso formato ma a destra */
-    .info-strip {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .onu-badge {
-      width: 72px;
-      height: 72px;
+    /* ONU */
+    .lbl-box.onu {
       background: var(--bg);
       border: 2px solid var(--accent);
-      border-radius: 6px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
     }
-    .onu-badge .onu-label {
-      font-size: 9px;
+    .lbl-box.onu .t1 {
+      font-size: 8px;
       font-weight: 700;
       letter-spacing: 0.1em;
-      text-transform: uppercase;
       color: var(--accent);
+      text-transform: uppercase;
+      line-height: 1;
     }
-    .onu-badge .onu-number {
+    .lbl-box.onu .t2 {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 800;
       color: var(--white);
-      letter-spacing: 0.03em;
       line-height: 1;
-      margin-top: 2px;
-    }
-
-    .onu-label-text {
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      text-align: center;
+      margin-top: 3px;
     }
 
     @media (max-width: 500px) {
-      .label-item img,
-      .label-text-box,
-      .onu-badge { width: 56px; height: 56px; }
+      .lbl-box { width: 56px; height: 56px; }
       .subtitle { display: none; }
       header h1 { font-size: 18px; }
       .card-name { font-size: 22px; }
@@ -324,7 +284,7 @@
   <div class="section-title">Rifiuti catalogati — Etichette da apporre sui contenitori</div>
   <div class="cards-grid">
 
-    <!-- 1. VETRO: R, corrosivo, ambiente, infiammabile, teschio -->
+    <!-- 1. VETRO -->
     <div class="card">
       <div class="card-header">
         <span class="card-name">Vetro</span>
@@ -334,53 +294,44 @@
         <div class="labels-section">
           <h4>Etichette da apporre</h4>
           <div class="labels-row">
-            <div class="label-text">
-              <div class="label-text-box cer">
-                <span class="lbl-title">CER</span>
-                <span class="lbl-value">15.01.10*</span>
-              </div>
-              <span>CER</span>
+            <div class="lbl">
+              <div class="lbl-box cer"><span class="t1">CER</span><span class="t2">15.01.10*</span></div>
+              <span class="lbl-caption">CER</span>
             </div>
-            <div class="label-text">
-              <div class="label-text-box sepack">
-                <span class="lbl-title">Produttore</span>
-                <span class="lbl-value">Sepack</span>
-              </div>
-              <span>Sepack</span>
+            <div class="lbl">
+              <div class="lbl-box sepack"><span class="t1">Produttore</span><span class="t2">Sepack</span></div>
+              <span class="lbl-caption">Sepack</span>
             </div>
-            <div class="label-item">
-              <img src="/images/R.png" alt="Rifiuto">
-              <span>Rifiuto</span>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/R.png" alt="Rifiuto"></div>
+              <span class="lbl-caption">Rifiuto</span>
             </div>
-            <div class="label-item">
-              <img src="/images/corrosivo.png" alt="Corrosivo">
-              <span>Corrosivo</span>
+            <div class="lbl">
+              <div class="lbl-box onu"><span class="t1">N° ONU</span><span class="t2">3509</span></div>
+              <span class="lbl-caption">ONU</span>
             </div>
-            <div class="label-item">
-              <img src="/images/ambiente.png" alt="Ambiente">
-              <span>Ambiente</span>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/corrosivo.png" alt="Corrosivo"></div>
+              <span class="lbl-caption">Corrosivo</span>
             </div>
-            <div class="label-item">
-              <img src="/images/infiammabile.png" alt="Infiammabile">
-              <span>Infiammabile</span>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/ambiente.png" alt="Ambiente"></div>
+              <span class="lbl-caption">Ambiente</span>
             </div>
-            <div class="label-item">
-              <img src="/images/teschio.png" alt="Tossico">
-              <span>Tossico</span>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/infiammabile.png" alt="Infiammabile"></div>
+              <span class="lbl-caption">Infiammabile</span>
+            </div>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/teschio.png" alt="Tossico"></div>
+              <span class="lbl-caption">Tossico</span>
             </div>
           </div>
-        </div>
-        <div class="info-strip">
-          <div class="onu-badge">
-            <span class="onu-label">N° ONU</span>
-            <span class="onu-number">3509</span>
-          </div>
-          <span class="onu-label-text">ONU</span>
         </div>
       </div>
     </div>
 
-    <!-- 2. ASSORBENTI: R, ambiente -->
+    <!-- 2. ASSORBENTI -->
     <div class="card">
       <div class="card-header">
         <span class="card-name">Assorbenti</span>
@@ -390,41 +341,32 @@
         <div class="labels-section">
           <h4>Etichette da apporre</h4>
           <div class="labels-row">
-            <div class="label-text">
-              <div class="label-text-box cer">
-                <span class="lbl-title">CER</span>
-                <span class="lbl-value">15.02.02*</span>
-              </div>
-              <span>CER</span>
+            <div class="lbl">
+              <div class="lbl-box cer"><span class="t1">CER</span><span class="t2">15.02.02*</span></div>
+              <span class="lbl-caption">CER</span>
             </div>
-            <div class="label-text">
-              <div class="label-text-box sepack">
-                <span class="lbl-title">Produttore</span>
-                <span class="lbl-value">Sepack</span>
-              </div>
-              <span>Sepack</span>
+            <div class="lbl">
+              <div class="lbl-box sepack"><span class="t1">Produttore</span><span class="t2">Sepack</span></div>
+              <span class="lbl-caption">Sepack</span>
             </div>
-            <div class="label-item">
-              <img src="/images/R.png" alt="Rifiuto">
-              <span>Rifiuto</span>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/R.png" alt="Rifiuto"></div>
+              <span class="lbl-caption">Rifiuto</span>
             </div>
-            <div class="label-item">
-              <img src="/images/ambiente.png" alt="Ambiente">
-              <span>Ambiente</span>
+            <div class="lbl">
+              <div class="lbl-box onu"><span class="t1">N° ONU</span><span class="t2">3077</span></div>
+              <span class="lbl-caption">ONU</span>
+            </div>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/ambiente.png" alt="Ambiente"></div>
+              <span class="lbl-caption">Ambiente</span>
             </div>
           </div>
-        </div>
-        <div class="info-strip">
-          <div class="onu-badge">
-            <span class="onu-label">N° ONU</span>
-            <span class="onu-number">3077</span>
-          </div>
-          <span class="onu-label-text">ONU</span>
         </div>
       </div>
     </div>
 
-    <!-- 3. ACIDI: R, corrosivo, teschio -->
+    <!-- 3. ACIDI -->
     <div class="card">
       <div class="card-header">
         <span class="card-name">ACIDI</span>
@@ -434,45 +376,36 @@
         <div class="labels-section">
           <h4>Etichette da apporre</h4>
           <div class="labels-row">
-            <div class="label-text">
-              <div class="label-text-box cer">
-                <span class="lbl-title">CER</span>
-                <span class="lbl-value">16.05.06*</span>
-              </div>
-              <span>CER</span>
+            <div class="lbl">
+              <div class="lbl-box cer"><span class="t1">CER</span><span class="t2">16.05.06*</span></div>
+              <span class="lbl-caption">CER</span>
             </div>
-            <div class="label-text">
-              <div class="label-text-box sepack">
-                <span class="lbl-title">Produttore</span>
-                <span class="lbl-value">Sepack</span>
-              </div>
-              <span>Sepack</span>
+            <div class="lbl">
+              <div class="lbl-box sepack"><span class="t1">Produttore</span><span class="t2">Sepack</span></div>
+              <span class="lbl-caption">Sepack</span>
             </div>
-            <div class="label-item">
-              <img src="/images/R.png" alt="Rifiuto">
-              <span>Rifiuto</span>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/R.png" alt="Rifiuto"></div>
+              <span class="lbl-caption">Rifiuto</span>
             </div>
-            <div class="label-item">
-              <img src="/images/corrosivo.png" alt="Corrosivo">
-              <span>Corrosivo</span>
+            <div class="lbl">
+              <div class="lbl-box onu"><span class="t1">N° ONU</span><span class="t2">3289</span></div>
+              <span class="lbl-caption">ONU</span>
             </div>
-            <div class="label-item">
-              <img src="/images/teschio.png" alt="Tossico">
-              <span>Tossico</span>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/corrosivo.png" alt="Corrosivo"></div>
+              <span class="lbl-caption">Corrosivo</span>
+            </div>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/teschio.png" alt="Tossico"></div>
+              <span class="lbl-caption">Tossico</span>
             </div>
           </div>
-        </div>
-        <div class="info-strip">
-          <div class="onu-badge">
-            <span class="onu-label">N° ONU</span>
-            <span class="onu-number">3289</span>
-          </div>
-          <span class="onu-label-text">ONU</span>
         </div>
       </div>
     </div>
 
-    <!-- 4. SOLVENTI: R, ambiente, infiammabile, teschio -->
+    <!-- 4. SOLVENTI -->
     <div class="card">
       <div class="card-header">
         <span class="card-name">SOLVENTI</span>
@@ -482,49 +415,40 @@
         <div class="labels-section">
           <h4>Etichette da apporre</h4>
           <div class="labels-row">
-            <div class="label-text">
-              <div class="label-text-box cer">
-                <span class="lbl-title">CER</span>
-                <span class="lbl-value">16.05.06*</span>
-              </div>
-              <span>CER</span>
+            <div class="lbl">
+              <div class="lbl-box cer"><span class="t1">CER</span><span class="t2">16.05.06*</span></div>
+              <span class="lbl-caption">CER</span>
             </div>
-            <div class="label-text">
-              <div class="label-text-box sepack">
-                <span class="lbl-title">Produttore</span>
-                <span class="lbl-value">Sepack</span>
-              </div>
-              <span>Sepack</span>
+            <div class="lbl">
+              <div class="lbl-box sepack"><span class="t1">Produttore</span><span class="t2">Sepack</span></div>
+              <span class="lbl-caption">Sepack</span>
             </div>
-            <div class="label-item">
-              <img src="/images/R.png" alt="Rifiuto">
-              <span>Rifiuto</span>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/R.png" alt="Rifiuto"></div>
+              <span class="lbl-caption">Rifiuto</span>
             </div>
-            <div class="label-item">
-              <img src="/images/ambiente.png" alt="Ambiente">
-              <span>Ambiente</span>
+            <div class="lbl">
+              <div class="lbl-box onu"><span class="t1">N° ONU</span><span class="t2">1992</span></div>
+              <span class="lbl-caption">ONU</span>
             </div>
-            <div class="label-item">
-              <img src="/images/infiammabile.png" alt="Infiammabile">
-              <span>Infiammabile</span>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/ambiente.png" alt="Ambiente"></div>
+              <span class="lbl-caption">Ambiente</span>
             </div>
-            <div class="label-item">
-              <img src="/images/teschio.png" alt="Tossico">
-              <span>Tossico</span>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/infiammabile.png" alt="Infiammabile"></div>
+              <span class="lbl-caption">Infiammabile</span>
+            </div>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/teschio.png" alt="Tossico"></div>
+              <span class="lbl-caption">Tossico</span>
             </div>
           </div>
-        </div>
-        <div class="info-strip">
-          <div class="onu-badge">
-            <span class="onu-label">N° ONU</span>
-            <span class="onu-number">1992</span>
-          </div>
-          <span class="onu-label-text">ONU</span>
         </div>
       </div>
     </div>
 
-    <!-- 5. VIALS VARIE: R, ambiente, 9 -->
+    <!-- 5. VIALS VARIE -->
     <div class="card">
       <div class="card-header">
         <span class="card-name">Vials Varie</span>
@@ -534,45 +458,36 @@
         <div class="labels-section">
           <h4>Etichette da apporre</h4>
           <div class="labels-row">
-            <div class="label-text">
-              <div class="label-text-box cer">
-                <span class="lbl-title">CER</span>
-                <span class="lbl-value">16.05.06*</span>
-              </div>
-              <span>CER</span>
+            <div class="lbl">
+              <div class="lbl-box cer"><span class="t1">CER</span><span class="t2">16.05.06*</span></div>
+              <span class="lbl-caption">CER</span>
             </div>
-            <div class="label-text">
-              <div class="label-text-box sepack">
-                <span class="lbl-title">Produttore</span>
-                <span class="lbl-value">Sepack</span>
-              </div>
-              <span>Sepack</span>
+            <div class="lbl">
+              <div class="lbl-box sepack"><span class="t1">Produttore</span><span class="t2">Sepack</span></div>
+              <span class="lbl-caption">Sepack</span>
             </div>
-            <div class="label-item">
-              <img src="/images/R.png" alt="Rifiuto">
-              <span>Rifiuto</span>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/R.png" alt="Rifiuto"></div>
+              <span class="lbl-caption">Rifiuto</span>
             </div>
-            <div class="label-item">
-              <img src="/images/ambiente.png" alt="Ambiente">
-              <span>Ambiente</span>
+            <div class="lbl">
+              <div class="lbl-box onu"><span class="t1">N° ONU</span><span class="t2">3316</span></div>
+              <span class="lbl-caption">ONU</span>
             </div>
-            <div class="label-item">
-              <img src="/images/9.png" alt="Classe 9">
-              <span>Cl. 9</span>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/ambiente.png" alt="Ambiente"></div>
+              <span class="lbl-caption">Ambiente</span>
+            </div>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/9.png" alt="Classe 9"></div>
+              <span class="lbl-caption">Cl. 9</span>
             </div>
           </div>
-        </div>
-        <div class="info-strip">
-          <div class="onu-badge">
-            <span class="onu-label">N° ONU</span>
-            <span class="onu-number">3316</span>
-          </div>
-          <span class="onu-label-text">ONU</span>
         </div>
       </div>
     </div>
 
-    <!-- 6. SOLIDO: R, ambiente, 9 -->
+    <!-- 6. SOLIDO -->
     <div class="card">
       <div class="card-header">
         <span class="card-name">SOLIDO</span>
@@ -582,40 +497,31 @@
         <div class="labels-section">
           <h4>Etichette da apporre</h4>
           <div class="labels-row">
-            <div class="label-text">
-              <div class="label-text-box cer">
-                <span class="lbl-title">CER</span>
-                <span class="lbl-value">16.05.06*</span>
-              </div>
-              <span>CER</span>
+            <div class="lbl">
+              <div class="lbl-box cer"><span class="t1">CER</span><span class="t2">16.05.06*</span></div>
+              <span class="lbl-caption">CER</span>
             </div>
-            <div class="label-text">
-              <div class="label-text-box sepack">
-                <span class="lbl-title">Produttore</span>
-                <span class="lbl-value">Sepack</span>
-              </div>
-              <span>Sepack</span>
+            <div class="lbl">
+              <div class="lbl-box sepack"><span class="t1">Produttore</span><span class="t2">Sepack</span></div>
+              <span class="lbl-caption">Sepack</span>
             </div>
-            <div class="label-item">
-              <img src="/images/R.png" alt="Rifiuto">
-              <span>Rifiuto</span>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/R.png" alt="Rifiuto"></div>
+              <span class="lbl-caption">Rifiuto</span>
             </div>
-            <div class="label-item">
-              <img src="/images/ambiente.png" alt="Ambiente">
-              <span>Ambiente</span>
+            <div class="lbl">
+              <div class="lbl-box onu"><span class="t1">N° ONU</span><span class="t2">3316</span></div>
+              <span class="lbl-caption">ONU</span>
             </div>
-            <div class="label-item">
-              <img src="/images/9.png" alt="Classe 9">
-              <span>Cl. 9</span>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/ambiente.png" alt="Ambiente"></div>
+              <span class="lbl-caption">Ambiente</span>
+            </div>
+            <div class="lbl">
+              <div class="lbl-box"><img src="/images/9.png" alt="Classe 9"></div>
+              <span class="lbl-caption">Cl. 9</span>
             </div>
           </div>
-        </div>
-        <div class="info-strip">
-          <div class="onu-badge">
-            <span class="onu-label">N° ONU</span>
-            <span class="onu-number">3316</span>
-          </div>
-          <span class="onu-label-text">ONU</span>
         </div>
       </div>
     </div>
