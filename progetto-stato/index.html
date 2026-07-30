@@ -98,7 +98,7 @@
   <!-- Modal giacenza -->
   <div id="giacenzaModal" class="modal">
     <div class="modal-content">
-      <span class="close">&times;</span>
+      <span class="close" id="modalCloseBtn">&times;</span>
       <h2 id="modalTitle">Vuoi aggiornare giacenza?</h2>
       <p id="modalDescrizione"></p>
       <p id="modalScorta">Scorta minima: <span id="scortaMinValue"></span></p>
@@ -111,25 +111,7 @@
     </div>
   </div>
 
-  <!-- Modal Admin -->
-  <div id="adminModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h2 id="adminModalTitle">Modalità Amministratore</h2>
-      <p id="adminModalDescrizione"></p>
-      <label for="adminGiacenza">Giacenza:</label>
-      <input type="number" id="adminGiacenza" min="0">
-      <label for="adminScortaMinima">Scorta minima:</label>
-      <input type="number" id="adminScortaMinima" min="0">
-      <label for="adminInOrdine">In ordine:</label>
-      <div id="adminInOrdineContainer">
-        <button class="minus" type="button">−</button>
-        <span id="adminInOrdineValue">0</span>
-        <button class="plus" type="button">+</button>
-      </div>
-      <button id="adminAggiornaBtn">Aggiorna</button>
-    </div>
-  </div>
+
 
   <!-- EmailJS -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
