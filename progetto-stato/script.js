@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const categorieContainer = document.getElementById("categorieContainer");
   const adminBtn = document.getElementById("adminBtn");
   const nuovoFornitoreBtn = document.getElementById("nuovoFornitoreBtn");
+  const adrBtn = document.getElementById("adrBtn");
 
   let prodotti = [];
   let selectedProdotto = null;
@@ -473,10 +474,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     counterValue.textContent = prodotto.Giacenza;
     aggiornaColore(document.getElementById("scortaMinSpan"));
+    hideFixedBtns();
     modal.style.display = "block";
   }
 
-  function closeModal() { modal.style.display = "none"; selectedProdotto = null; }
+  function hideFixedBtns() {
+    adminBtn.style.display = "none";
+    adrBtn.style.display = "none";
+    if (nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "none";
+  }
+
+  function showFixedBtns() {
+    adminBtn.style.display = "";
+    adrBtn.style.display = "";
+    if (isAdmin && nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "inline-flex";
+  }
+
+  function closeModal() {
+    modal.style.display = "none";
+    selectedProdotto = null;
+    showFixedBtns();
+  }
 
   decrementBtn.addEventListener("click", () => {
     let val = parseInt(counterValue.textContent);
