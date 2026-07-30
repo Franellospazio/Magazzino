@@ -48,17 +48,10 @@
     #nuovoFornitoreBtn:hover { background-color: #1a6a9a; }
 
     /* Modal mobile fix */
-    .modal {
-      padding-top: 0 !important;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
     .modal-content {
       max-height: 90vh;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      margin: 20px auto;
     }
 
     #inOrdineBtn {
@@ -96,7 +89,7 @@
   </div>
 
   <!-- Modal giacenza -->
-  <div id="giacenzaModal" class="modal">
+  <div id="giacenzaModal" class="modal" style="display:none;">
     <div class="modal-content">
       <span class="close" id="modalCloseBtn">&times;</span>
       <h2 id="modalTitle">Vuoi aggiornare giacenza?</h2>
