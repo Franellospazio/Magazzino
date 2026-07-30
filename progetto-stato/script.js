@@ -10,13 +10,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const decrementBtn = document.getElementById("decrement");
   const incrementBtn = document.getElementById("increment");
   const aggiornaBtn = document.getElementById("aggiornaBtn");
-
   const searchButton = document.querySelector(".searchButton");
   const sottoscortaBtn = document.getElementById("sottoscortaBtn");
   const inOrdineBtn = document.getElementById("inOrdineBtn");
   const categorieMasterBtn = document.getElementById("categorieMasterBtn");
   const categorieContainer = document.getElementById("categorieContainer");
   const adminBtn = document.getElementById("adminBtn");
+  const nuovoFornitoreBtn = document.getElementById("nuovoFornitoreBtn");
 
   let prodotti = [];
   let selectedProdotto = null;
@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeCategoryBtn = null;
   let isAdmin = false;
   let fornitoriCache = {};
+  let tuttiFornitori = []; // cache globale di tutti i fornitori
 
   const ADMIN_PASSWORD = "ori3";
   const STICKER_URL = "https://wonuzdqupujzeqhucxok.supabase.co/storage/v1/object/public/Admin/IMG_9082.webp";
@@ -58,16 +59,64 @@ document.addEventListener("DOMContentLoaded", () => {
       isAdmin = true;
       adminBtn.textContent = "🔓 Admin ON";
       adminBtn.style.backgroundColor = "#27ae60";
+      nuovoFornitoreBtn.style.display = "inline-flex";
+      loadTuttiFornitori();
       alert("Modalità admin attivata!");
     } else {
       isAdmin = false;
       adminBtn.textContent = "🛠️ Admin";
       adminBtn.style.backgroundColor = "#e74c3c";
+      nuovoFornitoreBtn.style.display = "none";
       results.innerHTML = `<img src="${STICKER_URL}" alt="Non sei amministratore!!" style="max-width:200px;">`;
     }
   });
 
-  // ─── Crea li prodotto — usa cloneNode per evitare listener duplicati ──────
+  // ─── Bottone nuovo fornitore globale ─────────────────────────────────────
+  nuovoFornitoreBtn.addEventListener("click", async () => {
+    const nome = prompt("Nome del nuovo fornitore:");
+    if (!nome || !nome.trim()) return;
+    try {
+      const res = await fetch("/api/fornitori", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome: nome.trim() })
+      });
+      if (!res.ok) throw new Error();
+      const nuovo = await res.json();
+      tuttiFornitori.push(nuovo);
+      tuttiFornitori.sort((a, b) => a.nome.localeCompare(b.nome));
+      alert(`Fornitore "${nuovo.nome}" aggiunto!`);
+    } catch {
+      alert("Errore durante l'aggiunta del fornitore.");
+    }
+  });
+
+  // ─── Carica tutti i fornitori disponibili ────────────────────────────────
+  async function loadTuttiFornitori() {
+    try {
+      const res = await fetch("/api/fornitori?tutti=1");
+      if (!res.ok) return;
+      tuttiFornitori = await res.json();
+    } catch (err) {
+      console.error("Errore caricamento tutti fornitori:", err);
+    }
+  }
+
+  // ─── Carica fornitori per prodotto (con cache) ────────────────────────────
+  async function loadFornitori(descrizione) {
+    try {
+      const res = await fetch(`/api/fornitori?prodotto=${encodeURIComponent(descrizione)}`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      fornitoriCache[descrizione] = data;
+      return data;
+    } catch (err) {
+      console.error("Errore caricamento fornitori:", err);
+      return [];
+    }
+  }
+
+  // ─── Crea li prodotto ─────────────────────────────────────────────────────
   function createProductLi(p) {
     const li = document.createElement("li");
     li.style.borderBottom = "1px solid #ccc";
@@ -85,30 +134,18 @@ document.addEventListener("DOMContentLoaded", () => {
     let giacenzaColor = "green";
     if (p.Giacenza < p.ScortaMinima) giacenzaColor = "red";
     else if (p.Giacenza === p.ScortaMinima) giacenzaColor = "orange";
-
     content += ` — <span style="color:${giacenzaColor};">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
 
-    if (p.inordine && p.inordine > 0) {
-      content += `<br>🛒 In ordine: ${p.inordine}`;
-    }
-
-    if (p.ultimo_aggiornamento) {
-      content += `<br><span style="color:#666; font-size:12px;">📅 Aggiornato: ${formatData(p.ultimo_aggiornamento)}</span>`;
-    }
-
-    if (p.ImageURL) {
-      content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
-    } else {
-      content += `<br><em>(img non presente)</em>`;
-    }
+    if (p.inordine && p.inordine > 0) content += `<br>🛒 In ordine: ${p.inordine}`;
+    if (p.ultimo_aggiornamento) content += `<br><span style="color:#666; font-size:12px;">📅 Aggiornato: ${formatData(p.ultimo_aggiornamento)}</span>`;
+    if (p.ImageURL) content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
+    else content += `<br><em>(img non presente)</em>`;
 
     li.innerHTML = content;
-    // Listener aggiunto una sola volta, direttamente sull'elemento appena creato
     li.addEventListener("click", () => openModal(p));
     return li;
   }
 
-  // ─── Crea li per vista in ordine (con badge fornitore) ───────────────────
   function createProductLiOrdine(p) {
     const li = createProductLi(p);
     if (p.fornitore_selezionato_nome) {
@@ -122,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return li;
   }
 
-  // ─── Reset ────────────────────────────────────────────────────────────────
+  // ─── Reset / Refresh ──────────────────────────────────────────────────────
   function resetAll() {
     results.innerHTML = "";
     categorieContainer.innerHTML = "";
@@ -134,27 +171,6 @@ document.addEventListener("DOMContentLoaded", () => {
     activeCategoryBtn = null;
   }
 
-  // ─── Refresh lista attiva ─────────────────────────────────────────────────
-  function refreshLista() {
-    if (showingAll) {
-      results.innerHTML = "";
-      prodotti.forEach(p => results.appendChild(createProductLi(p)));
-    } else if (showingSottoscorta) {
-      results.innerHTML = "";
-      prodotti.filter(p => p.Giacenza < p.ScortaMinima)
-              .forEach(p => results.appendChild(createProductLi(p)));
-    } else if (showingInOrdine) {
-      results.innerHTML = "";
-      renderInOrdine();
-    } else if (showingCategorie && activeCategoryBtn) {
-      results.innerHTML = "";
-      const cat = activeCategoryBtn.textContent;
-      prodotti.filter(p => p.categoria === cat)
-              .forEach(p => results.appendChild(createProductLi(p)));
-    }
-  }
-
-  // ─── Render vista in ordine ───────────────────────────────────────────────
   function renderInOrdine() {
     const inOrdine = prodotti.filter(p => p.inordine && p.inordine > 0);
     if (inOrdine.length === 0) {
@@ -176,6 +192,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function refreshLista() {
+    if (showingAll) { results.innerHTML = ""; prodotti.forEach(p => results.appendChild(createProductLi(p))); }
+    else if (showingSottoscorta) { results.innerHTML = ""; prodotti.filter(p => p.Giacenza < p.ScortaMinima).forEach(p => results.appendChild(createProductLi(p))); }
+    else if (showingInOrdine) { results.innerHTML = ""; renderInOrdine(); }
+    else if (showingCategorie && activeCategoryBtn) {
+      results.innerHTML = "";
+      const cat = activeCategoryBtn.textContent;
+      prodotti.filter(p => p.categoria === cat).forEach(p => results.appendChild(createProductLi(p)));
+    }
+  }
+
   // ─── Filtri ───────────────────────────────────────────────────────────────
   searchButton.addEventListener("click", () => {
     if (showingAll) resetAll();
@@ -184,18 +211,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   sottoscortaBtn.addEventListener("click", () => {
     if (showingSottoscorta) resetAll();
-    else {
-      resetAll();
-      prodotti.filter(p => p.Giacenza < p.ScortaMinima).forEach(p => results.appendChild(createProductLi(p)));
-      showingSottoscorta = true;
-    }
+    else { resetAll(); prodotti.filter(p => p.Giacenza < p.ScortaMinima).forEach(p => results.appendChild(createProductLi(p))); showingSottoscorta = true; }
   });
 
   inOrdineBtn.addEventListener("click", () => {
     if (showingInOrdine) { resetAll(); return; }
-    resetAll();
-    showingInOrdine = true;
-    renderInOrdine();
+    resetAll(); showingInOrdine = true; renderInOrdine();
   });
 
   categorieMasterBtn.addEventListener("click", () => {
@@ -205,23 +226,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
     categorie.forEach(cat => {
       const btn = document.createElement("button");
-      btn.type = "button";
-      btn.textContent = cat;
-      btn.classList.add("categoriaBtn");
-      btn.style.touchAction = "manipulation";
-      btn.style.userSelect = "none";
+      btn.type = "button"; btn.textContent = cat; btn.classList.add("categoriaBtn");
+      btn.style.touchAction = "manipulation"; btn.style.userSelect = "none";
       btn.addEventListener("click", () => {
-        if (activeCategoryBtn === btn) {
-          results.innerHTML = "";
-          btn.classList.remove("active");
-          activeCategoryBtn = null;
-          return;
-        }
+        if (activeCategoryBtn === btn) { results.innerHTML = ""; btn.classList.remove("active"); activeCategoryBtn = null; return; }
         if (activeCategoryBtn) activeCategoryBtn.classList.remove("active");
         results.innerHTML = "";
         prodotti.filter(p => p.categoria === cat).forEach(p => results.appendChild(createProductLi(p)));
-        btn.classList.add("active");
-        activeCategoryBtn = btn;
+        btn.classList.add("active"); activeCategoryBtn = btn;
       });
       categorieContainer.appendChild(btn);
     });
@@ -232,26 +244,9 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadProdotti() {
     try {
       const res = await fetch("/api/prodotti");
-      if (!res.ok) throw new Error(`Errore API: ${res.status}`);
+      if (!res.ok) throw new Error();
       prodotti = await res.json();
-    } catch (err) {
-      console.error("Errore caricamento dati:", err);
-    }
-  }
-
-  // ─── Carica fornitori per prodotto (con cache) ────────────────────────────
-  async function loadFornitori(descrizione) {
-    if (fornitoriCache[descrizione]) return fornitoriCache[descrizione];
-    try {
-      const res = await fetch(`/api/fornitori?prodotto=${encodeURIComponent(descrizione)}`);
-      if (!res.ok) return [];
-      const data = await res.json();
-      fornitoriCache[descrizione] = data;
-      return data;
-    } catch (err) {
-      console.error("Errore caricamento fornitori:", err);
-      return [];
-    }
+    } catch (err) { console.error("Errore caricamento dati:", err); }
   }
 
   // ─── Colore giacenza ──────────────────────────────────────────────────────
@@ -262,6 +257,153 @@ document.addEventListener("DOMContentLoaded", () => {
     if (current > min) counterValue.classList.add("qty-green");
     else if (current === min) counterValue.classList.add("qty-yellow");
     else counterValue.classList.add("qty-red");
+  }
+
+  // ─── Sezione gestione fornitori nel modal ─────────────────────────────────
+  // Renderizza la lista fornitori associati con up/down/elimina e il + per aggiungerne
+  function renderFornitoriAdmin(fornitori, prodottoDescrizione) {
+    const container = document.createElement("div");
+    container.id = "fornitoriAdminSection";
+    container.style.cssText = "margin-top:12px; border-top:1px solid #eee; padding-top:10px;";
+
+    const titolo = document.createElement("div");
+    titolo.style.cssText = "font-size:12px; font-weight:700; color:#555; margin-bottom:8px; letter-spacing:0.05em; text-transform:uppercase;";
+    titolo.textContent = "🏭 Fornitori associati";
+    container.appendChild(titolo);
+
+    // Lista fornitori con controlli
+    const lista = document.createElement("div");
+    lista.id = "fornitoriLista";
+    container.appendChild(lista);
+
+    function aggiornLista(fList) {
+      lista.innerHTML = "";
+      fList.forEach((f, idx) => {
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex; align-items:center; gap:6px; margin-bottom:6px;";
+
+        // Badge ordine
+        const badge = document.createElement("span");
+        badge.style.cssText = "background:#8e44ad; color:white; border-radius:50%; width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold; flex-shrink:0;";
+        badge.textContent = idx + 1;
+
+        // Nome
+        const nomeSpan = document.createElement("span");
+        nomeSpan.style.cssText = "flex:1; font-size:13px; font-weight:600;";
+        nomeSpan.textContent = f.nome;
+
+        // Su
+        const upBtn = document.createElement("button");
+        upBtn.type = "button"; upBtn.textContent = "↑";
+        upBtn.style.cssText = "border:none; background:#ddd; border-radius:4px; padding:2px 7px; cursor:pointer; font-size:13px;";
+        upBtn.disabled = idx === 0;
+        upBtn.addEventListener("click", async () => {
+          const prev = fList[idx - 1];
+          await fetch("/api/fornitori", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: f.id, ordine: idx }) });
+          await fetch("/api/fornitori", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: prev.id, ordine: idx + 1 }) });
+          // Swap locale
+          fList[idx - 1] = f; fList[idx] = prev;
+          fList[idx - 1].ordine = idx; fList[idx].ordine = idx + 1;
+          fornitoriCache[prodottoDescrizione] = fList;
+          aggiornLista(fList);
+        });
+
+        // Giù
+        const downBtn = document.createElement("button");
+        downBtn.type = "button"; downBtn.textContent = "↓";
+        downBtn.style.cssText = "border:none; background:#ddd; border-radius:4px; padding:2px 7px; cursor:pointer; font-size:13px;";
+        downBtn.disabled = idx === fList.length - 1;
+        downBtn.addEventListener("click", async () => {
+          const next = fList[idx + 1];
+          await fetch("/api/fornitori", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: f.id, ordine: idx + 2 }) });
+          await fetch("/api/fornitori", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: next.id, ordine: idx + 1 }) });
+          fList[idx + 1] = f; fList[idx] = next;
+          fList[idx].ordine = idx + 1; fList[idx + 1].ordine = idx + 2;
+          fornitoriCache[prodottoDescrizione] = fList;
+          aggiornLista(fList);
+        });
+
+        // Elimina
+        const delBtn = document.createElement("button");
+        delBtn.type = "button"; delBtn.textContent = "✕";
+        delBtn.style.cssText = "border:none; background:#e74c3c; color:white; border-radius:4px; padding:2px 7px; cursor:pointer; font-size:13px;";
+        delBtn.addEventListener("click", async () => {
+          if (!confirm(`Rimuovere ${f.nome} da questo prodotto?`)) return;
+          await fetch("/api/fornitori", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: f.id }) });
+          fList.splice(idx, 1);
+          // Ricalcola ordini
+          fList.forEach((x, i) => { x.ordine = i + 1; });
+          fornitoriCache[prodottoDescrizione] = fList;
+          aggiornLista(fList);
+        });
+
+        row.appendChild(badge); row.appendChild(nomeSpan); row.appendChild(upBtn); row.appendChild(downBtn); row.appendChild(delBtn);
+        lista.appendChild(row);
+      });
+
+      // Bottone aggiungi fornitore
+      const disponibili = tuttiFornitori.filter(t => !fList.find(f => f.id === t.id));
+      if (disponibili.length > 0) {
+        const addRow = document.createElement("div");
+        addRow.style.cssText = "margin-top:8px; display:flex; gap:6px; align-items:center;";
+
+        const sel = document.createElement("select");
+        sel.style.cssText = "flex:1; padding:5px; border:1.5px solid #8e44ad; border-radius:6px; font-size:13px;";
+        sel.innerHTML = `<option value="">— Aggiungi fornitore —</option>` + disponibili.map(f => `<option value="${f.id}">${f.nome}</option>`).join("");
+
+        const addBtn = document.createElement("button");
+        addBtn.type = "button"; addBtn.textContent = "＋";
+        addBtn.style.cssText = "background:#8e44ad; color:white; border:none; border-radius:6px; padding:5px 12px; font-size:16px; cursor:pointer; font-weight:bold;";
+        addBtn.addEventListener("click", async () => {
+          if (!sel.value) return;
+          const fornitoreId = parseInt(sel.value);
+          await fetch("/api/fornitori", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: fornitoreId }) });
+          const nuovo = tuttiFornitori.find(f => f.id === fornitoreId);
+          fList.push({ id: nuovo.id, nome: nuovo.nome, ordine: fList.length + 1 });
+          fornitoriCache[prodottoDescrizione] = fList;
+          aggiornLista(fList);
+        });
+
+        addRow.appendChild(sel); addRow.appendChild(addBtn);
+        lista.appendChild(addRow);
+      }
+    }
+
+    aggiornLista(fornitori);
+    return container;
+  }
+
+  // ─── Selettore fornitore per l'ordine (bottoni pill) ─────────────────────
+  function renderFornitoreOrdine(fornitori, currentFornitoreId) {
+    if (fornitori.length === 0) return { html: "", currentId: null };
+
+    const defaultId = currentFornitoreId ?? fornitori[0].id;
+
+    if (fornitori.length === 1) {
+      return {
+        html: `<div style="margin-top:10px; font-size:13px; color:#555;">🏭 Fornitore: <strong>${fornitori[0].nome}</strong></div>
+               <input type="hidden" id="fornitoreSelezionato" value="${fornitori[0].id}">`,
+        currentId: fornitori[0].id
+      };
+    }
+
+    const btns = fornitori.map(f => {
+      const active = f.id === defaultId;
+      const style = active ? "background:#8e44ad; color:white; border-color:#8e44ad;" : "background:#f0f0f0; color:#333; border-color:#ccc;";
+      return `<button type="button" class="fornitore-btn" data-id="${f.id}"
+                style="padding:6px 14px; border:1.5px solid; border-radius:20px; font-size:13px; font-weight:bold; cursor:pointer; margin:3px; transition:all 0.15s; ${style}">
+                ${f.nome}
+              </button>`;
+    }).join("");
+
+    return {
+      html: `<div style="margin-top:10px;">
+               <span style="font-size:12px; color:#555; font-weight:bold;">🏭 Fornitore ordine:</span><br>
+               <div id="fornitoreBtns" style="margin-top:6px;">${btns}</div>
+             </div>
+             <input type="hidden" id="fornitoreSelezionato" value="${defaultId}">`,
+      currentId: defaultId
+    };
   }
 
   // ─── Modal ────────────────────────────────────────────────────────────────
@@ -279,42 +421,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     modalDescrizione.innerHTML = descrizioneText;
 
-    // Costruisci contenuto modalScorta
     let scortaHTML = `Scorta minima: <span id="scortaMinSpan" class="min-qty">${prodotto.ScortaMinima}</span>`;
 
     if (isAdmin) {
       const inOrdineVal = prodotto.inordine ?? 0;
       const fornitori = await loadFornitori(prodotto.Descrizione);
-
-      // Determina fornitore corrente: usa quello salvato, altrimenti il primo della lista
-      let currentFornitoreId = prodotto.fornitore_selezionato ?? (fornitori.length > 0 ? fornitori[0].id : null);
-
-      // Costruisci HTML selettore fornitore
-      let fornitoreHTML = "";
-      if (fornitori.length === 1) {
-        fornitoreHTML = `
-          <div style="margin-top:10px; font-size:13px; color:#555;">
-            🏭 Fornitore: <strong>${fornitori[0].nome}</strong>
-          </div>
-          <input type="hidden" id="fornitoreSelezionato" value="${fornitori[0].id}">`;
-      } else if (fornitori.length >= 2) {
-        const btns = fornitori.map(f => {
-          const isActive = f.id === currentFornitoreId;
-          const style = isActive
-            ? "background:#8e44ad; color:white; border-color:#8e44ad;"
-            : "background:#f0f0f0; color:#333; border-color:#ccc;";
-          return `<button type="button" class="fornitore-btn" data-id="${f.id}"
-                    style="padding:6px 14px; border:1.5px solid; border-radius:20px; font-size:13px; font-weight:bold; cursor:pointer; margin:3px; transition:all 0.15s; ${style}">
-                    ${f.nome}
-                  </button>`;
-        }).join("");
-        fornitoreHTML = `
-          <div style="margin-top:10px;">
-            <span style="font-size:12px; color:#555; font-weight:bold;">🏭 Fornitore:</span><br>
-            <div id="fornitoreBtns" style="margin-top:6px;">${btns}</div>
-          </div>
-          <input type="hidden" id="fornitoreSelezionato" value="${currentFornitoreId ?? ''}">`;
-      }
+      const { html: fornitoreOrdineHTML } = renderFornitoreOrdine(fornitori, prodotto.fornitore_selezionato);
 
       scortaHTML += `
         <br>In ordine:
@@ -323,43 +435,40 @@ document.addEventListener("DOMContentLoaded", () => {
           <span id="inOrdineValue" class="qty-number qty-blue">${inOrdineVal}</span>
           <button type="button" id="incInOrdine" class="qty-btn plus">+</button>
         </div>
-        ${fornitoreHTML}
+        ${fornitoreOrdineHTML}
         <br>Modifica scorta minima:
         <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" class="admin-scorta-input">`;
     }
 
-    // Scrivi tutto in una volta sola — nessun doppio render
     modalScorta.innerHTML = scortaHTML;
 
-    // Listener +/- in ordine
     if (isAdmin) {
+      // Listener +/-
       document.getElementById("decInOrdine").addEventListener("click", () => {
         const el = document.getElementById("inOrdineValue");
-        let val = parseInt(el.textContent);
-        if (val > 0) el.textContent = val - 1;
+        let val = parseInt(el.textContent); if (val > 0) el.textContent = val - 1;
       });
       document.getElementById("incInOrdine").addEventListener("click", () => {
         const el = document.getElementById("inOrdineValue");
         el.textContent = parseInt(el.textContent) + 1;
       });
 
-      // Listener bottoni fornitore (solo se ci sono 2+)
+      // Listener bottoni fornitore ordine
       const fornitoreBtns = document.getElementById("fornitoreBtns");
       if (fornitoreBtns) {
         fornitoreBtns.addEventListener("click", (e) => {
           const btn = e.target.closest(".fornitore-btn");
           if (!btn) return;
-          fornitoreBtns.querySelectorAll(".fornitore-btn").forEach(b => {
-            b.style.background = "#f0f0f0";
-            b.style.color = "#333";
-            b.style.borderColor = "#ccc";
-          });
-          btn.style.background = "#8e44ad";
-          btn.style.color = "white";
-          btn.style.borderColor = "#8e44ad";
+          fornitoreBtns.querySelectorAll(".fornitore-btn").forEach(b => { b.style.background = "#f0f0f0"; b.style.color = "#333"; b.style.borderColor = "#ccc"; });
+          btn.style.background = "#8e44ad"; btn.style.color = "white"; btn.style.borderColor = "#8e44ad";
           document.getElementById("fornitoreSelezionato").value = btn.dataset.id;
         });
       }
+
+      // Sezione gestione fornitori (aggiungi/elimina/ordina)
+      const fornitori = fornitoriCache[prodotto.Descrizione] || [];
+      const sezione = renderFornitoriAdmin([...fornitori], prodotto.Descrizione);
+      modalScorta.appendChild(sezione);
     }
 
     counterValue.textContent = prodotto.Giacenza;
@@ -367,17 +476,13 @@ document.addEventListener("DOMContentLoaded", () => {
     modal.style.display = "block";
   }
 
-  function closeModal() {
-    modal.style.display = "none";
-    selectedProdotto = null;
-  }
+  function closeModal() { modal.style.display = "none"; selectedProdotto = null; }
 
   decrementBtn.addEventListener("click", () => {
     let val = parseInt(counterValue.textContent);
     if (val > 0) counterValue.textContent = val - 1;
     aggiornaColore(document.getElementById("scortaMinSpan"));
   });
-
   incrementBtn.addEventListener("click", () => {
     counterValue.textContent = parseInt(counterValue.textContent) + 1;
     aggiornaColore(document.getElementById("scortaMinSpan"));
@@ -402,28 +507,20 @@ document.addEventListener("DOMContentLoaded", () => {
       if (fornitoreEl && fornitoreEl.value) fornitoreId = parseInt(fornitoreEl.value);
     }
 
-    // Se inordine torna a 0 azzera il fornitore
     if (inOrdineNum === 0) fornitoreId = null;
 
     try {
       const res = await fetch("/api/prodotti", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          descrizione: selectedProdotto.Descrizione,
-          Giacenza: giacenzaNum,
-          inordine: inOrdineNum,
-          ScortaMinima: scortaMinimaNum,
-          fornitore_selezionato: fornitoreId
-        })
+        body: JSON.stringify({ descrizione: selectedProdotto.Descrizione, Giacenza: giacenzaNum, inordine: inOrdineNum, ScortaMinima: scortaMinimaNum, fornitore_selezionato: fornitoreId })
       });
-      if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
+      if (!res.ok) throw new Error();
 
-      // Aggiorna nome fornitore in locale
       let fornitoreNome = null;
       if (fornitoreId) {
-        const fornitori = fornitoriCache[selectedProdotto.Descrizione] || [];
-        const f = fornitori.find(f => f.id === fornitoreId);
+        const fList = fornitoriCache[selectedProdotto.Descrizione] || [];
+        const f = fList.find(f => f.id === fornitoreId);
         if (f) fornitoreNome = f.nome;
       }
 
@@ -438,26 +535,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const now = new Date();
         const dataOra = now.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         try {
-          await emailjs.send('service_487ujbw', 'template_l5an0k5', {
-            title: 'Update Magazzino',
-            prodotto: selectedProdotto.Descrizione,
-            giacenza: giacenzaNum,
-            scorta: scortaMinimaNum,
-            time: dataOra,
-            to_email: 'f.disabatino@sepack-lab.it'
-          });
-        } catch (emailErr) {
-          console.error('Errore invio email:', emailErr);
-        }
+          await emailjs.send('service_487ujbw', 'template_l5an0k5', { title: 'Update Magazzino', prodotto: selectedProdotto.Descrizione, giacenza: giacenzaNum, scorta: scortaMinimaNum, time: dataOra, to_email: 'f.disabatino@sepack-lab.it' });
+        } catch (e) { console.error('Errore email:', e); }
       }
 
       closeModal();
       refreshLista();
-
-    } catch (err) {
-      console.error(err);
-      alert("Errore aggiornamento prodotto!");
-    }
+    } catch (err) { console.error(err); alert("Errore aggiornamento prodotto!"); }
   });
 
   closeBtn.addEventListener("click", closeModal);
@@ -467,8 +551,7 @@ document.addEventListener("DOMContentLoaded", () => {
     resetAll();
     const query = search.value.toLowerCase();
     if (!query) return;
-    prodotti.filter(p => p.Descrizione.toLowerCase().includes(query))
-            .forEach(p => results.appendChild(createProductLi(p)));
+    prodotti.filter(p => p.Descrizione.toLowerCase().includes(query)).forEach(p => results.appendChild(createProductLi(p)));
   });
 
   loadProdotti();
