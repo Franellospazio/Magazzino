@@ -6,6 +6,26 @@
   <title>Stato Magazzino</title>
   <link rel="stylesheet" href="style.css">
   <style>
+    #inOrdineBtn {
+      flex: 1 1 auto;
+      min-width: 100px;
+      height: 50px;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 12px;
+      white-space: nowrap;
+      transition: background 0.2s, transform 0.1s;
+      background: #8e44ad;
+    }
+    #inOrdineBtn:hover { background: #6c3483; }
+
     #adrBtn {
       position: fixed;
       bottom: 20px;
@@ -36,6 +56,7 @@
       <input type="text" id="search" class="searchTerm" placeholder="Digita nome prodotto...">
       <button type="button" class="searchButton">🔍 Mostra tutti i prodotti</button>
       <button type="button" id="sottoscortaBtn">📦 Prodotti Sottoscorta</button>
+      <button type="button" id="inOrdineBtn">🛒 Prodotti in Ordine</button>
       <button id="categorieMasterBtn" class="categoriaMasterBtn">🏷️ Filtra per categorie</button>
       <div id="categorieContainer" class="categorie-container"></div>
     </div>
