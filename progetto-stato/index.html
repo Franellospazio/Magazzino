@@ -6,26 +6,6 @@
   <title>Stato Magazzino</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    #inOrdineBtn {
-      flex: 1 1 auto;
-      min-width: 100px;
-      height: 50px;
-      border: none;
-      border-radius: 5px;
-      color: white;
-      font-weight: bold;
-      font-size: 18px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 12px;
-      white-space: nowrap;
-      transition: background 0.2s, transform 0.1s;
-      background: #8e44ad;
-    }
-    #inOrdineBtn:hover { background: #6c3483; }
-
     #adrBtn {
       position: fixed;
       bottom: 20px;
@@ -45,9 +25,47 @@
       align-items: center;
       gap: 6px;
     }
-    #adrBtn:hover {
-      background-color: #1e8449;
+    #adrBtn:hover { background-color: #1e8449; }
+
+    #nuovoFornitoreBtn {
+      position: fixed;
+      bottom: 20px;
+      left: 160px;
+      z-index: 10000;
+      background-color: #2980b9;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 50px;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      transition: background 0.2s;
+      display: none; /* nascosto di default, visibile solo in admin */
+      align-items: center;
+      gap: 6px;
     }
+    #nuovoFornitoreBtn:hover { background-color: #1a6a9a; }
+
+    #inOrdineBtn {
+      flex: 1 1 auto;
+      min-width: 100px;
+      height: 50px;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 12px;
+      white-space: nowrap;
+      transition: background 0.2s, transform 0.1s;
+      background: #8e44ad;
+    }
+    #inOrdineBtn:hover { background: #6c3483; }
   </style>
 </head>
 <body>
@@ -62,7 +80,8 @@
     </div>
     <ul id="results" class="results"></ul>
   </div>
-  <!-- Modal per aggiornare giacenza (utente normale) -->
+
+  <!-- Modal giacenza -->
   <div id="giacenzaModal" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
@@ -77,6 +96,7 @@
       <button id="aggiornaBtn">Aggiorna</button>
     </div>
   </div>
+
   <!-- Modal Admin -->
   <div id="adminModal" class="modal">
     <div class="modal-content">
@@ -96,15 +116,14 @@
       <button id="adminAggiornaBtn">Aggiorna</button>
     </div>
   </div>
-  <!-- EmailJS SDK v4 -->
+
+  <!-- EmailJS -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <script>
-    emailjs.init("BnJLQgx-iX-2J45cy");
-  </script>
+  <script>emailjs.init("BnJLQgx-iX-2J45cy");</script>
   <script src="script.js"></script>
-  <!-- Pulsante admin -->
+
   <button id="adminBtn">🛠️ Admin</button>
-  <!-- Pulsante etichette -->
   <a id="adrBtn" href="etichette_adr.html" target="_blank">🏷️ Etichette</a>
+  <button id="nuovoFornitoreBtn">➕ Fornitore</button>
 </body>
 </html>
