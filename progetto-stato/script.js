@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const searchButton = document.querySelector(".searchButton");
   const sottoscortaBtn = document.getElementById("sottoscortaBtn");
+  const inOrdineBtn = document.getElementById("inOrdineBtn");
   const categorieMasterBtn = document.getElementById("categorieMasterBtn");
   const categorieContainer = document.getElementById("categorieContainer");
   const adminBtn = document.getElementById("adminBtn");
@@ -21,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedProdotto = null;
   let showingAll = false;
   let showingSottoscorta = false;
+  let showingInOrdine = false;
   let showingCategorie = false;
   let activeCategoryBtn = null;
   let isAdmin = false;
@@ -37,7 +39,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const diffMs = now - date;
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     
-    // Se è stato aggiornato oggi
     if (diffDays === 0) {
       const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
       if (diffHours === 0) {
@@ -47,13 +48,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return diffHours === 1 ? "1 ora fa" : `${diffHours} ore fa`;
     }
     
-    // Se è stato aggiornato ieri
     if (diffDays === 1) return "Ieri";
-    
-    // Se è stato aggiornato questa settimana
     if (diffDays < 7) return `${diffDays} giorni fa`;
     
-    // Altrimenti mostra la data completa
     return date.toLocaleDateString('it-IT', { 
       day: '2-digit', 
       month: '2-digit', 
@@ -92,19 +89,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (middle) content += ` <span style="color:#999;">${middle}</span>`;
     content += ` <span style="color:#2ecc71;">${taglio}</span>`;
 
-    // Colore dinamico per la giacenza
     let giacenzaColor = "green";
     if (p.Giacenza < p.ScortaMinima) giacenzaColor = "red";
     else if (p.Giacenza === p.ScortaMinima) giacenzaColor = "orange";
 
-    // Giacenza (Scorta Minima)
     content += ` — <span style="color:${giacenzaColor};">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
 
     if (p.inordine && p.inordine > 0) {
       content += `<br>🛒 In ordine: ${p.inordine}`;
     }
 
-    // 👇 NUOVO: Aggiungi data ultimo aggiornamento
     if (p.ultimo_aggiornamento) {
       const dataFormatted = formatData(p.ultimo_aggiornamento);
       content += `<br><span style="color:#666; font-size:12px;">📅 Aggiornato: ${dataFormatted}</span>`;
@@ -127,6 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
     categorieContainer.style.display = "none";
     showingAll = false;
     showingSottoscorta = false;
+    showingInOrdine = false;
     showingCategorie = false;
     activeCategoryBtn = null;
   }
@@ -149,6 +144,17 @@ document.addEventListener("DOMContentLoaded", () => {
       const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
       sottoscorta.forEach(p => results.appendChild(createProductLi(p, true)));
       showingSottoscorta = true;
+    }
+  });
+
+  // In ordine
+  inOrdineBtn.addEventListener("click", () => {
+    if (showingInOrdine) resetAll();
+    else {
+      resetAll();
+      const inOrdine = prodotti.filter(p => p.inordine && p.inordine > 0);
+      inOrdine.forEach(p => results.appendChild(createProductLi(p)));
+      showingInOrdine = true;
     }
   });
 
@@ -212,7 +218,6 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedProdotto = prodotto;
     modalTitle.textContent = isAdmin ? "Aggiorna prodotto" : "Aggiorna giacenza";
     
-    // 👇 Mostra data e ora accanto al nome prodotto
     let descrizioneText = `Prodotto: ${prodotto.Descrizione}`;
     if (prodotto.ultimo_aggiornamento) {
       const date = new Date(prodotto.ultimo_aggiornamento);
@@ -229,10 +234,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     modalDescrizione.innerHTML = descrizioneText;
 
-    // Scorta minima
     modalScorta.innerHTML = `Scorta minima: <span id="scortaMinSpan" class="min-qty">${prodotto.ScortaMinima}</span>`;
 
-    // Modal admin
     if (isAdmin) {
       const inOrdineVal = prodotto.inordine ?? 0;
 
@@ -313,13 +316,11 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       if (!res.ok) throw new Error(`Errore aggiornamento: ${res.status}`);
 
-      // Aggiorna il timestamp locale
       selectedProdotto.Giacenza = giacenzaNum;
       selectedProdotto.inordine = inOrdineNum;
       selectedProdotto.ScortaMinima = scortaMinimaNum;
       selectedProdotto.ultimo_aggiornamento = new Date().toISOString();
 
-      // 👇 NUOVO: Invia email se NON admin e giacenza < scorta minima
       if (!isAdmin && giacenzaNum < scortaMinimaNum) {
         const now = new Date();
         const dataOra = now.toLocaleString('it-IT', { 
@@ -332,8 +333,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
           await emailjs.send(
-            'service_487ujbw',      // Service ID
-            'template_l5an0k5',     // Template ID
+            'service_487ujbw',
+            'template_l5an0k5',
             {
               title: 'Update Magazzino',
               prodotto: selectedProdotto.Descrizione,
@@ -346,13 +347,12 @@ document.addEventListener("DOMContentLoaded", () => {
           console.log('Email sottoscorta inviata con successo');
         } catch (emailErr) {
           console.error('Errore invio email:', emailErr);
-          // Non bloccare il flusso se l'email fallisce
         }
       }
 
       closeModal();
       
-      // Ricarica i risultati se stai visualizzando qualcosa
+      // Ricarica i risultati mantenendo il filtro attivo
       if (showingAll) {
         results.innerHTML = "";
         prodotti.forEach(p => results.appendChild(createProductLi(p)));
@@ -360,6 +360,10 @@ document.addEventListener("DOMContentLoaded", () => {
         results.innerHTML = "";
         const sottoscorta = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
         sottoscorta.forEach(p => results.appendChild(createProductLi(p, true)));
+      } else if (showingInOrdine) {
+        results.innerHTML = "";
+        const inOrdine = prodotti.filter(p => p.inordine && p.inordine > 0);
+        inOrdine.forEach(p => results.appendChild(createProductLi(p)));
       } else if (showingCategorie && activeCategoryBtn) {
         results.innerHTML = "";
         const cat = activeCategoryBtn.textContent;
