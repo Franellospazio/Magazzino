@@ -510,19 +510,45 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("counterSection").style.display = "none";
     aggiornaBtn.style.display = "none";
 
-    let html = `<div style="margin-bottom:10px; font-size:11px; font-weight:700; color:#555; letter-spacing:0.1em; text-transform:uppercase;">Progressivi disponibili</div>`;
+    // Separa progressivi in 3 gruppi (già ordinati dall'API)
+    const aperti    = gruppo.progressivi.filter(r => r.data_apertura && !r.data_chiusura);
+    const nonAperti = gruppo.progressivi.filter(r => !r.data_apertura && !r.data_chiusura);
+    const chiusi    = gruppo.progressivi.filter(r => r.data_chiusura);
 
-    gruppo.progressivi.forEach(r => {
-      const aperto = r.data_apertura ? `<span style="color:#e67e22;">📂 ${formatDataBreve(r.data_apertura)}</span>` : `<span style="color:#27ae60;">⬜ Non aperto</span>`;
+    function rowHTML(r, style = "") {
       const scadenza = r.scadenza_sepack ? `<span style="color:#e74c3c; font-size:11px;">⏰ ${r.scadenza_sepack}</span>` : '';
-      html += `<div class="reagente-row" data-progressivo="${r.progressivo}" style="border:1px solid #ddd; border-radius:8px; padding:10px; margin-bottom:8px; cursor:pointer;">
+      let stato = '';
+      if (r.data_chiusura)      stato = `<span style="color:#aaa;">🔒 ${formatDataBreve(r.data_chiusura)}</span>`;
+      else if (r.data_apertura) stato = `<span style="color:#e67e22;">📂 ${formatDataBreve(r.data_apertura)}</span>`;
+      else                      stato = `<span style="color:#27ae60;">⬜ Non aperto</span>`;
+      return `<div class="reagente-row" data-progressivo="${r.progressivo}"
+        style="border:1px solid #ddd; border-radius:8px; padding:10px; margin-bottom:6px; cursor:pointer; ${style}">
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px;">
           <strong style="font-size:14px; color:#2c3e50;">${r.progressivo}</strong>
-          ${aperto}
+          ${stato}
         </div>
         ${scadenza ? `<div style="margin-top:4px;">${scadenza}</div>` : ''}
       </div>`;
-    });
+    }
+
+    function sectionHeader(label, color) {
+      return `<div style="font-size:10px; font-weight:700; color:${color}; letter-spacing:0.12em; text-transform:uppercase; margin:10px 0 6px;">${label}</div>`;
+    }
+
+    let html = '';
+
+    if (aperti.length > 0) {
+      html += sectionHeader('📂 Aperti', '#e67e22');
+      aperti.forEach(r => { html += rowHTML(r); });
+    }
+    if (nonAperti.length > 0) {
+      html += sectionHeader('⬜ Non ancora aperti', '#27ae60');
+      nonAperti.forEach(r => { html += rowHTML(r); });
+    }
+    if (chiusi.length > 0) {
+      html += sectionHeader('🔒 Chiusi', '#aaa');
+      chiusi.forEach(r => { html += rowHTML(r, 'opacity:0.5;'); });
+    }
 
     // Sezione in ordine — visibile solo in admin
     if (isAdmin) {
