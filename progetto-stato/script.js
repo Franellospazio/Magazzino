@@ -174,6 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const li = document.createElement("li");
     li.style.borderBottom = "1px solid #ccc";
     li.style.padding = "5px 0";
+    li.dataset.reagente = g.nome_prodotto;
     let gc = g.giacenza < g.scorta_minima ? "red" : g.giacenza === g.scorta_minima ? "orange" : "green";
     let content = `<strong style="color:black;">${g.nome_prodotto}</strong>`;
     content += ` — <span style="color:${gc};">${g.giacenza}</span>`;
@@ -272,6 +273,15 @@ document.addEventListener("DOMContentLoaded", () => {
     else if (showingCategorie && activeCategoryBtn) {
       results.innerHTML = "";
       prodotti.filter(p => p.categoria === activeCategoryBtn.textContent).forEach(p => results.appendChild(createProductLi(p)));
+    }
+  }
+
+  // Aggiorna solo il li di un singolo reagente nella lista corrente, senza ri-renderizzare tutto
+  function patchReagenteLiInList(gruppo) {
+    const existing = results.querySelector(`[data-reagente="${CSS.escape(gruppo.nome_prodotto)}"]`);
+    if (existing) {
+      const nuovo = createReagenteLi(gruppo);
+      results.replaceChild(nuovo, existing);
     }
   }
 
@@ -730,7 +740,7 @@ document.addEventListener("DOMContentLoaded", () => {
           } catch (e) { console.error('Errore email reagente:', e); }
         }
 
-        refreshLista();
+        patchReagenteLiInList(gruppo);
         closeModal();
       });
     }
@@ -769,7 +779,8 @@ document.addEventListener("DOMContentLoaded", () => {
             ${gruppo.scorta_minima > 0 ? ` (min: ${gruppo.scorta_minima})` : ''}
           </span>`;
 
-        refreshLista();
+        refreshLista();  // per prodotti normali se in vista ordini/sottoscorta
+        patchReagenteLiInList(gruppo);
         openProgressivoDetail(progressivo, gruppo);
       });
     }
