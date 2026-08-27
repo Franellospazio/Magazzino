@@ -38,11 +38,13 @@ export default async function handler(req, res) {
     }
 
     // Tutti i reagenti attivi (senza data_chiusura)
+    // .range(0, 9999) bypassa il limite default di 1000 righe di Supabase
     const { data, error } = await supabase
       .from('reagenti')
       .select('*')
       .is('data_chiusura', null)
-      .order('nome_prodotto', { ascending: true });
+      .order('nome_prodotto', { ascending: true })
+      .range(0, 9999);
 
     if (error) return res.status(500).json({ error: error.message });
 
