@@ -747,8 +747,8 @@ document.addEventListener("DOMContentLoaded", () => {
         gruppo.giacenza = Math.max(0, gruppo.giacenza - 1);
         console.log(`[DEBUG] giacenza aggiornata:`, gruppo.giacenza, `scorta_minima:`, gruppo.scorta_minima);
 
-        // Mail se giacenza scende sotto la scorta minima
-        if (gruppo.scorta_minima > 0 && gruppo.giacenza < gruppo.scorta_minima) {
+        // Mail solo se NON admin e giacenza scende sotto scorta minima
+        if (!isAdmin && gruppo.scorta_minima > 0 && gruppo.giacenza < gruppo.scorta_minima) {
           const now = new Date();
           const dataOra = now.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
           try {
@@ -776,22 +776,24 @@ document.addEventListener("DOMContentLoaded", () => {
         const body = { progressivo: r.progressivo };
         body.data_apertura = aperturaVal ? new Date(aperturaVal).toISOString() : null;
         body.data_chiusura = chiusuraVal ? new Date(chiusuraVal).toISOString() : null;
-        await fetch("/api/reagenti", {
+
+        const resp = await fetch("/api/reagenti", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body)
         });
+        console.log(`[DEBUG] admin PATCH risposta:`, resp.status, await resp.json());
 
         const eraChiuso = !!r.data_chiusura;
+
+        // Aggiorna il record nell'array gruppo.progressivi (stesso riferimento)
         r.data_apertura = body.data_apertura;
         r.data_chiusura = body.data_chiusura;
 
-        // Aggiorna giacenza del gruppo localmente
+        // Aggiorna giacenza
         if (!eraChiuso && body.data_chiusura) {
-          // Era aperto/non aperto, ora chiuso → giacenza -1
           gruppo.giacenza = Math.max(0, gruppo.giacenza - 1);
         } else if (eraChiuso && !body.data_chiusura) {
-          // Era chiuso, ora riaperto → giacenza +1
           gruppo.giacenza++;
         }
 
@@ -802,9 +804,19 @@ document.addEventListener("DOMContentLoaded", () => {
             ${gruppo.scorta_minima > 0 ? ` (min: ${gruppo.scorta_minima})` : ''}
           </span>`;
 
-        refreshLista();  // per prodotti normali se in vista ordini/sottoscorta
         patchReagenteLiInList(gruppo);
-        openProgressivoDetail(progressivo, gruppo);
+
+        // Riordina progressivi: aperti → non aperti → chiusi
+        gruppo.progressivi.sort((a, b) => {
+          const stato = x => x.data_chiusura ? 2 : x.data_apertura ? 0 : 1;
+          const sa = stato(a), sb = stato(b);
+          if (sa !== sb) return sa - sb;
+          const parse = p => { const [y, n] = p.progressivo.split('-').map(Number); return y * 10000 + n; };
+          return parse(a) - parse(b);
+        });
+
+        // Ritorna al modal del gruppo aggiornato
+        openReagenteModal(gruppo);
       });
     }
   }
