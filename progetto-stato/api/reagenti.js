@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-// Ordina progressivi: prima per anno, poi per numero (es. 15-42 < 15-259 < 16-4)
+// Ordina progressivi: prima per anno, poi per numero
 function ordinaProgressivi(a, b) {
   const parse = p => {
     const [anno, num] = p.split('-').map(Number);
@@ -21,8 +21,6 @@ function ordinaProgressivi(a, b) {
 export default async function handler(req, res) {
 
   // ── GET /api/reagenti ─────────────────────────────────────────────────────
-  // Ritorna tutti i reagenti senza data_chiusura, raggruppati per nome_prodotto
-  // con giacenza calcolata e lista progressivi
   if (req.method === 'GET') {
     const { progressivo } = req.query;
 
@@ -37,7 +35,7 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-    // Fetch tutti i reagenti attivi con paginazione (Supabase limite 1000 per chiamata)
+    // Fetch tutti i reagenti attivi con paginazione
     let allData = [];
     let from = 0;
     const pageSize = 1000;
@@ -54,15 +52,22 @@ export default async function handler(req, res) {
       if (page.length < pageSize) break;
       from += pageSize;
     }
-    const data = allData;
+
+    // Fetch ordini
+    const { data: ordini } = await supabase
+      .from('reagenti_ordini')
+      .select('nome_prodotto, inordine');
+    const ordiniMap = {};
+    (ordini || []).forEach(o => { ordiniMap[o.nome_prodotto] = o.inordine; });
 
     // Raggruppa per nome_prodotto
     const gruppi = {};
-    data.forEach(r => {
+    allData.forEach(r => {
       if (!gruppi[r.nome_prodotto]) {
         gruppi[r.nome_prodotto] = {
           nome_prodotto: r.nome_prodotto,
           scorta_minima: r.scorta_minima,
+          inordine: ordiniMap[r.nome_prodotto] || 0,
           giacenza: 0,
           progressivi: []
         };
@@ -71,9 +76,11 @@ export default async function handler(req, res) {
       gruppi[r.nome_prodotto].progressivi.push(r);
     });
 
-    // Ordina i progressivi dentro ogni gruppo
+    // Ordina progressivi dentro ogni gruppo
     Object.values(gruppi).forEach(g => {
       g.progressivi.sort(ordinaProgressivi);
+      // Fornitore del gruppo = fornitore del primo progressivo
+      g.fornitore = g.progressivi[0]?.fornitore || null;
     });
 
     const risultato = Object.values(gruppi).sort((a, b) =>
@@ -84,9 +91,17 @@ export default async function handler(req, res) {
   }
 
   // ── PATCH /api/reagenti ───────────────────────────────────────────────────
-  // Aggiorna data_apertura, data_chiusura, scorta_minima di un progressivo
   if (req.method === 'PATCH') {
-    const { progressivo, data_apertura, data_chiusura, scorta_minima } = req.body;
+    const { progressivo, data_apertura, data_chiusura, scorta_minima, inordine, nome_prodotto } = req.body;
+
+    // Aggiorna inordine (a livello di nome_prodotto)
+    if (inordine !== undefined && nome_prodotto) {
+      const { error } = await supabase
+        .from('reagenti_ordini')
+        .upsert({ nome_prodotto, inordine }, { onConflict: 'nome_prodotto' });
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ message: 'In ordine aggiornato' });
+    }
 
     if (!progressivo) return res.status(400).json({ error: 'progressivo richiesto' });
 
@@ -96,13 +111,11 @@ export default async function handler(req, res) {
 
     // scorta_minima si aggiorna su TUTTI i progressivi dello stesso prodotto
     if (scorta_minima !== undefined) {
-      // Prima trova il nome_prodotto
       const { data: prod } = await supabase
         .from('reagenti')
         .select('nome_prodotto')
         .eq('progressivo', progressivo)
         .single();
-
       if (prod) {
         await supabase
           .from('reagenti')
