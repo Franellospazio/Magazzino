@@ -663,8 +663,8 @@ document.addEventListener("DOMContentLoaded", () => {
         <tr><td style="color:#777; padding:4px 0;">Apertura</td><td><strong>${formatDataBreve(r.data_apertura)}</strong></td></tr>
       </table>`;
 
-    if (!aperto) {
-      // Bottone apri
+    if (!aperto && !r.data_chiusura) {
+      // Bottone apri — solo se non ancora aperto e non chiuso
       html += `
         <div style="margin-top:16px; text-align:center;">
           <p style="font-size:13px; color:#555; margin-bottom:8px;">Data apertura:</p>
@@ -672,14 +672,26 @@ document.addEventListener("DOMContentLoaded", () => {
           <br>
           <button id="apriBtn" style="background:#27ae60; color:white; border:none; border-radius:8px; padding:10px 24px; font-size:15px; font-weight:bold; cursor:pointer;">📂 Apri questa bottiglia</button>
         </div>`;
-    } else {
-      // Bottone chiudi (utente e admin)
+    } else if (aperto && !r.data_chiusura && !isAdmin) {
+      // Bottone chiudi — solo utente normale, solo se aperta e non già chiusa
       html += `
         <div style="margin-top:12px; padding:8px 12px; background:#fef9e7; border-radius:6px; font-size:13px; color:#e67e22; font-weight:bold; margin-bottom:10px;">
           📂 Aperta il ${formatDataBreve(r.data_apertura)}
         </div>
         <div style="text-align:center;">
           <button id="chiudiBtn" style="background:#e74c3c; color:white; border:none; border-radius:8px; padding:10px 24px; font-size:15px; font-weight:bold; cursor:pointer;">🔒 Chiudi bottiglia (esaurita)</button>
+        </div>`;
+    } else if (aperto && !r.data_chiusura && isAdmin) {
+      // Admin vede solo il badge apertura, la chiusura la fa dalla sezione modifica date
+      html += `
+        <div style="margin-top:12px; padding:8px 12px; background:#fef9e7; border-radius:6px; font-size:13px; color:#e67e22; font-weight:bold; margin-bottom:10px;">
+          📂 Aperta il ${formatDataBreve(r.data_apertura)}
+        </div>`;
+    } else if (r.data_chiusura) {
+      // Già chiusa
+      html += `
+        <div style="margin-top:12px; padding:8px 12px; background:#f9f9f9; border-radius:6px; font-size:13px; color:#aaa; font-weight:bold; margin-bottom:10px;">
+          🔒 Chiusa il ${formatDataBreve(r.data_chiusura)}
         </div>`;
     }
 
@@ -713,7 +725,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Apri bottiglia
-    if (!aperto) {
+    if (!aperto && !r.data_chiusura) {
       document.getElementById("apriBtn").addEventListener("click", async () => {
         const dataVal = document.getElementById("dataAperturaInput").value;
         if (!dataVal) return;
@@ -726,8 +738,7 @@ document.addEventListener("DOMContentLoaded", () => {
         alert(`Bottiglia ${r.progressivo} aperta!`);
         openProgressivoDetail(progressivo, gruppo);
       });
-    } else if (aperto && !r.data_chiusura) {
-      // Chiudi bottiglia (utente) — solo se NON già chiusa
+    } else if (aperto && !r.data_chiusura && !isAdmin) {
       document.getElementById("chiudiBtn").addEventListener("click", async () => {
         console.log(`[DEBUG] chiudiBtn click: progressivo=${r.progressivo}, data_chiusura attuale=`, r.data_chiusura);
         if (r.data_chiusura) {
