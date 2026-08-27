@@ -6,16 +6,22 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-// Ordina progressivi: prima per anno, poi per numero
-function ordinaProgressivi(a, b) {
-  const parse = p => {
-    const [anno, num] = p.split('-').map(Number);
-    return { anno, num };
-  };
-  const pa = parse(a.progressivo);
-  const pb = parse(b.progressivo);
-  if (pa.anno !== pb.anno) return pa.anno - pb.anno;
-  return pa.num - pb.num;
+// Ordina per anno-numero progressivo
+function parseProgressivo(p) {
+  const [y, n] = p.split('-').map(Number);
+  return { y, n };
+}
+function cmpProgressivo(a, b) {
+  const pa = parseProgressivo(a.progressivo);
+  const pb = parseProgressivo(b.progressivo);
+  return pa.y !== pb.y ? pa.y - pb.y : pa.n - pb.n;
+}
+
+// Stato: 0=aperto, 1=non aperto, 2=chiuso
+function statoProgressivo(r) {
+  if (r.data_chiusura) return 2;
+  if (r.data_apertura) return 0;
+  return 1;
 }
 
 export default async function handler(req, res) {
@@ -24,7 +30,6 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { progressivo } = req.query;
 
-    // Dettaglio singolo progressivo
     if (progressivo) {
       const { data, error } = await supabase
         .from('reagenti')
@@ -35,7 +40,7 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-    // Fetch tutti i reagenti attivi con paginazione
+    // Fetch TUTTI i reagenti (inclusi chiusi) con paginazione
     let allData = [];
     let from = 0;
     const pageSize = 1000;
@@ -43,7 +48,6 @@ export default async function handler(req, res) {
       const { data: page, error } = await supabase
         .from('reagenti')
         .select('*')
-        .is('data_chiusura', null)
         .order('nome_prodotto', { ascending: true })
         .range(from, from + pageSize - 1);
       if (error) return res.status(500).json({ error: error.message });
@@ -68,19 +72,26 @@ export default async function handler(req, res) {
           nome_prodotto: r.nome_prodotto,
           scorta_minima: r.scorta_minima,
           inordine: ordiniMap[r.nome_prodotto] || 0,
-          giacenza: 0,
+          giacenza: 0,   // conta solo NON chiusi
           progressivi: []
         };
       }
-      gruppi[r.nome_prodotto].giacenza++;
+      // Giacenza: solo progressivi senza data_chiusura
+      if (!r.data_chiusura) gruppi[r.nome_prodotto].giacenza++;
       gruppi[r.nome_prodotto].progressivi.push(r);
     });
 
-    // Ordina progressivi dentro ogni gruppo
+    // Ordina progressivi: aperti → non aperti → chiusi, ognuno per progressivo asc
     Object.values(gruppi).forEach(g => {
-      g.progressivi.sort(ordinaProgressivi);
-      // Fornitore del gruppo = fornitore del primo progressivo
-      g.fornitore = g.progressivi[0]?.fornitore || null;
+      g.progressivi.sort((a, b) => {
+        const sa = statoProgressivo(a);
+        const sb = statoProgressivo(b);
+        if (sa !== sb) return sa - sb;
+        return cmpProgressivo(a, b);
+      });
+      // Fornitore: primo progressivo non chiuso
+      const primo = g.progressivi.find(p => !p.data_chiusura) || g.progressivi[0];
+      g.fornitore = primo?.fornitore || null;
     });
 
     const risultato = Object.values(gruppi).sort((a, b) =>
@@ -94,7 +105,6 @@ export default async function handler(req, res) {
   if (req.method === 'PATCH') {
     const { progressivo, data_apertura, data_chiusura, scorta_minima, inordine, nome_prodotto } = req.body;
 
-    // Aggiorna inordine (a livello di nome_prodotto)
     if (inordine !== undefined && nome_prodotto) {
       const { error } = await supabase
         .from('reagenti_ordini')
@@ -109,7 +119,6 @@ export default async function handler(req, res) {
     if (data_apertura !== undefined) updateData.data_apertura = data_apertura;
     if (data_chiusura !== undefined) updateData.data_chiusura = data_chiusura;
 
-    // scorta_minima si aggiorna su TUTTI i progressivi dello stesso prodotto
     if (scorta_minima !== undefined) {
       const { data: prod } = await supabase
         .from('reagenti')
