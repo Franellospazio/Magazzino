@@ -525,6 +525,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const nonAperti = gruppo.progressivi.filter(r => !r.data_apertura && !r.data_chiusura);
     const chiusi    = gruppo.progressivi.filter(r => r.data_chiusura);
 
+    console.log(`[DEBUG] openReagenteModal: ${gruppo.nome_prodotto}`, {
+      totale: gruppo.progressivi.length,
+      aperti: aperti.length,
+      nonAperti: nonAperti.length,
+      chiusi: chiusi.length,
+      campione_chiusi: chiusi.slice(0,3).map(r => ({ prog: r.progressivo, chiusura: r.data_chiusura }))
+    });
+
     function rowHTML(r, style = "") {
       const scadenza = r.scadenza_sepack ? `<span style="color:#e74c3c; font-size:11px;">⏰ ${r.scadenza_sepack}</span>` : '';
       let statoLabel = '';
@@ -614,7 +622,7 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ nome_prodotto: gruppo.nome_prodotto, inordine: val })
         });
         gruppo.inordine = val;
-        refreshLista();
+        patchReagenteLiInList(gruppo);
         alert("In ordine aggiornato!");
       });
       document.getElementById("salvaScortaBtn").addEventListener("click", async () => {
@@ -697,6 +705,13 @@ document.addEventListener("DOMContentLoaded", () => {
     modalScorta.innerHTML = html;
     document.getElementById("backToGruppo").addEventListener("click", () => openReagenteModal(gruppo));
 
+    // Debug: verifica dati progressivo
+    console.log(`[DEBUG] openProgressivoDetail: progressivo=${r.progressivo}`, {
+      data_apertura: r.data_apertura,
+      data_chiusura: r.data_chiusura,
+      aperto: aperto
+    });
+
     // Apri bottiglia
     if (!aperto) {
       document.getElementById("apriBtn").addEventListener("click", async () => {
@@ -711,18 +726,26 @@ document.addEventListener("DOMContentLoaded", () => {
         alert(`Bottiglia ${r.progressivo} aperta!`);
         openProgressivoDetail(progressivo, gruppo);
       });
-    } else {
-      // Chiudi bottiglia (utente)
+    } else if (aperto && !r.data_chiusura) {
+      // Chiudi bottiglia (utente) — solo se NON già chiusa
       document.getElementById("chiudiBtn").addEventListener("click", async () => {
+        console.log(`[DEBUG] chiudiBtn click: progressivo=${r.progressivo}, data_chiusura attuale=`, r.data_chiusura);
+        if (r.data_chiusura) {
+          alert("Questa bottiglia è già chiusa.");
+          return;
+        }
         if (!confirm(`Confermi la chiusura della bottiglia ${r.progressivo}? La giacenza diminuirà di 1.`)) return;
         const oggi = new Date().toISOString();
-        await fetch("/api/reagenti", {
+        const resp = await fetch("/api/reagenti", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ progressivo: r.progressivo, data_chiusura: oggi })
         });
+        const respJson = await resp.json();
+        console.log(`[DEBUG] PATCH chiusura risposta:`, resp.status, respJson);
         r.data_chiusura = oggi;
         gruppo.giacenza = Math.max(0, gruppo.giacenza - 1);
+        console.log(`[DEBUG] giacenza aggiornata:`, gruppo.giacenza, `scorta_minima:`, gruppo.scorta_minima);
 
         // Mail se giacenza scende sotto la scorta minima
         if (gruppo.scorta_minima > 0 && gruppo.giacenza < gruppo.scorta_minima) {
