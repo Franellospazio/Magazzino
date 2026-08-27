@@ -37,16 +37,24 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-    // Tutti i reagenti attivi (senza data_chiusura)
-    // .range(0, 9999) bypassa il limite default di 1000 righe di Supabase
-    const { data, error } = await supabase
-      .from('reagenti')
-      .select('*')
-      .is('data_chiusura', null)
-      .order('nome_prodotto', { ascending: true })
-      .range(0, 9999);
-
-    if (error) return res.status(500).json({ error: error.message });
+    // Fetch tutti i reagenti attivi con paginazione (Supabase limite 1000 per chiamata)
+    let allData = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: page, error } = await supabase
+        .from('reagenti')
+        .select('*')
+        .is('data_chiusura', null)
+        .order('nome_prodotto', { ascending: true })
+        .range(from, from + pageSize - 1);
+      if (error) return res.status(500).json({ error: error.message });
+      if (!page || page.length === 0) break;
+      allData = allData.concat(page);
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
+    const data = allData;
 
     // Raggruppa per nome_prodotto
     const gruppi = {};
