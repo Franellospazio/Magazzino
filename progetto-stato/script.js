@@ -20,9 +20,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const adrBtn = document.getElementById("adrBtn");
 
   let prodotti = [];
-  let reagenti = []; // lista gruppi reagenti
+  let reagenti = [];
   let selectedProdotto = null;
-  let selectedReagente = null; // gruppo reagente selezionato
+  let selectedReagente = null;
   let showingAll = false;
   let showingSottoscorta = false;
   let showingInOrdine = false;
@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const ADMIN_PASSWORD = "ori3";
   const STICKER_URL = "https://wonuzdqupujzeqhucxok.supabase.co/storage/v1/object/public/Admin/IMG_9082.webp";
 
-  // ─── Formattazione data ───────────────────────────────────────────────────
+  // ─── Utility date ─────────────────────────────────────────────────────────
   function formatData(timestamp) {
     if (!timestamp) return "Mai aggiornato";
     const date = new Date(timestamp);
@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return new Date(ts).toISOString().split('T')[0];
   }
 
-  // ─── Bottoni fissi: nascondi/mostra ───────────────────────────────────────
+  // ─── Bottoni fissi ────────────────────────────────────────────────────────
   function hideFixedBtns() {
     adminBtn.style.display = "none";
     if (adrBtn) adrBtn.style.display = "none";
@@ -101,11 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const nome = prompt("Nome del nuovo fornitore:");
       if (!nome || !nome.trim()) return;
       try {
-        const res = await fetch("/api/fornitori", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nome: nome.trim() })
-        });
+        const res = await fetch("/api/fornitori", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nome: nome.trim() }) });
         if (!res.ok) throw new Error();
         const nuovo = await res.json();
         tuttiFornitori.push(nuovo);
@@ -151,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch { return []; }
   }
 
-  // ─── Crea li prodotto normale ─────────────────────────────────────────────
+  // ─── Li prodotto normale ──────────────────────────────────────────────────
   function createProductLi(p) {
     const li = document.createElement("li");
     li.style.borderBottom = "1px solid #ccc";
@@ -167,15 +163,13 @@ document.addEventListener("DOMContentLoaded", () => {
     content += ` — <span style="color:${gc};">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
     if (p.inordine && p.inordine > 0) content += `<br>🛒 In ordine: ${p.inordine}`;
     if (p.ultimo_aggiornamento) content += `<br><span style="color:#666; font-size:12px;">📅 Aggiornato: ${formatData(p.ultimo_aggiornamento)}</span>`;
-    content += p.ImageURL
-      ? `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`
-      : `<br><em>(img non presente)</em>`;
+    content += p.ImageURL ? `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">` : `<br><em>(img non presente)</em>`;
     li.innerHTML = content;
     li.addEventListener("click", () => openModal(p));
     return li;
   }
 
-  // ─── Crea li reagente (gruppo) ────────────────────────────────────────────
+  // ─── Li reagente (gruppo) ─────────────────────────────────────────────────
   function createReagenteLi(g) {
     const li = document.createElement("li");
     li.style.borderBottom = "1px solid #ccc";
@@ -184,6 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let content = `<strong style="color:black;">${g.nome_prodotto}</strong>`;
     content += ` — <span style="color:${gc};">${g.giacenza}</span>`;
     if (g.scorta_minima > 0) content += ` (<span style="color:blue;">${g.scorta_minima}</span>)`;
+    if (g.inordine && g.inordine > 0) content += `<br>🛒 In ordine: ${g.inordine}`;
     li.innerHTML = content;
     li.addEventListener("click", () => openReagenteModal(g));
     return li;
@@ -211,37 +206,6 @@ document.addEventListener("DOMContentLoaded", () => {
     activeCategoryBtn = null;
   }
 
-  function renderInOrdine() {
-    const inOrdine = prodotti.filter(p => p.inordine && p.inordine > 0);
-    if (inOrdine.length === 0) {
-      results.innerHTML = "<li style='padding:10px; color:#999;'>Nessun prodotto in ordine.</li>";
-      return;
-    }
-    const gruppi = {};
-    inOrdine.forEach(p => {
-      const key = p.fornitore_selezionato_nome || "— Senza fornitore —";
-      if (!gruppi[key]) gruppi[key] = [];
-      gruppi[key].push(p);
-    });
-    Object.entries(gruppi).forEach(([fornitore, lista]) => {
-      const header = document.createElement("li");
-      header.style.cssText = "background:#8e44ad; color:white; font-weight:bold; padding:8px 12px; font-size:14px; list-style:none; border-radius:6px; margin-top:8px;";
-      header.textContent = "🏭 " + fornitore;
-      results.appendChild(header);
-      lista.forEach(p => results.appendChild(createProductLiOrdine(p)));
-    });
-  }
-
-  function refreshLista() {
-    if (showingAll) { results.innerHTML = ""; renderAll(); }
-    else if (showingSottoscorta) { results.innerHTML = ""; prodotti.filter(p => p.Giacenza < p.ScortaMinima).forEach(p => results.appendChild(createProductLi(p))); }
-    else if (showingInOrdine) { results.innerHTML = ""; renderInOrdine(); }
-    else if (showingCategorie && activeCategoryBtn) {
-      results.innerHTML = "";
-      prodotti.filter(p => p.categoria === activeCategoryBtn.textContent).forEach(p => results.appendChild(createProductLi(p)));
-    }
-  }
-
   function renderAll() {
     prodotti.forEach(p => results.appendChild(createProductLi(p)));
     if (reagenti.length > 0) {
@@ -250,6 +214,64 @@ document.addEventListener("DOMContentLoaded", () => {
       header.textContent = "🧪 Reagenti";
       results.appendChild(header);
       reagenti.forEach(g => results.appendChild(createReagenteLi(g)));
+    }
+  }
+
+  function renderInOrdine() {
+    // Prodotti normali in ordine
+    const inOrdine = prodotti.filter(p => p.inordine && p.inordine > 0);
+    const reagentiInOrdine = reagenti.filter(g => g.inordine && g.inordine > 0);
+
+    if (inOrdine.length === 0 && reagentiInOrdine.length === 0) {
+      results.innerHTML = "<li style='padding:10px; color:#999;'>Nessun prodotto in ordine.</li>";
+      return;
+    }
+
+    // Prodotti normali raggruppati per fornitore
+    const gruppi = {};
+    inOrdine.forEach(p => {
+      const key = p.fornitore_selezionato_nome || "— Senza fornitore —";
+      if (!gruppi[key]) gruppi[key] = [];
+      gruppi[key].push({ tipo: 'prodotto', data: p });
+    });
+
+    // Reagenti raggruppati per fornitore
+    reagentiInOrdine.forEach(g => {
+      const key = g.fornitore || "— Senza fornitore —";
+      if (!gruppi[key]) gruppi[key] = [];
+      gruppi[key].push({ tipo: 'reagente', data: g });
+    });
+
+    Object.entries(gruppi).sort(([a], [b]) => a.localeCompare(b)).forEach(([fornitore, lista]) => {
+      const header = document.createElement("li");
+      header.style.cssText = "background:#8e44ad; color:white; font-weight:bold; padding:8px 12px; font-size:14px; list-style:none; border-radius:6px; margin-top:8px;";
+      header.textContent = "🏭 " + fornitore;
+      results.appendChild(header);
+      lista.forEach(item => {
+        if (item.tipo === 'prodotto') results.appendChild(createProductLiOrdine(item.data));
+        else results.appendChild(createReagenteLi(item.data));
+      });
+    });
+  }
+
+  function refreshLista() {
+    if (showingAll) { results.innerHTML = ""; renderAll(); }
+    else if (showingSottoscorta) {
+      results.innerHTML = "";
+      prodotti.filter(p => p.Giacenza < p.ScortaMinima).forEach(p => results.appendChild(createProductLi(p)));
+      const rsub = reagenti.filter(g => g.scorta_minima > 0 && g.giacenza < g.scorta_minima);
+      if (rsub.length > 0) {
+        const header = document.createElement("li");
+        header.style.cssText = "background:#16a085; color:white; font-weight:bold; padding:8px 12px; font-size:13px; list-style:none; border-radius:6px; margin-top:8px;";
+        header.textContent = "🧪 Reagenti sottoscorta";
+        results.appendChild(header);
+        rsub.forEach(g => results.appendChild(createReagenteLi(g)));
+      }
+    }
+    else if (showingInOrdine) { results.innerHTML = ""; renderInOrdine(); }
+    else if (showingCategorie && activeCategoryBtn) {
+      results.innerHTML = "";
+      prodotti.filter(p => p.categoria === activeCategoryBtn.textContent).forEach(p => results.appendChild(createProductLi(p)));
     }
   }
 
@@ -264,7 +286,6 @@ document.addEventListener("DOMContentLoaded", () => {
     else {
       resetAll();
       prodotti.filter(p => p.Giacenza < p.ScortaMinima).forEach(p => results.appendChild(createProductLi(p)));
-      // Reagenti sottoscorta
       const rsub = reagenti.filter(g => g.scorta_minima > 0 && g.giacenza < g.scorta_minima);
       if (rsub.length > 0) {
         const header = document.createElement("li");
@@ -319,7 +340,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ─── Colore giacenza prodotto normale ────────────────────────────────────
+  // ─── Colore giacenza ──────────────────────────────────────────────────────
   function aggiornaColore(span) {
     const current = parseInt(counterValue.textContent);
     const min = parseInt(span.textContent);
@@ -329,17 +350,15 @@ document.addEventListener("DOMContentLoaded", () => {
     else counterValue.classList.add("qty-red");
   }
 
-  // ─── Modal prodotto normale ───────────────────────────────────────────────
+  // ─── Fornitori admin (prodotti normali) ───────────────────────────────────
   function renderFornitoriAdmin(fornitori, prodottoDescrizione) {
     const container = document.createElement("div");
-    container.id = "fornitoriAdminSection";
     container.style.cssText = "margin-top:12px; border-top:1px solid #eee; padding-top:10px;";
     const titolo = document.createElement("div");
     titolo.style.cssText = "font-size:12px; font-weight:700; color:#555; margin-bottom:8px; letter-spacing:0.05em; text-transform:uppercase;";
     titolo.textContent = "🏭 Fornitori associati";
     container.appendChild(titolo);
     const lista = document.createElement("div");
-    lista.id = "fornitoriLista";
     container.appendChild(lista);
 
     function aggiornLista(fList) {
@@ -362,7 +381,6 @@ document.addEventListener("DOMContentLoaded", () => {
           await fetch("/api/fornitori", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: f.id, ordine: idx }) });
           await fetch("/api/fornitori", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: prev.id, ordine: idx + 1 }) });
           fList[idx - 1] = f; fList[idx] = prev;
-          fList[idx - 1].ordine = idx; fList[idx].ordine = idx + 1;
           fornitoriCache[prodottoDescrizione] = fList;
           aggiornLista(fList);
         });
@@ -375,7 +393,6 @@ document.addEventListener("DOMContentLoaded", () => {
           await fetch("/api/fornitori", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: f.id, ordine: idx + 2 }) });
           await fetch("/api/fornitori", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: next.id, ordine: idx + 1 }) });
           fList[idx + 1] = f; fList[idx] = next;
-          fList[idx].ordine = idx + 1; fList[idx + 1].ordine = idx + 2;
           fornitoriCache[prodottoDescrizione] = fList;
           aggiornLista(fList);
         });
@@ -383,10 +400,9 @@ document.addEventListener("DOMContentLoaded", () => {
         delBtn.type = "button"; delBtn.textContent = "✕";
         delBtn.style.cssText = "border:none; background:#e74c3c; color:white; border-radius:4px; padding:2px 7px; cursor:pointer; font-size:13px;";
         delBtn.addEventListener("click", async () => {
-          if (!confirm(`Rimuovere ${f.nome} da questo prodotto?`)) return;
+          if (!confirm(`Rimuovere ${f.nome}?`)) return;
           await fetch("/api/fornitori", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: f.id }) });
           fList.splice(idx, 1);
-          fList.forEach((x, i) => { x.ordine = i + 1; });
           fornitoriCache[prodottoDescrizione] = fList;
           aggiornLista(fList);
         });
@@ -402,12 +418,12 @@ document.addEventListener("DOMContentLoaded", () => {
         sel.innerHTML = `<option value="">— Aggiungi fornitore —</option>` + disponibili.map(f => `<option value="${f.id}">${f.nome}</option>`).join("");
         const addBtn = document.createElement("button");
         addBtn.type = "button"; addBtn.textContent = "＋";
-        addBtn.style.cssText = "background:#8e44ad; color:white; border:none; border-radius:6px; padding:5px 12px; font-size:16px; cursor:pointer; font-weight:bold;";
+        addBtn.style.cssText = "background:#8e44ad; color:white; border:none; border-radius:6px; padding:5px 12px; font-size:16px; cursor:pointer;";
         addBtn.addEventListener("click", async () => {
           if (!sel.value) return;
-          const fornitoreId = parseInt(sel.value);
-          await fetch("/api/fornitori", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: fornitoreId }) });
-          const nuovo = tuttiFornitori.find(f => f.id === fornitoreId);
+          const fId = parseInt(sel.value);
+          await fetch("/api/fornitori", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: fId }) });
+          const nuovo = tuttiFornitori.find(f => f.id === fId);
           fList.push({ id: nuovo.id, nome: nuovo.nome, ordine: fList.length + 1 });
           fornitoriCache[prodottoDescrizione] = fList;
           aggiornLista(fList);
@@ -420,6 +436,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return container;
   }
 
+  // ─── Modal prodotto normale ───────────────────────────────────────────────
   async function openModal(prodotto) {
     selectedProdotto = prodotto;
     selectedReagente = null;
@@ -471,7 +488,6 @@ document.addEventListener("DOMContentLoaded", () => {
       modalScorta.appendChild(renderFornitoriAdmin([...fornitori], prodotto.Descrizione));
     }
 
-    // Mostra contatore giacenza (nasconde sezione reagente)
     document.getElementById("counterSection").style.display = "";
     aggiornaBtn.style.display = "";
     counterValue.textContent = prodotto.Giacenza;
@@ -485,44 +501,77 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedReagente = gruppo;
     selectedProdotto = null;
     modalTitle.textContent = isAdmin ? "Reagente — Admin" : "Reagente";
-    modalDescrizione.innerHTML = `<strong>${gruppo.nome_prodotto}</strong><br><span style="color:#666; font-size:13px;">Giacenza: <strong style="color:${gruppo.giacenza < gruppo.scorta_minima ? 'red' : 'green'};">${gruppo.giacenza}</strong>${gruppo.scorta_minima > 0 ? ` (min: ${gruppo.scorta_minima})` : ''}</span>`;
+    modalDescrizione.innerHTML = `<strong>${gruppo.nome_prodotto}</strong><br>
+      <span style="color:#666; font-size:13px;">
+        Giacenza: <strong style="color:${gruppo.giacenza < gruppo.scorta_minima ? 'red' : 'green'};">${gruppo.giacenza}</strong>
+        ${gruppo.scorta_minima > 0 ? ` (min: ${gruppo.scorta_minima})` : ''}
+      </span>`;
 
-    // Nascondi contatore normale
     document.getElementById("counterSection").style.display = "none";
     aggiornaBtn.style.display = "none";
 
-    // Costruisci lista progressivi
     let html = `<div style="margin-bottom:10px; font-size:11px; font-weight:700; color:#555; letter-spacing:0.1em; text-transform:uppercase;">Progressivi disponibili</div>`;
+
     gruppo.progressivi.forEach(r => {
       const aperto = r.data_apertura ? `<span style="color:#e67e22;">📂 ${formatDataBreve(r.data_apertura)}</span>` : `<span style="color:#27ae60;">⬜ Non aperto</span>`;
-      const scadenza = r.scadenza_sepack ? `<span style="color:#e74c3c; font-size:11px;">⏰ Scad: ${r.scadenza_sepack}</span>` : '';
-      html += `
-        <div class="reagente-row" data-progressivo="${r.progressivo}" style="border:1px solid #ddd; border-radius:8px; padding:10px; margin-bottom:8px; cursor:pointer; transition:background 0.15s;">
-          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px;">
-            <strong style="font-size:14px; color:#2c3e50;">${r.progressivo}</strong>
-            ${aperto}
-          </div>
-          ${scadenza ? `<div style="margin-top:4px;">${scadenza}</div>` : ''}
-        </div>`;
+      const scadenza = r.scadenza_sepack ? `<span style="color:#e74c3c; font-size:11px;">⏰ ${r.scadenza_sepack}</span>` : '';
+      html += `<div class="reagente-row" data-progressivo="${r.progressivo}" style="border:1px solid #ddd; border-radius:8px; padding:10px; margin-bottom:8px; cursor:pointer;">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px;">
+          <strong style="font-size:14px; color:#2c3e50;">${r.progressivo}</strong>
+          ${aperto}
+        </div>
+        ${scadenza ? `<div style="margin-top:4px;">${scadenza}</div>` : ''}
+      </div>`;
     });
 
+    // Sezione in ordine — visibile solo in admin
     if (isAdmin) {
-      html += `<div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px; font-size:12px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em;">Scorta minima</div>
-        <input type="number" id="reagenteScortaMinima" value="${gruppo.scorta_minima}" style="margin-top:6px; width:80px; padding:5px; border:1.5px solid #00B4CC; border-radius:5px; font-size:15px; text-align:center;">
-        <button id="salvaScortaBtn" style="margin-left:8px; padding:5px 14px; background:#16a085; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Salva</button>`;
+      html += `
+        <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+          <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">In ordine</div>
+          <div class="admin-in-ordine-container">
+            <button type="button" id="decInOrdineR" class="qty-btn minus">−</button>
+            <span id="inOrdineValueR" class="qty-number qty-blue">${gruppo.inordine || 0}</span>
+            <button type="button" id="incInOrdineR" class="qty-btn plus">+</button>
+          </div>
+          <button id="salvaInOrdineBtn" style="margin-top:6px; padding:5px 14px; background:#8e44ad; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Salva in ordine</button>
+        </div>
+        <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+          <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Scorta minima</div>
+          <input type="number" id="reagenteScortaMinima" value="${gruppo.scorta_minima}" style="width:80px; padding:5px; border:1.5px solid #00B4CC; border-radius:5px; font-size:15px; text-align:center;">
+          <button id="salvaScortaBtn" style="margin-left:8px; padding:5px 14px; background:#16a085; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Salva</button>
+        </div>`;
     }
 
     modalScorta.innerHTML = html;
 
-    // Listener click su ogni progressivo
+    // Listener progressivi
     modalScorta.querySelectorAll(".reagente-row").forEach(row => {
       row.addEventListener("mouseenter", () => row.style.background = "#f8f8f8");
       row.addEventListener("mouseleave", () => row.style.background = "");
       row.addEventListener("click", () => openProgressivoDetail(row.dataset.progressivo, gruppo));
     });
 
-    // Listener salva scorta minima (admin)
     if (isAdmin) {
+      document.getElementById("decInOrdineR").addEventListener("click", () => {
+        const el = document.getElementById("inOrdineValueR");
+        let v = parseInt(el.textContent); if (v > 0) el.textContent = v - 1;
+      });
+      document.getElementById("incInOrdineR").addEventListener("click", () => {
+        const el = document.getElementById("inOrdineValueR");
+        el.textContent = parseInt(el.textContent) + 1;
+      });
+      document.getElementById("salvaInOrdineBtn").addEventListener("click", async () => {
+        const val = parseInt(document.getElementById("inOrdineValueR").textContent);
+        await fetch("/api/reagenti", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nome_prodotto: gruppo.nome_prodotto, inordine: val })
+        });
+        gruppo.inordine = val;
+        refreshLista();
+        alert("In ordine aggiornato!");
+      });
       document.getElementById("salvaScortaBtn").addEventListener("click", async () => {
         const sm = parseInt(document.getElementById("reagenteScortaMinima").value);
         if (isNaN(sm)) return;
@@ -541,11 +590,10 @@ document.addEventListener("DOMContentLoaded", () => {
     modal.style.display = "block";
   }
 
-  // ─── Dettaglio singolo progressivo ───────────────────────────────────────
+  // ─── Dettaglio progressivo ────────────────────────────────────────────────
   function openProgressivoDetail(progressivo, gruppo) {
     const r = gruppo.progressivi.find(x => x.progressivo === progressivo);
     if (!r) return;
-
     const aperto = !!r.data_apertura;
 
     let html = `
@@ -560,11 +608,10 @@ document.addEventListener("DOMContentLoaded", () => {
         <tr><td style="color:#777; padding:4px 0;">Posizione</td><td><strong>${r.posizione || '—'}</strong></td></tr>
         <tr><td style="color:#777; padding:4px 0;">MISL</td><td><strong>${r.misl || '—'}</strong></td></tr>
         <tr><td style="color:#777; padding:4px 0;">Apertura</td><td><strong>${formatDataBreve(r.data_apertura)}</strong></td></tr>
-        ${r.data_chiusura ? `<tr><td style="color:#777; padding:4px 0;">Chiusura</td><td><strong>${formatDataBreve(r.data_chiusura)}</strong></td></tr>` : ''}
       </table>`;
 
     if (!aperto) {
-      // Operatore normale: apri bottiglia
+      // Bottone apri
       html += `
         <div style="margin-top:16px; text-align:center;">
           <p style="font-size:13px; color:#555; margin-bottom:8px;">Data apertura:</p>
@@ -573,9 +620,17 @@ document.addEventListener("DOMContentLoaded", () => {
           <button id="apriBtn" style="background:#27ae60; color:white; border:none; border-radius:8px; padding:10px 24px; font-size:15px; font-weight:bold; cursor:pointer;">📂 Apri questa bottiglia</button>
         </div>`;
     } else {
-      html += `<div style="margin-top:12px; padding:8px 12px; background:#fef9e7; border-radius:6px; font-size:13px; color:#e67e22; font-weight:bold;">📂 Bottiglia già aperta il ${formatDataBreve(r.data_apertura)}</div>`;
+      // Bottone chiudi (utente e admin)
+      html += `
+        <div style="margin-top:12px; padding:8px 12px; background:#fef9e7; border-radius:6px; font-size:13px; color:#e67e22; font-weight:bold; margin-bottom:10px;">
+          📂 Aperta il ${formatDataBreve(r.data_apertura)}
+        </div>
+        <div style="text-align:center;">
+          <button id="chiudiBtn" style="background:#e74c3c; color:white; border:none; border-radius:8px; padding:10px 24px; font-size:15px; font-weight:bold; cursor:pointer;">🔒 Chiudi bottiglia (esaurita)</button>
+        </div>`;
     }
 
+    // Sezione admin
     if (isAdmin) {
       html += `
         <div style="margin-top:14px; border-top:1px solid #eee; padding-top:10px;">
@@ -595,9 +650,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     modalScorta.innerHTML = html;
-
     document.getElementById("backToGruppo").addEventListener("click", () => openReagenteModal(gruppo));
 
+    // Apri bottiglia
     if (!aperto) {
       document.getElementById("apriBtn").addEventListener("click", async () => {
         const dataVal = document.getElementById("dataAperturaInput").value;
@@ -608,21 +663,36 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ progressivo: r.progressivo, data_apertura: new Date(dataVal).toISOString() })
         });
         r.data_apertura = new Date(dataVal).toISOString();
-        // Aggiorna giacenza (rimane uguale, l'apertura non la cambia)
         alert(`Bottiglia ${r.progressivo} aperta!`);
         openProgressivoDetail(progressivo, gruppo);
       });
+    } else {
+      // Chiudi bottiglia (utente)
+      document.getElementById("chiudiBtn").addEventListener("click", async () => {
+        if (!confirm(`Confermi la chiusura della bottiglia ${r.progressivo}? La giacenza diminuirà di 1.`)) return;
+        const oggi = new Date().toISOString();
+        await fetch("/api/reagenti", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ progressivo: r.progressivo, data_chiusura: oggi })
+        });
+        r.data_chiusura = oggi;
+        // Aggiorna gruppo localmente
+        const idx = gruppo.progressivi.findIndex(x => x.progressivo === r.progressivo);
+        if (idx !== -1) { gruppo.progressivi.splice(idx, 1); gruppo.giacenza--; }
+        refreshLista();
+        closeModal();
+      });
     }
 
+    // Admin salva modifiche
     if (isAdmin) {
       document.getElementById("adminSalvaProgressivoBtn").addEventListener("click", async () => {
         const aperturaVal = document.getElementById("adminAperturaInput").value;
         const chiusuraVal = document.getElementById("adminChiusuraInput").value;
         const body = { progressivo: r.progressivo };
-        if (aperturaVal) body.data_apertura = new Date(aperturaVal).toISOString();
-        else body.data_apertura = null;
-        if (chiusuraVal) body.data_chiusura = new Date(chiusuraVal).toISOString();
-        else body.data_chiusura = null;
+        body.data_apertura = aperturaVal ? new Date(aperturaVal).toISOString() : null;
+        body.data_chiusura = chiusuraVal ? new Date(chiusuraVal).toISOString() : null;
         await fetch("/api/reagenti", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -630,11 +700,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         r.data_apertura = body.data_apertura;
         r.data_chiusura = body.data_chiusura;
-        // Se chiuso, rimuovi dai progressivi del gruppo e aggiorna giacenza
         if (body.data_chiusura) {
           const idx = gruppo.progressivi.findIndex(x => x.progressivo === r.progressivo);
           if (idx !== -1) { gruppo.progressivi.splice(idx, 1); gruppo.giacenza--; }
-          await loadReagenti(); // ricarica per aggiornare
+          await loadReagenti();
           closeModal();
           refreshLista();
           return;
@@ -645,7 +714,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ─── Chiudi modal ────────────────────────────────────────────────────────
+  // ─── Chiudi modal ─────────────────────────────────────────────────────────
   function closeModal() {
     modal.style.display = "none";
     selectedProdotto = null;
