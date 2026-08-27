@@ -517,17 +517,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function rowHTML(r, style = "") {
       const scadenza = r.scadenza_sepack ? `<span style="color:#e74c3c; font-size:11px;">⏰ ${r.scadenza_sepack}</span>` : '';
-      let stato = '';
-      if (r.data_chiusura)      stato = `<span style="color:#aaa;">🔒 ${formatDataBreve(r.data_chiusura)}</span>`;
-      else if (r.data_apertura) stato = `<span style="color:#e67e22;">📂 ${formatDataBreve(r.data_apertura)}</span>`;
-      else                      stato = `<span style="color:#27ae60;">⬜ Non aperto</span>`;
+      let statoLabel = '';
+      let aperturLabel = '';
+      if (r.data_chiusura) {
+        statoLabel   = `<span style="color:#aaa; font-size:12px;">🔒 ${formatDataBreve(r.data_chiusura)}</span>`;
+        aperturLabel = `<span style="color:#aaa; font-size:12px;">📂 ${formatDataBreve(r.data_apertura)}</span>`;
+      } else if (r.data_apertura) {
+        statoLabel   = `<span style="color:#e67e22; font-size:12px;">📂 ${formatDataBreve(r.data_apertura)}</span>`;
+        aperturLabel = '';
+      } else {
+        statoLabel   = `<span style="color:#999; font-size:14px;">—</span>`;
+        aperturLabel = '';
+      }
       return `<div class="reagente-row" data-progressivo="${r.progressivo}"
-        style="border:1px solid #ddd; border-radius:8px; padding:10px; margin-bottom:6px; cursor:pointer; ${style}">
-        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px;">
+        style="border:1px solid #ddd; border-radius:8px; padding:8px 12px; margin-bottom:6px; cursor:pointer; ${style}">
+        <div style="display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:8px;">
           <strong style="font-size:14px; color:#2c3e50;">${r.progressivo}</strong>
-          ${stato}
+          ${statoLabel}
+          ${scadenza}
         </div>
-        ${scadenza ? `<div style="margin-top:4px;">${scadenza}</div>` : ''}
+        ${aperturLabel ? `<div style="margin-top:4px; font-size:11px; color:#aaa;">Aperta: ${aperturLabel}</div>` : ''}
       </div>`;
     }
 
@@ -703,9 +712,24 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ progressivo: r.progressivo, data_chiusura: oggi })
         });
         r.data_chiusura = oggi;
-        // Aggiorna gruppo localmente
-        const idx = gruppo.progressivi.findIndex(x => x.progressivo === r.progressivo);
-        if (idx !== -1) { gruppo.progressivi.splice(idx, 1); gruppo.giacenza--; }
+        gruppo.giacenza = Math.max(0, gruppo.giacenza - 1);
+
+        // Mail se giacenza scende sotto la scorta minima
+        if (gruppo.scorta_minima > 0 && gruppo.giacenza < gruppo.scorta_minima) {
+          const now = new Date();
+          const dataOra = now.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+          try {
+            await emailjs.send('service_487ujbw', 'template_l5an0k5', {
+              title: 'Reagente Sottoscorta',
+              prodotto: gruppo.nome_prodotto,
+              giacenza: gruppo.giacenza,
+              scorta: gruppo.scorta_minima,
+              time: dataOra,
+              to_email: 'f.disabatino@sepack-lab.it'
+            });
+          } catch (e) { console.error('Errore email reagente:', e); }
+        }
+
         refreshLista();
         closeModal();
       });
@@ -724,17 +748,28 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body)
         });
+
+        const eraChiuso = !!r.data_chiusura;
         r.data_apertura = body.data_apertura;
         r.data_chiusura = body.data_chiusura;
-        if (body.data_chiusura) {
-          const idx = gruppo.progressivi.findIndex(x => x.progressivo === r.progressivo);
-          if (idx !== -1) { gruppo.progressivi.splice(idx, 1); gruppo.giacenza--; }
-          await loadReagenti();
-          closeModal();
-          refreshLista();
-          return;
+
+        // Aggiorna giacenza del gruppo localmente
+        if (!eraChiuso && body.data_chiusura) {
+          // Era aperto/non aperto, ora chiuso → giacenza -1
+          gruppo.giacenza = Math.max(0, gruppo.giacenza - 1);
+        } else if (eraChiuso && !body.data_chiusura) {
+          // Era chiuso, ora riaperto → giacenza +1
+          gruppo.giacenza++;
         }
-        alert("Modifiche salvate!");
+
+        // Aggiorna header modal
+        modalDescrizione.innerHTML = `<strong>${gruppo.nome_prodotto}</strong><br>
+          <span style="color:#666; font-size:13px;">
+            Giacenza: <strong style="color:${gruppo.giacenza < gruppo.scorta_minima ? 'red' : 'green'};">${gruppo.giacenza}</strong>
+            ${gruppo.scorta_minima > 0 ? ` (min: ${gruppo.scorta_minima})` : ''}
+          </span>`;
+
+        refreshLista();
         openProgressivoDetail(progressivo, gruppo);
       });
     }
