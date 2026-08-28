@@ -57,26 +57,29 @@ export default async function handler(req, res) {
       from += pageSize;
     }
 
-    // Fetch ordini
+    // Fetch ordini (inclusa nota)
     const { data: ordini } = await supabase
       .from('reagenti_ordini')
-      .select('nome_prodotto, inordine');
+      .select('nome_prodotto, inordine, nota');
     const ordiniMap = {};
-    (ordini || []).forEach(o => { ordiniMap[o.nome_prodotto] = o.inordine; });
+    (ordini || []).forEach(o => {
+      ordiniMap[o.nome_prodotto] = { inordine: o.inordine, nota: o.nota || '' };
+    });
 
     // Raggruppa per nome_prodotto
     const gruppi = {};
     allData.forEach(r => {
       if (!gruppi[r.nome_prodotto]) {
+        const ord = ordiniMap[r.nome_prodotto] || {};
         gruppi[r.nome_prodotto] = {
           nome_prodotto: r.nome_prodotto,
           scorta_minima: r.scorta_minima,
-          inordine: ordiniMap[r.nome_prodotto] || 0,
-          giacenza: 0,   // conta solo NON chiusi
+          inordine: ord.inordine || 0,
+          nota: ord.nota || '',
+          giacenza: 0,
           progressivi: []
         };
       }
-      // Giacenza: solo progressivi senza data_chiusura
       if (!r.data_chiusura) gruppi[r.nome_prodotto].giacenza++;
       gruppi[r.nome_prodotto].progressivi.push(r);
     });
@@ -103,14 +106,17 @@ export default async function handler(req, res) {
 
   // ── PATCH /api/reagenti ───────────────────────────────────────────────────
   if (req.method === 'PATCH') {
-    const { progressivo, data_apertura, data_chiusura, scorta_minima, inordine, nome_prodotto } = req.body;
+    const { progressivo, data_apertura, data_chiusura, scorta_minima, inordine, nota, nome_prodotto } = req.body;
 
-    if (inordine !== undefined && nome_prodotto) {
+    if ((inordine !== undefined || nota !== undefined) && nome_prodotto) {
+      const upsertData = { nome_prodotto };
+      if (inordine !== undefined) upsertData.inordine = inordine;
+      if (nota !== undefined) upsertData.nota = nota;
       const { error } = await supabase
         .from('reagenti_ordini')
-        .upsert({ nome_prodotto, inordine }, { onConflict: 'nome_prodotto' });
+        .upsert(upsertData, { onConflict: 'nome_prodotto' });
       if (error) return res.status(500).json({ error: error.message });
-      return res.status(200).json({ message: 'In ordine aggiornato' });
+      return res.status(200).json({ message: 'Aggiornato' });
     }
 
     if (!progressivo) return res.status(400).json({ error: 'progressivo richiesto' });
