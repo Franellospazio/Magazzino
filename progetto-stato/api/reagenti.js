@@ -97,9 +97,13 @@ export default async function handler(req, res) {
       g.fornitore = primo?.fornitore || null;
     });
 
-    const risultato = Object.values(gruppi).sort((a, b) =>
-      a.nome_prodotto.localeCompare(b.nome_prodotto)
-    );
+    const risultato = Object.values(gruppi).sort((a, b) => {
+      // Prima quelli con nota, poi ordine alfabetico
+      const aNota = a.nota ? 1 : 0;
+      const bNota = b.nota ? 1 : 0;
+      if (bNota !== aNota) return bNota - aNota;
+      return a.nome_prodotto.localeCompare(b.nome_prodotto);
+    });
 
     return res.status(200).json(risultato);
   }
