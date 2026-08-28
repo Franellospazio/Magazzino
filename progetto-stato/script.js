@@ -180,6 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
     content += ` — <span style="color:${gc};">${g.giacenza}</span>`;
     if (g.scorta_minima > 0) content += ` (<span style="color:blue;">${g.scorta_minima}</span>)`;
     if (g.inordine && g.inordine > 0) content += `<br>🛒 In ordine: ${g.inordine}`;
+    if (g.nota) content += `<br><span style="display:inline-block; margin-top:3px; background:#2980b9; color:white; font-size:11px; font-weight:bold; padding:2px 10px; border-radius:10px;">📌 ${g.nota}</span>`;
     li.innerHTML = content;
     li.addEventListener("click", () => openReagenteModal(g));
     return li;
@@ -593,6 +594,11 @@ document.addEventListener("DOMContentLoaded", () => {
           <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Scorta minima</div>
           <input type="number" id="reagenteScortaMinima" value="${gruppo.scorta_minima}" style="width:80px; padding:5px; border:1.5px solid #00B4CC; border-radius:5px; font-size:15px; text-align:center;">
           <button id="salvaScortaBtn" style="margin-left:8px; padding:5px 14px; background:#16a085; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Salva</button>
+        </div>
+        <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+          <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">📌 Nota / Uso</div>
+          <input type="text" id="reagenteNotaInput" value="${gruppo.nota || ''}" placeholder="Es: Lavaggio celle, GC-MS..." style="width:100%; padding:6px; border:1.5px solid #2980b9; border-radius:5px; font-size:13px; box-sizing:border-box;">
+          <button id="salvaNotaBtn" style="margin-top:6px; padding:5px 14px; background:#2980b9; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Salva nota</button>
         </div>`;
     }
 
@@ -624,6 +630,17 @@ document.addEventListener("DOMContentLoaded", () => {
         gruppo.inordine = val;
         patchReagenteLiInList(gruppo);
         alert("In ordine aggiornato!");
+      });
+      document.getElementById("salvaNotaBtn").addEventListener("click", async () => {
+        const notaVal = document.getElementById("reagenteNotaInput").value.trim();
+        await fetch("/api/reagenti", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nome_prodotto: gruppo.nome_prodotto, nota: notaVal })
+        });
+        gruppo.nota = notaVal;
+        patchReagenteLiInList(gruppo);
+        alert("Nota salvata!");
       });
       document.getElementById("salvaScortaBtn").addEventListener("click", async () => {
         const sm = parseInt(document.getElementById("reagenteScortaMinima").value);
