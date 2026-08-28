@@ -203,6 +203,8 @@ document.addEventListener("DOMContentLoaded", () => {
     results.innerHTML = "";
     categorieContainer.innerHTML = "";
     categorieContainer.style.display = "none";
+    if (mislContainer) { mislContainer.innerHTML = ""; mislContainer.style.display = "none"; }
+    activeMislBtn = null;
     showingAll = false; showingSottoscorta = false;
     showingInOrdine = false; showingCategorie = false;
     activeCategoryBtn = null;
@@ -314,24 +316,110 @@ document.addEventListener("DOMContentLoaded", () => {
     resetAll(); showingInOrdine = true; renderInOrdine();
   });
 
+  let mislContainer = null;
+  let activeMislBtn = null;
+
   categorieMasterBtn.addEventListener("click", () => {
     if (showingCategorie) { resetAll(); return; }
     resetAll();
     categorieContainer.style.display = "flex";
+
+    // Categorie prodotti normali
     const categorie = [...new Set(prodotti.map(p => p.categoria).filter(c => c))];
     categorie.forEach(cat => {
       const btn = document.createElement("button");
       btn.type = "button"; btn.textContent = cat; btn.classList.add("categoriaBtn");
       btn.style.touchAction = "manipulation"; btn.style.userSelect = "none";
       btn.addEventListener("click", () => {
-        if (activeCategoryBtn === btn) { results.innerHTML = ""; btn.classList.remove("active"); activeCategoryBtn = null; return; }
+        if (activeCategoryBtn === btn) { results.innerHTML = ""; btn.classList.remove("active"); activeCategoryBtn = null; if (mislContainer) { mislContainer.innerHTML = ""; mislContainer.style.display = "none"; } return; }
         if (activeCategoryBtn) activeCategoryBtn.classList.remove("active");
+        if (mislContainer) { mislContainer.innerHTML = ""; mislContainer.style.display = "none"; }
+        activeMislBtn = null;
         results.innerHTML = "";
         prodotti.filter(p => p.categoria === cat).forEach(p => results.appendChild(createProductLi(p)));
         btn.classList.add("active"); activeCategoryBtn = btn;
       });
       categorieContainer.appendChild(btn);
     });
+
+    // Bottone MISL
+    const mislBtn = document.createElement("button");
+    mislBtn.type = "button"; mislBtn.textContent = "🧪 MISL"; mislBtn.classList.add("categoriaBtn");
+    mislBtn.style.touchAction = "manipulation"; mislBtn.style.userSelect = "none";
+    mislBtn.addEventListener("click", () => {
+      if (activeCategoryBtn === mislBtn) {
+        results.innerHTML = ""; mislBtn.classList.remove("active"); activeCategoryBtn = null;
+        if (mislContainer) { mislContainer.innerHTML = ""; mislContainer.style.display = "none"; }
+        activeMislBtn = null;
+        return;
+      }
+      if (activeCategoryBtn) activeCategoryBtn.classList.remove("active");
+      activeCategoryBtn = mislBtn; mislBtn.classList.add("active");
+      results.innerHTML = "";
+
+      // Raccogli tutte le MISL uniche dai progressivi
+      const mislSet = new Set();
+      reagenti.forEach(g => {
+        g.progressivi.forEach(r => { if (r.misl && r.misl.trim()) mislSet.add(r.misl.trim()); });
+      });
+      const mislList = [...mislSet].sort((a, b) => a.localeCompare(b));
+
+      // Mostra secondo livello MISL
+      if (!mislContainer) {
+        mislContainer = document.createElement("div");
+        mislContainer.style.cssText = "display:flex; flex-wrap:wrap; gap:6px; padding:8px 0 4px; width:100%;";
+        categorieContainer.parentNode.insertBefore(mislContainer, categorieContainer.nextSibling);
+      }
+      mislContainer.innerHTML = "";
+      mislContainer.style.display = "flex";
+
+      mislList.forEach(misl => {
+        const mb = document.createElement("button");
+        mb.type = "button"; mb.textContent = misl; mb.classList.add("categoriaBtn");
+        mb.style.cssText = "background:#8e44ad; color:white; border:none; border-radius:16px; padding:5px 14px; font-size:12px; font-weight:bold; cursor:pointer; touch-action:manipulation;";
+        mb.addEventListener("click", () => {
+          if (activeMislBtn === mb) {
+            results.innerHTML = ""; mb.style.opacity = "1"; activeMislBtn = null; return;
+          }
+          if (activeMislBtn) activeMislBtn.style.opacity = "1";
+          activeMislBtn = mb; mb.style.opacity = "0.7";
+          results.innerHTML = "";
+
+          // Filtra reagenti che hanno almeno un progressivo con questa MISL
+          const reagentiFiltrati = reagenti.filter(g =>
+            g.progressivi.some(r => r.misl && r.misl.trim() === misl)
+          );
+
+          if (reagentiFiltrati.length === 0) {
+            results.innerHTML = "<li style='padding:10px; color:#999;'>Nessun reagente trovato.</li>";
+            return;
+          }
+
+          reagentiFiltrati.forEach(g => {
+            // Prendi posizione dal primo progressivo con questa MISL non chiuso
+            const progConMisl = g.progressivi.find(r => r.misl && r.misl.trim() === misl && !r.data_chiusura)
+                             || g.progressivi.find(r => r.misl && r.misl.trim() === misl);
+            const posizione = progConMisl?.posizione || '—';
+
+            const li = document.createElement("li");
+            li.style.borderBottom = "1px solid #ccc";
+            li.style.padding = "5px 0";
+            li.dataset.reagente = g.nome_prodotto;
+            let gc = g.giacenza < g.scorta_minima ? "red" : g.giacenza === g.scorta_minima ? "orange" : "green";
+            let content = `<strong style="color:black;">${g.nome_prodotto}</strong>`;
+            content += ` — <span style="color:${gc};">${g.giacenza}</span>`;
+            if (g.scorta_minima > 0) content += ` (<span style="color:blue;">${g.scorta_minima}</span>)`;
+            content += `<br><span style="display:inline-block; margin-top:3px; background:#8e44ad; color:white; font-size:11px; font-weight:bold; padding:2px 10px; border-radius:10px;">📍 ${posizione}</span>`;
+            if (g.nota) content += ` <span style="display:inline-block; margin-top:3px; background:#2980b9; color:white; font-size:11px; font-weight:bold; padding:2px 10px; border-radius:10px;">📌 ${g.nota}</span>`;
+            li.innerHTML = content;
+            li.addEventListener("click", () => openReagenteModal(g));
+            results.appendChild(li);
+          });
+        });
+        mislContainer.appendChild(mb);
+      });
+    });
+    categorieContainer.appendChild(mislBtn);
     showingCategorie = true;
   });
 
