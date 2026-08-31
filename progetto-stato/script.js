@@ -1,4 +1,40 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+
+  // ─── Auth ─────────────────────────────────────────────────────────────────
+  const SUPABASE_URL_CLIENT  = 'https://wonuzdqupujzeqhucxok.supabase.co';
+  const SUPABASE_ANON_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indvbnv6ZHF1cHVqemVxaHVjeG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDk4MjQwMDAsImV4cCI6MjAyNTQwMDAwMH0.INSERISCI_LA_TUA_ANON_KEY';
+  const sbClient = supabase.createClient(SUPABASE_URL_CLIENT, SUPABASE_ANON_KEY);
+
+  // Controlla sessione
+  const { data: { session } } = await sbClient.auth.getSession();
+  if (!session) {
+    window.location.href = '/login.html';
+    return;
+  }
+
+  let currentSession = session;
+
+  // Rinnovo automatico token
+  sbClient.auth.onAuthStateChange((event, s) => {
+    if (event === 'SIGNED_OUT') window.location.href = '/login.html';
+    if (s) currentSession = s;
+  });
+
+  // Helper headers con JWT
+  function authHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${currentSession.access_token}`
+    };
+  }
+
+  // Controlla se admin dal profilo
+  const { data: profile } = await sbClient
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', session.user.id)
+    .single();
+  const isAdminFromDB = profile?.is_admin === true;
   const search = document.getElementById("search");
   const results = document.getElementById("results");
   const modal = document.getElementById("giacenzaModal");
@@ -28,11 +64,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let showingInOrdine = false;
   let showingCategorie = false;
   let activeCategoryBtn = null;
-  let isAdmin = false;
+  let isAdmin = isAdminFromDB;   // dal profilo Supabase, non dalla password
   let fornitoriCache = {};
   let tuttiFornitori = [];
 
-  const ADMIN_PASSWORD = "ori3";
   const STICKER_URL = "https://wonuzdqupujzeqhucxok.supabase.co/storage/v1/object/public/Admin/IMG_9082.webp";
 
   // ─── Utility date ─────────────────────────────────────────────────────────
@@ -77,22 +112,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isAdmin && nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "inline-flex";
   }
 
-  // ─── Admin ────────────────────────────────────────────────────────────────
-  adminBtn.addEventListener("click", () => {
-    const pw = prompt("Inserisci password admin (4 caratteri):");
-    if (pw === ADMIN_PASSWORD) {
-      isAdmin = true;
-      adminBtn.textContent = "🔓 Admin ON";
-      adminBtn.style.backgroundColor = "#27ae60";
-      if (nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "inline-flex";
-      loadTuttiFornitori();
-      alert("Modalità admin attivata!");
-    } else {
-      isAdmin = false;
-      adminBtn.textContent = "🛠️ Admin";
-      adminBtn.style.backgroundColor = "#e74c3c";
-      if (nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "none";
-      results.innerHTML = `<img src="${STICKER_URL}" alt="Non sei amministratore!!" style="max-width:200px;">`;
+  // ─── Admin — determinato dal profilo DB, bottone mostra stato ────────────
+  if (isAdmin) {
+    adminBtn.textContent = "🔓 Admin ON";
+    adminBtn.style.backgroundColor = "#27ae60";
+    if (nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "inline-flex";
+    loadTuttiFornitori();
+  }
+  adminBtn.addEventListener("click", async () => {
+    if (confirm("Vuoi uscire dal sito?")) {
+      await sbClient.auth.signOut();
+      window.location.href = '/login.html';
     }
   });
 
@@ -101,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const nome = prompt("Nome del nuovo fornitore:");
       if (!nome || !nome.trim()) return;
       try {
-        const res = await fetch("/api/fornitori", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nome: nome.trim() }) });
+        const res = await fetch("/api/fornitori", { method: "POST", headers: authHeaders(), body: JSON.stringify({ nome: nome.trim() }) });
         if (!res.ok) throw new Error();
         const nuovo = await res.json();
         tuttiFornitori.push(nuovo);
@@ -114,7 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ─── Carica dati ─────────────────────────────────────────────────────────
   async function loadProdotti() {
     try {
-      const res = await fetch("/api/prodotti");
+      const res = await fetch("/api/prodotti", { headers: authHeaders() });
       if (!res.ok) throw new Error();
       prodotti = await res.json();
     } catch (err) { console.error("Errore caricamento prodotti:", err); }
@@ -122,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadReagenti() {
     try {
-      const res = await fetch("/api/reagenti");
+      const res = await fetch("/api/reagenti", { headers: authHeaders() });
       if (!res.ok) throw new Error();
       reagenti = await res.json();
     } catch (err) { console.error("Errore caricamento reagenti:", err); }
@@ -130,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadTuttiFornitori() {
     try {
-      const res = await fetch("/api/fornitori?tutti=1");
+      const res = await fetch("/api/fornitori?tutti=1", { headers: authHeaders() });
       if (!res.ok) return;
       tuttiFornitori = await res.json();
     } catch (err) { console.error("Errore fornitori:", err); }
@@ -139,7 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadFornitori(descrizione) {
     if (fornitoriCache[descrizione]) return fornitoriCache[descrizione];
     try {
-      const res = await fetch(`/api/fornitori?prodotto=${encodeURIComponent(descrizione)}`);
+      const res = await fetch(`/api/fornitori?prodotto=${encodeURIComponent(descrizione)}`, { headers: authHeaders() });
       if (!res.ok) return [];
       const data = await res.json();
       fornitoriCache[descrizione] = data;
@@ -477,8 +507,8 @@ document.addEventListener("DOMContentLoaded", () => {
         upBtn.disabled = idx === 0;
         upBtn.addEventListener("click", async () => {
           const prev = fList[idx - 1];
-          await fetch("/api/fornitori", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: f.id, ordine: idx }) });
-          await fetch("/api/fornitori", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: prev.id, ordine: idx + 1 }) });
+          await fetch("/api/fornitori", { method: "PATCH", headers: authHeaders(), body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: f.id, ordine: idx }) });
+          await fetch("/api/fornitori", { method: "PATCH", headers: authHeaders(), body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: prev.id, ordine: idx + 1 }) });
           fList[idx - 1] = f; fList[idx] = prev;
           fornitoriCache[prodottoDescrizione] = fList;
           aggiornLista(fList);
@@ -489,8 +519,8 @@ document.addEventListener("DOMContentLoaded", () => {
         downBtn.disabled = idx === fList.length - 1;
         downBtn.addEventListener("click", async () => {
           const next = fList[idx + 1];
-          await fetch("/api/fornitori", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: f.id, ordine: idx + 2 }) });
-          await fetch("/api/fornitori", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: next.id, ordine: idx + 1 }) });
+          await fetch("/api/fornitori", { method: "PATCH", headers: authHeaders(), body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: f.id, ordine: idx + 2 }) });
+          await fetch("/api/fornitori", { method: "PATCH", headers: authHeaders(), body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: next.id, ordine: idx + 1 }) });
           fList[idx + 1] = f; fList[idx] = next;
           fornitoriCache[prodottoDescrizione] = fList;
           aggiornLista(fList);
@@ -500,7 +530,7 @@ document.addEventListener("DOMContentLoaded", () => {
         delBtn.style.cssText = "border:none; background:#e74c3c; color:white; border-radius:4px; padding:2px 7px; cursor:pointer; font-size:13px;";
         delBtn.addEventListener("click", async () => {
           if (!confirm(`Rimuovere ${f.nome}?`)) return;
-          await fetch("/api/fornitori", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: f.id }) });
+          await fetch("/api/fornitori", { method: "DELETE", headers: authHeaders(), body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: f.id }) });
           fList.splice(idx, 1);
           fornitoriCache[prodottoDescrizione] = fList;
           aggiornLista(fList);
@@ -521,7 +551,7 @@ document.addEventListener("DOMContentLoaded", () => {
         addBtn.addEventListener("click", async () => {
           if (!sel.value) return;
           const fId = parseInt(sel.value);
-          await fetch("/api/fornitori", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: fId }) });
+          await fetch("/api/fornitori", { method: "POST", headers: authHeaders(), body: JSON.stringify({ prodotto: prodottoDescrizione, fornitore_id: fId }) });
           const nuovo = tuttiFornitori.find(f => f.id === fId);
           fList.push({ id: nuovo.id, nome: nuovo.nome, ordine: fList.length + 1 });
           fornitoriCache[prodottoDescrizione] = fList;
@@ -712,7 +742,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const val = parseInt(document.getElementById("inOrdineValueR").textContent);
         await fetch("/api/reagenti", {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify({ nome_prodotto: gruppo.nome_prodotto, inordine: val })
         });
         gruppo.inordine = val;
@@ -723,7 +753,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const notaVal = document.getElementById("reagenteNotaInput").value.trim();
         await fetch("/api/reagenti", {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify({ nome_prodotto: gruppo.nome_prodotto, nota: notaVal })
         });
         gruppo.nota = notaVal;
@@ -735,7 +765,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (isNaN(sm)) return;
         await fetch("/api/reagenti", {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify({ progressivo: gruppo.progressivi[0].progressivo, scorta_minima: sm })
         });
         gruppo.scorta_minima = sm;
@@ -836,7 +866,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!dataVal) return;
         await fetch("/api/reagenti", {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify({ progressivo: r.progressivo, data_apertura: new Date(dataVal).toISOString() })
         });
         r.data_apertura = new Date(dataVal).toISOString();
@@ -854,7 +884,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const oggi = new Date().toISOString();
         const resp = await fetch("/api/reagenti", {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify({ progressivo: r.progressivo, data_chiusura: oggi })
         });
         const respJson = await resp.json();
@@ -895,7 +925,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const resp = await fetch("/api/reagenti", {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify(body)
         });
         console.log(`[DEBUG] admin PATCH risposta:`, resp.status, await resp.json());
@@ -980,7 +1010,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch("/api/prodotti", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(),
         body: JSON.stringify({ descrizione: selectedProdotto.Descrizione, Giacenza: giacenzaNum, inordine: inOrdineNum, ScortaMinima: scortaMinimaNum, fornitore_selezionato: fornitoreId })
       });
       if (!res.ok) throw new Error();
