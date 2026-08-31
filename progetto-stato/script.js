@@ -29,15 +29,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // Controlla se admin dal profilo
-const { data: profile } = await sbClient
-  .auth.setSession(session)
-  .then(() => sbClient
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', session.user.id)
-    .single()
-  );
-const isAdminFromDB = profile?.is_admin === true;
+const profileRes = await fetch(
+  `https://wonuzdqupujzeqhucxok.supabase.co/rest/v1/profiles?select=is_admin&id=eq.${session.user.id}`,
+  { headers: {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': `Bearer ${session.access_token}`
+  }}
+);
+const profileData = await profileRes.json();
+const isAdminFromDB = profileData?.[0]?.is_admin === true;
   const search = document.getElementById("search");
   const results = document.getElementById("results");
   const modal = document.getElementById("giacenzaModal");
