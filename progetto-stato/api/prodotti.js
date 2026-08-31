@@ -1,4 +1,4 @@
-// api/prodotti.js
+// api/prodotti.js — con verifica auth
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -6,57 +6,62 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
+async function getUser(req) {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith('Bearer ')) return null;
+  const { data: { user } } = await supabase.auth.getUser(auth.split(' ')[1]);
+  return user || null;
+}
+
+async function checkAdmin(userId) {
+  const { data } = await supabase.from('profiles').select('is_admin').eq('id', userId).single();
+  return data?.is_admin === true;
+}
+
 export default async function handler(req, res) {
-  if (req.method === "GET") {
+  // Verifica autenticazione su tutti i metodi
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Non autenticato' });
+
+  if (req.method === 'GET') {
     const { data, error } = await supabase
-      .from("Magazzino")
-      .select("*, fornitori(nome)")
-      .order("Descrizione", { ascending: true });
+      .from('Magazzino')
+      .select('*, fornitori:prodotto_fornitori(fornitore_id, ordine, fornitori(id, nome))')
+      .order('Descrizione', { ascending: true });
+    if (error) return res.status(500).json({ error: error.message });
 
-    if (error) {
-      console.error("Errore GET Supabase:", error);
-      return res.status(500).json({ error: error.message });
-    }
-
-    // Aggiunge fornitore_selezionato_nome flat sull'oggetto
-    const prodotti = data.map(p => ({
-      ...p,
-      fornitore_selezionato_nome: p.fornitori?.nome ?? null,
-      fornitori: undefined // rimuove l'oggetto nested
-    }));
-
+    const prodotti = data.map(p => {
+      const fornitoriOrdinati = (p.fornitori || [])
+        .sort((a, b) => a.ordine - b.ordine)
+        .map(f => ({ id: f.fornitori.id, nome: f.fornitori.nome, ordine: f.ordine }));
+      const fornitoreSelezionato = fornitoriOrdinati.find(f => f.id === p.fornitore_selezionato);
+      return {
+        ...p,
+        fornitori: fornitoriOrdinati,
+        fornitore_selezionato_nome: fornitoreSelezionato?.nome || null
+      };
+    });
     return res.status(200).json(prodotti);
   }
 
-  if (req.method === "PATCH") {
-    const { descrizione, Giacenza, ScortaMinima, inordine, fornitore_selezionato } = req.body;
+  if (req.method === 'PATCH') {
+    // Solo admin può fare PATCH
+    const admin = await checkAdmin(user.id);
+    if (!admin) return res.status(403).json({ error: 'Non autorizzato' });
 
-    if (!descrizione || Giacenza === undefined) {
-      return res.status(400).json({ error: "descrizione e Giacenza richiesti" });
-    }
+    const { descrizione, Giacenza, inordine, ScortaMinima, fornitore_selezionato } = req.body;
+    if (!descrizione) return res.status(400).json({ error: 'Descrizione richiesta' });
 
-    const updateData = {
-      Giacenza,
-      ultimo_aggiornamento: new Date().toISOString()
-    };
-
-    if (ScortaMinima !== undefined) updateData.ScortaMinima = ScortaMinima;
+    const updateData = { ultimo_aggiornamento: new Date().toISOString() };
+    if (Giacenza !== undefined) updateData.Giacenza = Giacenza;
     if (inordine !== undefined) updateData.inordine = inordine;
-    // fornitore_selezionato può essere un id o null (quando inordine torna a 0)
+    if (ScortaMinima !== undefined) updateData.ScortaMinima = ScortaMinima;
     if (fornitore_selezionato !== undefined) updateData.fornitore_selezionato = fornitore_selezionato;
 
-    const { error } = await supabase
-      .from("Magazzino")
-      .update(updateData)
-      .eq("Descrizione", descrizione);
-
-    if (error) {
-      console.error("Errore PATCH Supabase:", error);
-      return res.status(500).json({ error: error.message });
-    }
-
-    return res.status(200).json({ message: "Prodotto aggiornato" });
+    const { error } = await supabase.from('Magazzino').update(updateData).eq('Descrizione', descrizione);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json({ message: 'Aggiornato' });
   }
 
-  return res.status(405).json({ error: "Metodo non consentito" });
+  return res.status(405).json({ error: 'Metodo non consentito' });
 }
