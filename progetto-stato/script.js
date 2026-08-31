@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ─── Auth ─────────────────────────────────────────────────────────────────
   const SUPABASE_URL_CLIENT  = 'https://wonuzdqupujzeqhucxok.supabase.co';
-  const SUPABASE_ANON_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indvbnv6ZHF1cHVqemVxaHVjeG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDk4MjQwMDAsImV4cCI6MjAyNTQwMDAwMH0.INSERISCI_LA_TUA_ANON_KEY';
+  const SUPABASE_ANON_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvbnV6ZHF1cHVqemVxaHVjeG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxNzYzMjQsImV4cCI6MjA3Mzc1MjMyNH0.UVNF-cb7W9nynV327q4Qz8-vdDk6_6IKbwrvFwVA2Mw';
   const sbClient = supabase.createClient(SUPABASE_URL_CLIENT, SUPABASE_ANON_KEY);
 
   // Controlla sessione
