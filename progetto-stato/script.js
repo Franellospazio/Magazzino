@@ -30,11 +30,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Controlla se admin dal profilo
 const { data: profile } = await sbClient
-  .from('profiles')
-  .select('is_admin')
-  .eq('id', session.user.id)
-  .single();
-  const isAdminFromDB = profile?.is_admin === true;
+  .auth.setSession(session)
+  .then(() => sbClient
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', session.user.id)
+    .single()
+  );
+const isAdminFromDB = profile?.is_admin === true;
   const search = document.getElementById("search");
   const results = document.getElementById("results");
   const modal = document.getElementById("giacenzaModal");
