@@ -6,6 +6,18 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
+async function getUser(req) {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith('Bearer ')) return null;
+  const { data: { user } } = await supabase.auth.getUser(auth.split(' ')[1]);
+  return user || null;
+}
+
+async function checkAdmin(userId) {
+  const { data } = await supabase.from('profiles').select('is_admin').eq('id', userId).single();
+  return data?.is_admin === true;
+}
+
 // Ordina per anno-numero progressivo
 function parseProgressivo(p) {
   const [y, n] = p.split('-').map(Number);
@@ -25,6 +37,9 @@ function statoProgressivo(r) {
 }
 
 export default async function handler(req, res) {
+  // Verifica autenticazione
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Non autenticato' });
 
   // ── GET /api/reagenti ─────────────────────────────────────────────────────
   if (req.method === 'GET') {
