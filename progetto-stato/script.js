@@ -11,6 +11,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   console.log('session:', session);
 console.log('token:', session?.access_token?.substring(0, 50));
 console.log('anon key:', SUPABASE_ANON_KEY?.substring(0, 20));
+
+  const decoded = JSON.parse(atob(session.access_token.split('.')[1]));
+console.log('token exp:', new Date(decoded.exp * 1000));
+console.log('token role:', decoded.role);
+console.log('token sub:', decoded.sub);
   if (!session) {
     window.location.href = '/login.html';
     return;
