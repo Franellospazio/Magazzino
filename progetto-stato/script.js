@@ -42,10 +42,13 @@ const profileRes = await fetch(
   `https://wonuzdqupujzeqhucxok.supabase.co/rest/v1/profiles?select=is_admin&id=eq.${session.user.id}`,
   { headers: {
     'apikey': SUPABASE_ANON_KEY,
-    'Authorization': `Bearer ${session.access_token}`
+    'Authorization': `Bearer ${session.access_token}`,
+    'Accept': 'application/json'
   }}
 );
+console.log('profile status:', profileRes.status);
 const profileData = await profileRes.json();
+console.log('profile data:', profileData);
 const isAdminFromDB = profileData?.[0]?.is_admin === true;
   const search = document.getElementById("search");
   const results = document.getElementById("results");
