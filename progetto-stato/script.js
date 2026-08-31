@@ -7,6 +7,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Controlla sessione
   const { data: { session } } = await sbClient.auth.getSession();
+
+  console.log('session:', session);
+console.log('token:', session?.access_token?.substring(0, 50));
+console.log('anon key:', SUPABASE_ANON_KEY?.substring(0, 20));
   if (!session) {
     window.location.href = '/login.html';
     return;
