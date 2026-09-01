@@ -2,63 +2,39 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ─── Auth ─────────────────────────────────────────────────────────────────
   const SUPABASE_URL_CLIENT  = 'https://wonuzdqupujzeqhucxok.supabase.co';
-  const SUPABASE_ANON_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvbnV6ZHF1cHVqemVxaHVjeG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxNzYzMjQsImV4cCI6MjA3Mzc1MjMyNH0.UVNF-cb7W9nynV327q4Qz8-vdDk6_6IKbwrvFwVA2Mw';
+  const SUPABASE_ANON_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indvbnv6ZHF1cHVqemVxaHVjeG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDk4MjQwMDAsImV4cCI6MjAyNTQwMDAwMH0.INSERISCI_LA_TUA_ANON_KEY';
   const sbClient = supabase.createClient(SUPABASE_URL_CLIENT, SUPABASE_ANON_KEY);
 
-  // Controlla sessione
-const { data: { session } } = await sbClient.auth.getSession();
+  const { data: { session } } = await sbClient.auth.getSession();
 
-if (!session) {
-  window.location.href = '/login.html';
-  return;
-}
-
-// Solo ora i log, session è garantito non null
-console.log('session:', session);
-console.log('token:', session?.access_token?.substring(0, 50));
-console.log('anon key:', SUPABASE_ANON_KEY?.substring(0, 20));
-  console.log('session:', session);
-console.log('token:', session?.access_token?.substring(0, 50));
-console.log('anon key:', SUPABASE_ANON_KEY?.substring(0, 20));
-
-  const decoded = JSON.parse(atob(session.access_token.split('.')[1]));
-console.log('token exp:', new Date(decoded.exp * 1000));
-console.log('token role:', decoded.role);
-console.log('token sub:', decoded.sub);
-  if (!session) {
-    window.location.href = '/login.html';
-    return;
-  }
-
+  let isReadonly = !session;
   let currentSession = session;
 
-  // Rinnovo automatico token
   sbClient.auth.onAuthStateChange((event, s) => {
     if (event === 'SIGNED_OUT') window.location.href = '/login.html';
     if (s) currentSession = s;
   });
 
-  // Helper headers con JWT
   function authHeaders() {
     return {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${currentSession.access_token}`
+      'Authorization': currentSession ? `Bearer ${currentSession.access_token}` : ''
     };
   }
 
-  // Controlla se admin dal profilo
-const profileRes = await fetch(
-  `https://wonuzdqupujzeqhucxok.supabase.co/rest/v1/profiles?select=is_admin&id=eq.${session.user.id}`,
-  { headers: {
-    'apikey': SUPABASE_ANON_KEY,
-    'Authorization': `Bearer ${session.access_token}`,
-    'Accept': 'application/json'
-  }}
-);
-console.log('profile status:', profileRes.status);
-const profileData = await profileRes.json();
-console.log('profile data:', profileData);
-const isAdminFromDB = profileData?.[0]?.is_admin === true;
+  let isAdminFromDB = false;
+  if (session) {
+    const profileRes = await fetch(
+      `${SUPABASE_URL_CLIENT}/rest/v1/profiles?select=is_admin&id=eq.${session.user.id}`,
+      { headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${session.access_token}`,
+        'Accept': 'application/json'
+      }}
+    );
+    const profileData = await profileRes.json();
+    isAdminFromDB = profileData?.[0]?.is_admin === true;
+  }
   const search = document.getElementById("search");
   const results = document.getElementById("results");
   const modal = document.getElementById("giacenzaModal");
@@ -88,11 +64,23 @@ const isAdminFromDB = profileData?.[0]?.is_admin === true;
   let showingInOrdine = false;
   let showingCategorie = false;
   let activeCategoryBtn = null;
-  let isAdmin = isAdminFromDB;   // dal profilo Supabase, non dalla password
+  let isAdmin = isAdminFromDB;
   let fornitoriCache = {};
   let tuttiFornitori = [];
 
   const STICKER_URL = "https://wonuzdqupujzeqhucxok.supabase.co/storage/v1/object/public/Admin/IMG_9082.webp";
+
+  // ─── Modalità sola lettura ────────────────────────────────────────────────
+  if (isReadonly) {
+    // Nascondi bottoni modifica
+    if (adminBtn) adminBtn.style.display = "none";
+    if (nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "none";
+    // Aggiungi banner sola lettura
+    const banner = document.createElement("div");
+    banner.style.cssText = "position:fixed; bottom:0; left:0; right:0; background:#f39c12; color:white; text-align:center; padding:6px; font-size:12px; font-weight:bold; z-index:9999;";
+    banner.innerHTML = '👁 Modalità sola lettura — <a href="/login.html" style="color:white; text-decoration:underline;">Accedi</a> per modificare';
+    document.body.appendChild(banner);
+  }
 
   // ─── Utility date ─────────────────────────────────────────────────────────
   function formatData(timestamp) {
@@ -219,7 +207,7 @@ const isAdminFromDB = profileData?.[0]?.is_admin === true;
     if (p.ultimo_aggiornamento) content += `<br><span style="color:#666; font-size:12px;">📅 Aggiornato: ${formatData(p.ultimo_aggiornamento)}</span>`;
     content += p.ImageURL ? `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">` : `<br><em>(img non presente)</em>`;
     li.innerHTML = content;
-    li.addEventListener("click", () => openModal(p));
+    li.addEventListener("click", () => { if (!isReadonly) openModal(p); });
     return li;
   }
 
@@ -236,7 +224,7 @@ const isAdminFromDB = profileData?.[0]?.is_admin === true;
     if (g.inordine && g.inordine > 0) content += `<br>🛒 In ordine: ${g.inordine}`;
     if (g.nota) content += `<br><span style="display:inline-block; margin-top:3px; background:#2980b9; color:white; font-size:11px; font-weight:bold; padding:2px 10px; border-radius:10px;">📌 ${g.nota}</span>`;
     li.innerHTML = content;
-    li.addEventListener("click", () => openReagenteModal(g));
+    li.addEventListener("click", () => { if (!isReadonly) openReagenteModal(g); });
     return li;
   }
 
@@ -466,7 +454,7 @@ const isAdminFromDB = profileData?.[0]?.is_admin === true;
             content += `<br><span style="display:inline-block; margin-top:3px; background:#8e44ad; color:white; font-size:11px; font-weight:bold; padding:2px 10px; border-radius:10px;">📍 ${posizione}</span>`;
             if (g.nota) content += ` <span style="display:inline-block; margin-top:3px; background:#2980b9; color:white; font-size:11px; font-weight:bold; padding:2px 10px; border-radius:10px;">📌 ${g.nota}</span>`;
             li.innerHTML = content;
-            li.addEventListener("click", () => openReagenteModal(g));
+            li.addEventListener("click", () => { if (!isReadonly) openReagenteModal(g); });
             results.appendChild(li);
           });
         });
