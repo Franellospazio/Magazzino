@@ -48,9 +48,13 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-    // Solo admin può fare PATCH
-    const admin = await checkAdmin(user.id);
-    if (!admin) return res.status(403).json({ error: 'Non autorizzato' });
+    // Con auth attiva verifica che sia admin
+    if (AUTH_ENABLED) {
+      const user = await getUser(req);
+      if (!user) return res.status(401).json({ error: 'Non autenticato' });
+      const admin = await checkAdmin(user.id);
+      if (!admin) return res.status(403).json({ error: 'Non autorizzato' });
+    }
 
     const { descrizione, Giacenza, inordine, ScortaMinima, fornitore_selezionato } = req.body;
     if (!descrizione) return res.status(400).json({ error: 'Descrizione richiesta' });
