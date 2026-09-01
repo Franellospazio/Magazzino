@@ -5,7 +5,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const SUPABASE_ANON_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indvbnv6ZHF1cHVqemVxaHVjeG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDk4MjQwMDAsImV4cCI6MjAyNTQwMDAwMH0.INSERISCI_LA_TUA_ANON_KEY';
   const sbClient = supabase.createClient(SUPABASE_URL_CLIENT, SUPABASE_ANON_KEY);
 
-  const { data: { session } } = await sbClient.auth.getSession();
+const { data: { session } } = await sbClient.auth.getSession();
+
+  const solaLettura = new URLSearchParams(window.location.search).get('readonly') === '1';
+  if (!session && !solaLettura) {
+    window.location.href = '/login.html';
+    return;
+  }
 
   let isReadonly = !session;
   let currentSession = session;
