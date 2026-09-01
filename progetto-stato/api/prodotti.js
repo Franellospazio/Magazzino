@@ -18,10 +18,10 @@ async function checkAdmin(userId) {
   return data?.is_admin === true;
 }
 
+const AUTH_ENABLED = process.env.AUTH_ENABLED === 'true';
+
 export default async function handler(req, res) {
-  // GET è pubblico (sola lettura senza login)
-  // PATCH richiede autenticazione
-  if (req.method !== 'GET') {
+  if (AUTH_ENABLED && req.method !== 'GET') {
     const user = await getUser(req);
     if (!user) return res.status(401).json({ error: 'Non autenticato' });
   }
