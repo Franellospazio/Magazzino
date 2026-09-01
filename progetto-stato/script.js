@@ -2,22 +2,27 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ─── Auth ─────────────────────────────────────────────────────────────────
   const SUPABASE_URL_CLIENT  = 'https://wonuzdqupujzeqhucxok.supabase.co';
-  const SUPABASE_ANON_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indvbnv6ZHF1cHVqemVxaHVjeG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDk4MjQwMDAsImV4cCI6MjAyNTQwMDAwMH0.INSERISCI_LA_TUA_ANON_KEY';
+  const SUPABASE_ANON_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvbnV6ZHF1cHVqemVxaHVjeG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxNzYzMjQsImV4cCI6MjA3Mzc1MjMyNH0.UVNF-cb7W9nynV327q4Qz8-vdDk6_6IKbwrvFwVA2Mw';
   const sbClient = supabase.createClient(SUPABASE_URL_CLIENT, SUPABASE_ANON_KEY);
 
-const { data: { session } } = await sbClient.auth.getSession();
+  // Leggi config dal server — AUTH_ENABLED si cambia da Vercel env vars
+  const configRes = await fetch('/api/config');
+  const config = await configRes.json();
+  const AUTH_ENABLED = config.authEnabled;
 
+  const { data: { session } } = await sbClient.auth.getSession();
   const solaLettura = new URLSearchParams(window.location.search).get('readonly') === '1';
-  if (!session && !solaLettura) {
+
+  if (AUTH_ENABLED && !session && !solaLettura) {
     window.location.href = '/login.html';
     return;
   }
 
-  let isReadonly = !session;
+  let isReadonly = AUTH_ENABLED ? !session : false;
   let currentSession = session;
 
   sbClient.auth.onAuthStateChange((event, s) => {
-    if (event === 'SIGNED_OUT') window.location.href = '/login.html';
+    if (AUTH_ENABLED && event === 'SIGNED_OUT') window.location.href = '/login.html';
     if (s) currentSession = s;
   });
 
@@ -29,7 +34,7 @@ const { data: { session } } = await sbClient.auth.getSession();
   }
 
   let isAdminFromDB = false;
-  if (session) {
+  if (AUTH_ENABLED && session) {
     const profileRes = await fetch(
       `${SUPABASE_URL_CLIENT}/rest/v1/profiles?select=is_admin&id=eq.${session.user.id}`,
       { headers: {
@@ -70,10 +75,11 @@ const { data: { session } } = await sbClient.auth.getSession();
   let showingInOrdine = false;
   let showingCategorie = false;
   let activeCategoryBtn = null;
-  let isAdmin = isAdminFromDB;
+  let isAdmin = AUTH_ENABLED ? isAdminFromDB : false;
   let fornitoriCache = {};
   let tuttiFornitori = [];
 
+  const ADMIN_PASSWORD = "ori3";
   const STICKER_URL = "https://wonuzdqupujzeqhucxok.supabase.co/storage/v1/object/public/Admin/IMG_9082.webp";
 
   // ─── Modalità sola lettura ────────────────────────────────────────────────
@@ -130,19 +136,42 @@ const { data: { session } } = await sbClient.auth.getSession();
     if (isAdmin && nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "inline-flex";
   }
 
-  // ─── Admin — determinato dal profilo DB, bottone mostra stato ────────────
-  if (isAdmin) {
-    adminBtn.textContent = "🔓 Admin ON";
-    adminBtn.style.backgroundColor = "#27ae60";
-    if (nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "inline-flex";
-    loadTuttiFornitori();
-  }
-  adminBtn.addEventListener("click", async () => {
-    if (confirm("Vuoi uscire dal sito?")) {
-      await sbClient.auth.signOut();
-      window.location.href = '/login.html';
+  // ─── Admin ────────────────────────────────────────────────────────────────
+  if (AUTH_ENABLED) {
+    // Auth attiva: bottone mostra stato e fa logout
+    if (isAdmin) {
+      adminBtn.textContent = "🔓 Admin ON";
+      adminBtn.style.backgroundColor = "#27ae60";
+      if (nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "inline-flex";
+      loadTuttiFornitori();
     }
-  });
+    adminBtn.addEventListener("click", async () => {
+      if (confirm("Vuoi uscire dal sito?")) {
+        await sbClient.auth.signOut();
+        window.location.href = '/login.html';
+      }
+    });
+  } else {
+    // Auth disabilitata: bottone usa vecchia password
+    adminBtn.textContent = "🛠️ Admin";
+    adminBtn.addEventListener("click", () => {
+      const pw = prompt("Inserisci password admin:");
+      if (pw === ADMIN_PASSWORD) {
+        isAdmin = true;
+        adminBtn.textContent = "🔓 Admin ON";
+        adminBtn.style.backgroundColor = "#27ae60";
+        if (nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "inline-flex";
+        loadTuttiFornitori();
+        alert("Modalità admin attivata!");
+      } else {
+        isAdmin = false;
+        adminBtn.textContent = "🛠️ Admin";
+        adminBtn.style.backgroundColor = "#e74c3c";
+        if (nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "none";
+        results.innerHTML = `<img src="${STICKER_URL}" alt="Non sei amministratore!!" style="max-width:200px;">`;
+      }
+    });
+  }
 
   if (nuovoFornitoreBtn) {
     nuovoFornitoreBtn.addEventListener("click", async () => {
