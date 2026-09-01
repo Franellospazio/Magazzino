@@ -37,9 +37,12 @@ function statoProgressivo(r) {
 }
 
 export default async function handler(req, res) {
-  // Verifica autenticazione
-  const user = await getUser(req);
-  if (!user) return res.status(401).json({ error: 'Non autenticato' });
+  // GET è pubblico (sola lettura senza login)
+  // PATCH richiede autenticazione
+  if (req.method !== 'GET') {
+    const user = await getUser(req);
+    if (!user) return res.status(401).json({ error: 'Non autenticato' });
+  }
 
   // ── GET /api/reagenti ─────────────────────────────────────────────────────
   if (req.method === 'GET') {
