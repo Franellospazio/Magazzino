@@ -19,9 +19,12 @@ async function checkAdmin(userId) {
 }
 
 export default async function handler(req, res) {
-  // Verifica autenticazione su tutti i metodi
-  const user = await getUser(req);
-  if (!user) return res.status(401).json({ error: 'Non autenticato' });
+  // GET è pubblico (sola lettura senza login)
+  // PATCH richiede autenticazione
+  if (req.method !== 'GET') {
+    const user = await getUser(req);
+    if (!user) return res.status(401).json({ error: 'Non autenticato' });
+  }
 
   if (req.method === 'GET') {
     const { data, error } = await supabase
