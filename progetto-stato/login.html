@@ -97,14 +97,16 @@
   <div class="login-card">
     <div class="logo">
       <img src="/images/sepack.png" alt="Sepack" onerror="this.style.display='none'">
-      <h1>Magazzino Sepack</h1>
-      <p>Accedi con le tue credenziali aziendali</p>
+      <h1>Magazzino</h1>
+      <p>Inserisci le tue credenziali</p>
     </div>
-    <label for="email">Email</label>
-    <input type="email" id="email" placeholder="nome@sepack-lab.it" autocomplete="email">
-    <label for="password">Password</label>
-    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
-    <button class="btn" id="loginBtn" onclick="handleLogin()">Accedi</button>
+    <form onsubmit="event.preventDefault(); handleLogin();">
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="email@esempio.com" autocomplete="email">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+      <button class="btn" id="loginBtn" type="submit">Accedi</button>
+    </form>
     <div class="error" id="errorMsg"></div>
   </div>
 
