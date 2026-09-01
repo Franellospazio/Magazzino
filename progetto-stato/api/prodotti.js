@@ -48,12 +48,14 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-    // Con auth attiva verifica che sia admin
+    let isAdminUser = false;
     if (AUTH_ENABLED) {
       const user = await getUser(req);
       if (!user) return res.status(401).json({ error: 'Non autenticato' });
-      const admin = await checkAdmin(user.id);
-      if (!admin) return res.status(403).json({ error: 'Non autorizzato' });
+      isAdminUser = await checkAdmin(user.id);
+    } else {
+      // Auth disabilitata: isAdmin viene dal body (password ori3 lato client)
+      isAdminUser = req.body.isAdmin === true;
     }
 
     const { descrizione, Giacenza, inordine, ScortaMinima, fornitore_selezionato } = req.body;
@@ -61,9 +63,12 @@ export default async function handler(req, res) {
 
     const updateData = { ultimo_aggiornamento: new Date().toISOString() };
     if (Giacenza !== undefined) updateData.Giacenza = Giacenza;
-    if (inordine !== undefined) updateData.inordine = inordine;
-    if (ScortaMinima !== undefined) updateData.ScortaMinima = ScortaMinima;
-    if (fornitore_selezionato !== undefined) updateData.fornitore_selezionato = fornitore_selezionato;
+    // inordine, ScortaMinima e fornitore solo per admin
+    if (isAdminUser) {
+      if (inordine !== undefined) updateData.inordine = inordine;
+      if (ScortaMinima !== undefined) updateData.ScortaMinima = ScortaMinima;
+      if (fornitore_selezionato !== undefined) updateData.fornitore_selezionato = fornitore_selezionato;
+    }
 
     const { error } = await supabase.from('Magazzino').update(updateData).eq('Descrizione', descrizione);
     if (error) return res.status(500).json({ error: error.message });
