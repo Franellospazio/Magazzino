@@ -106,7 +106,7 @@
       <label for="password">Password</label>
       <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
       <button class="btn" id="loginBtn" type="submit">Accedi</button>
-      <a href="/" id="readonlyBtn" style="display:block; text-align:center; margin-top:14px; color:#999; font-size:13px; text-decoration:none; padding:8px;">
+      <a href="/?readonly=1" id="readonlyBtn" style="display:block; text-align:center; margin-top:14px; color:#999; font-size:13px; text-decoration:none; padding:8px;">
         👁 Accedi in sola lettura
       </a>
     </form>
@@ -115,7 +115,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const SUPABASE_URL = 'https://XXXXXXXX.supabase.co';
+    const SUPABASE_URL = 'https://wonuzdqupujzeqhucxok.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvbnV6ZHF1cHVqemVxaHVjeG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxNzYzMjQsImV4cCI6MjA3Mzc1MjMyNH0.UVNF-cb7W9nynV327q4Qz8-vdDk6_6IKbwrvFwVA2Mw';
     const { createClient } = supabase;
     const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
