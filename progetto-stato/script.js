@@ -138,19 +138,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ─── Admin ────────────────────────────────────────────────────────────────
   if (AUTH_ENABLED) {
-    // Auth attiva: bottone mostra stato e fa logout
     if (isAdmin) {
       adminBtn.textContent = "🔓 Admin ON";
       adminBtn.style.backgroundColor = "#27ae60";
       if (nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "inline-flex";
       loadTuttiFornitori();
     }
-    adminBtn.addEventListener("click", async () => {
-      if (confirm("Vuoi uscire dal sito?")) {
+    // Bottone logout separato
+    const logoutBtn = document.createElement("button");
+    logoutBtn.textContent = "🚪 Esci";
+    logoutBtn.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#e74c3c; color:white; border:none; border-radius:20px; padding:8px 20px; font-size:13px; cursor:pointer; z-index:100;";
+    logoutBtn.addEventListener("click", async () => {
+      if (confirm("Vuoi uscire?")) {
         await sbClient.auth.signOut();
         window.location.href = '/login.html';
       }
     });
+    document.body.appendChild(logoutBtn);
+    adminBtn.addEventListener("click", () => {}); // nessuna azione sul bottone admin
   } else {
     // Auth disabilitata: bottone usa vecchia password
     adminBtn.textContent = "🛠️ Admin";
@@ -1058,7 +1063,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const res = await fetch("/api/prodotti", {
         method: "PATCH",
         headers: authHeaders(),
-        body: JSON.stringify({ descrizione: selectedProdotto.Descrizione, Giacenza: giacenzaNum, inordine: inOrdineNum, ScortaMinima: scortaMinimaNum, fornitore_selezionato: fornitoreId })
+        body: JSON.stringify({ descrizione: selectedProdotto.Descrizione, Giacenza: giacenzaNum, inordine: inOrdineNum, ScortaMinima: scortaMinimaNum, fornitore_selezionato: fornitoreId, isAdmin })
       });
       if (!res.ok) throw new Error();
       let fornitoreNome = null;
