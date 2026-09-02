@@ -229,6 +229,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch { return []; }
   }
 
+  // Helper: ottieni nome fornitore per raggruppamento (con fallback al primo associato)
+  function getFornitoreKeyProdotto(p) {
+    if (p.fornitore_selezionato_nome) return p.fornitore_selezionato_nome;
+    if (p.fornitori && p.fornitori.length > 0) return p.fornitori[0].nome;
+    return "— Senza fornitore —";
+  }
+  function getFornitoreKeyReagente(g) {
+    return g.fornitore || "— Senza fornitore —";
+  }
+
   // ─── Li prodotto normale ──────────────────────────────────────────────────
   function createProductLi(p) {
     const li = document.createElement("li");
@@ -286,6 +296,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     categorieContainer.innerHTML = "";
     categorieContainer.style.display = "none";
     if (mislContainer) { mislContainer.innerHTML = ""; mislContainer.style.display = "none"; }
+    if (typeof fornitoriContainer !== 'undefined' && fornitoriContainer) { fornitoriContainer.innerHTML = ""; fornitoriContainer.style.display = "none"; }
     activeMislBtn = null;
     showingAll = false; showingSottoscorta = false;
     showingInOrdine = false; showingCategorie = false;
@@ -316,14 +327,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Prodotti normali raggruppati per fornitore
     const gruppi = {};
     inOrdine.forEach(p => {
-      const key = p.fornitore_selezionato_nome || "— Senza fornitore —";
+      const key = getFornitoreKeyProdotto(p);
       if (!gruppi[key]) gruppi[key] = [];
       gruppi[key].push({ tipo: 'prodotto', data: p });
     });
 
     // Reagenti raggruppati per fornitore
     reagentiInOrdine.forEach(g => {
-      const key = g.fornitore || "— Senza fornitore —";
+      const key = getFornitoreKeyReagente(g);
       if (!gruppi[key]) gruppi[key] = [];
       gruppi[key].push({ tipo: 'reagente', data: g });
     });
@@ -348,12 +359,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       const reagSotto = reagenti.filter(g => g.scorta_minima > 0 && g.giacenza < g.scorta_minima);
       const gruppi = {};
       prodSotto.forEach(p => {
-        const key = p.fornitore_selezionato_nome || "— Senza fornitore —";
+        const key = getFornitoreKeyProdotto(p);
         if (!gruppi[key]) gruppi[key] = [];
         gruppi[key].push({ tipo: 'prodotto', data: p });
       });
       reagSotto.forEach(g => {
-        const key = g.fornitore || "— Senza fornitore —";
+        const key = getFornitoreKeyReagente(g);
         if (!gruppi[key]) gruppi[key] = [];
         gruppi[key].push({ tipo: 'reagente', data: g });
       });
@@ -406,12 +417,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Raggruppa per fornitore
     const gruppi = {};
     prodSotto.forEach(p => {
-      const key = p.fornitore_selezionato_nome || "— Senza fornitore —";
+      const key = getFornitoreKeyProdotto(p);
       if (!gruppi[key]) gruppi[key] = [];
       gruppi[key].push({ tipo: 'prodotto', data: p });
     });
     reagSotto.forEach(g => {
-      const key = g.fornitore || "— Senza fornitore —";
+      const key = getFornitoreKeyReagente(g);
       if (!gruppi[key]) gruppi[key] = [];
       gruppi[key].push({ tipo: 'reagente', data: g });
     });
@@ -458,6 +469,83 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
       categorieContainer.appendChild(btn);
     });
+
+    // Bottone FORNITORI
+    let fornitoriContainer = null;
+    const selectedFornitori = new Set();
+
+    const fornitoriBtn = document.createElement("button");
+    fornitoriBtn.type = "button"; fornitoriBtn.textContent = "🏭 Fornitori"; fornitoriBtn.classList.add("categoriaBtn");
+    fornitoriBtn.style.touchAction = "manipulation"; fornitoriBtn.style.userSelect = "none";
+    fornitoriBtn.addEventListener("click", () => {
+      if (activeCategoryBtn === fornitoriBtn) {
+        results.innerHTML = ""; fornitoriBtn.classList.remove("active"); activeCategoryBtn = null;
+        if (fornitoriContainer) { fornitoriContainer.innerHTML = ""; fornitoriContainer.style.display = "none"; }
+        if (mislContainer) { mislContainer.innerHTML = ""; mislContainer.style.display = "none"; }
+        selectedFornitori.clear(); activeMislBtn = null;
+        return;
+      }
+      if (activeCategoryBtn) activeCategoryBtn.classList.remove("active");
+      if (mislContainer) { mislContainer.innerHTML = ""; mislContainer.style.display = "none"; }
+      activeCategoryBtn = fornitoriBtn; fornitoriBtn.classList.add("active");
+      results.innerHTML = ""; selectedFornitori.clear();
+
+      // Raccogli tutti i fornitori unici da prodotti e reagenti
+      const fornSet = new Set();
+      prodotti.forEach(p => { const k = getFornitoreKeyProdotto(p); if (k !== "— Senza fornitore —") fornSet.add(k); });
+      reagenti.forEach(g => { const k = getFornitoreKeyReagente(g); if (k !== "— Senza fornitore —") fornSet.add(k); });
+      const fornList = [...fornSet].sort((a, b) => a.localeCompare(b));
+
+      if (!fornitoriContainer) {
+        fornitoriContainer = document.createElement("div");
+        fornitoriContainer.style.cssText = "display:flex; flex-wrap:wrap; gap:6px; padding:8px 0 4px; width:100%;";
+        categorieContainer.parentNode.insertBefore(fornitoriContainer, categorieContainer.nextSibling);
+      }
+      fornitoriContainer.innerHTML = "";
+      fornitoriContainer.style.display = "flex";
+
+      function renderFornitoriResults() {
+        results.innerHTML = "";
+        if (selectedFornitori.size === 0) return;
+        const gruppi = {};
+        prodotti.forEach(p => {
+          const k = getFornitoreKeyProdotto(p);
+          if (selectedFornitori.has(k)) { if (!gruppi[k]) gruppi[k] = []; gruppi[k].push({ tipo: 'prodotto', data: p }); }
+        });
+        reagenti.forEach(g => {
+          const k = getFornitoreKeyReagente(g);
+          if (selectedFornitori.has(k)) { if (!gruppi[k]) gruppi[k] = []; gruppi[k].push({ tipo: 'reagente', data: g }); }
+        });
+        Object.entries(gruppi).sort(([a],[b]) => a.localeCompare(b)).forEach(([forn, lista]) => {
+          const hdr = document.createElement("li");
+          hdr.style.cssText = "background:#8e44ad; color:white; font-weight:bold; padding:8px 12px; font-size:14px; list-style:none; border-radius:6px; margin-top:8px;";
+          hdr.textContent = "🏭 " + forn;
+          results.appendChild(hdr);
+          lista.forEach(item => {
+            if (item.tipo === 'prodotto') results.appendChild(createProductLi(item.data));
+            else results.appendChild(createReagenteLi(item.data));
+          });
+        });
+      }
+
+      fornList.forEach(forn => {
+        const fb = document.createElement("button");
+        fb.type = "button"; fb.textContent = forn; fb.classList.add("categoriaBtn");
+        fb.style.cssText = "background:#1a1a2e; border:1.5px solid #8e44ad; color:#8e44ad; border-radius:16px; padding:5px 14px; font-size:12px; cursor:pointer; touch-action:manipulation;";
+        fb.addEventListener("click", () => {
+          if (selectedFornitori.has(forn)) {
+            selectedFornitori.delete(forn);
+            fb.style.background = "#1a1a2e"; fb.style.color = "#8e44ad";
+          } else {
+            selectedFornitori.add(forn);
+            fb.style.background = "#8e44ad"; fb.style.color = "white";
+          }
+          renderFornitoriResults();
+        });
+        fornitoriContainer.appendChild(fb);
+      });
+    });
+    categorieContainer.appendChild(fornitoriBtn);
 
     // Bottone MISL
     const mislBtn = document.createElement("button");
