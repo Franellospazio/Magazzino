@@ -27,12 +27,12 @@
     }
     #adrBtn:hover { background-color: #1e8449; }
 
-    #nuovoFornitoreBtn {
+    #adminBtn {
       position: fixed;
       bottom: 20px;
-      left: 160px;
+      right: 20px;
       z-index: 10000;
-      background-color: #2980b9;
+      background-color: #e74c3c;
       color: white;
       border: none;
       padding: 12px 20px;
@@ -41,7 +41,23 @@
       cursor: pointer;
       box-shadow: 0 4px 6px rgba(0,0,0,0.3);
       transition: background 0.2s;
-      display: none; /* nascosto di default, visibile solo in admin */
+    }
+
+    #nuovoFornitoreBtn {
+      position: fixed;
+      bottom: 70px;  /* sopra adminBtn */
+      right: 20px;
+      z-index: 10000;
+      background-color: #2980b9;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 50px;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      transition: background 0.2s;
+      display: none;
       align-items: center;
       gap: 6px;
     }
@@ -115,7 +131,7 @@
   <script>emailjs.init("BnJLQgx-iX-2J45cy");</script>
   <script src="script.js"></script>
 
-  <button id="adminBtn">🚪 Esci</button>
+  <button id="adminBtn">🛠️ Admin</button>
   <a id="adrBtn" href="etichette_adr.html" target="_blank">🏷️ Etichette</a>
   <button id="nuovoFornitoreBtn">➕ Fornitore</button>
 </body>
