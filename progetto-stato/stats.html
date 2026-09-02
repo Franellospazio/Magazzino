@@ -8,224 +8,85 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e8eaf0; min-height: 100vh; }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0f1117;
-      color: #e8eaf0;
-      min-height: 100vh;
-    }
-
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 24px;
-      background: #181c26;
-      border-bottom: 1px solid #252a38;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    header h1 {
-      font-size: 18px;
-      font-weight: 700;
-      color: #fff;
-      letter-spacing: -0.3px;
-    }
-
-    .back-btn {
-      background: none;
-      border: 1px solid #353a4a;
-      color: #aab;
-      border-radius: 8px;
-      padding: 7px 14px;
-      font-size: 13px;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: border-color 0.2s, color 0.2s;
-    }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; background: #181c26; border-bottom: 1px solid #252a38; position: sticky; top: 0; z-index: 100; }
+    header h1 { font-size: 18px; font-weight: 700; color: #fff; }
+    .back-btn { background: none; border: 1px solid #353a4a; color: #aab; border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
     .back-btn:hover { border-color: #00B4CC; color: #00B4CC; }
 
-    /* ── Period picker ── */
-    .period-bar {
-      display: flex;
-      gap: 8px;
-      padding: 16px 24px;
-      flex-wrap: wrap;
-      align-items: center;
-      background: #13161f;
-      border-bottom: 1px solid #1e2232;
-    }
-
-    .period-btn {
-      background: #1e2232;
-      border: 1px solid #2a2f42;
-      color: #99a;
-      border-radius: 20px;
-      padding: 6px 14px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.15s;
-      white-space: nowrap;
-    }
+    /* Period bar */
+    .period-bar { display: flex; gap: 8px; padding: 12px 24px; flex-wrap: wrap; align-items: center; background: #13161f; border-bottom: 1px solid #1e2232; }
+    .period-btn { background: #1e2232; border: 1px solid #2a2f42; color: #99a; border-radius: 20px; padding: 6px 14px; font-size: 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
     .period-btn:hover { border-color: #00B4CC; color: #00B4CC; }
     .period-btn.active { background: #00B4CC; border-color: #00B4CC; color: #fff; font-weight: 600; }
-
-    .period-custom {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      margin-left: auto;
-    }
-    .period-custom input {
-      background: #1e2232;
-      border: 1px solid #2a2f42;
-      color: #e8eaf0;
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 12px;
-      outline: none;
-    }
+    .period-custom { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+    .period-custom input { background: #1e2232; border: 1px solid #2a2f42; color: #e8eaf0; border-radius: 8px; padding: 6px 10px; font-size: 12px; outline: none; }
     .period-custom input:focus { border-color: #00B4CC; }
-    .period-custom button {
-      background: #00B4CC;
-      border: none;
-      color: white;
-      border-radius: 8px;
-      padding: 6px 12px;
-      font-size: 12px;
-      cursor: pointer;
-    }
+    .period-custom button { background: #00B4CC; border: none; color: white; border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
 
-    /* ── KPI cards ── */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 12px;
-      padding: 24px 24px 0;
-    }
+    /* Product selector */
+    .product-selector { background: #13161f; border-bottom: 1px solid #1e2232; padding: 12px 24px; }
+    .selector-row { display: flex; gap: 10px; align-items: center; }
+    .product-search-wrap { position: relative; flex: 1; max-width: 380px; }
+    .product-search-wrap input { width: 100%; background: #1e2232; border: 1px solid #2a2f42; color: #e8eaf0; border-radius: 8px; padding: 8px 12px; font-size: 13px; outline: none; }
+    .product-search-wrap input:focus { border-color: #00B4CC; }
+    .search-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: #1e2232; border: 1px solid #2a2f42; border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 200; display: none; }
+    .search-dropdown.open { display: block; }
+    .search-item { padding: 9px 12px; font-size: 12px; cursor: pointer; color: #ccd; border-bottom: 1px solid #252a38; }
+    .search-item:last-child { border-bottom: none; }
+    .search-item:hover { background: #252a38; color: #fff; }
+    .selected-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; background: #00B4CC22; border: 1px solid #00B4CC55; color: #00B4CC; border-radius: 20px; padding: 4px 10px; font-size: 11px; }
+    .chip button { background: none; border: none; color: #00B4CC; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+    .clear-all { background: none; border: 1px solid #353a4a; color: #667; border-radius: 8px; padding: 6px 12px; font-size: 11px; cursor: pointer; }
+    .clear-all:hover { border-color: #e74c3c; color: #e74c3c; }
 
-    .kpi-card {
-      background: #181c26;
-      border: 1px solid #252a38;
-      border-radius: 12px;
-      padding: 16px;
-    }
-    .kpi-label {
-      font-size: 11px;
-      color: #667;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 6px;
-    }
-    .kpi-value {
-      font-size: 28px;
-      font-weight: 700;
-      color: #fff;
-      line-height: 1;
-    }
-    .kpi-sub {
-      font-size: 11px;
-      color: #556;
-      margin-top: 4px;
-    }
+    /* KPI */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; padding: 20px 24px 0; }
+    .kpi-card { background: #181c26; border: 1px solid #252a38; border-radius: 12px; padding: 16px; }
+    .kpi-label { font-size: 11px; color: #556; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .kpi-value { font-size: 26px; font-weight: 700; color: #fff; line-height: 1; }
+    .kpi-sub { font-size: 11px; color: #445; margin-top: 4px; }
     .kpi-card.warn .kpi-value { color: #f39c12; }
     .kpi-card.danger .kpi-value { color: #e74c3c; }
     .kpi-card.ok .kpi-value { color: #27ae60; }
 
-    /* ── Charts grid ── */
-    .charts-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 16px;
-      padding: 20px 24px;
-    }
-
-    .chart-card {
-      background: #181c26;
-      border: 1px solid #252a38;
-      border-radius: 12px;
-      padding: 20px;
-    }
-    .chart-card h2 {
-      font-size: 13px;
-      font-weight: 600;
-      color: #ccd;
-      margin-bottom: 16px;
-    }
+    /* Charts */
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; padding: 20px 24px; }
+    .chart-card { background: #181c26; border: 1px solid #252a38; border-radius: 12px; padding: 20px; }
+    .chart-card h2 { font-size: 13px; font-weight: 600; color: #ccd; margin-bottom: 16px; }
     .chart-card canvas { max-height: 260px; }
 
-    /* ── Table ── */
-    .table-card {
-      background: #181c26;
-      border: 1px solid #252a38;
-      border-radius: 12px;
-      padding: 20px;
-      margin: 0 24px 24px;
-    }
-    .table-card h2 {
-      font-size: 13px;
-      font-weight: 600;
-      color: #ccd;
-      margin-bottom: 14px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    th {
-      text-align: left;
-      color: #556;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      padding: 6px 10px;
-      border-bottom: 1px solid #1e2232;
-    }
-    td {
-      padding: 10px;
-      border-bottom: 1px solid #1a1e2a;
-      color: #ccd;
-    }
+    /* Tables */
+    .table-card { background: #181c26; border: 1px solid #252a38; border-radius: 12px; padding: 20px; margin: 0 24px 16px; }
+    .table-card h2 { font-size: 13px; font-weight: 600; color: #ccd; margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; color: #445; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 10px; border-bottom: 1px solid #1e2232; }
+    td { padding: 10px; border-bottom: 1px solid #1a1e2a; color: #ccd; }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: #1e2232; }
-    .badge {
-      display: inline-block;
-      border-radius: 10px;
-      padding: 2px 8px;
-      font-size: 11px;
-      font-weight: 600;
-    }
+    .badge { display: inline-block; border-radius: 10px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
     .badge-red { background: rgba(231,76,60,0.2); color: #e74c3c; }
     .badge-green { background: rgba(39,174,96,0.2); color: #27ae60; }
     .badge-yellow { background: rgba(243,156,18,0.2); color: #f39c12; }
 
-    .loading {
-      text-align: center;
-      padding: 60px 24px;
-      color: #445;
-      font-size: 14px;
-    }
+    .loading { text-align: center; padding: 60px 24px; color: #445; font-size: 14px; }
+    .section-title { font-size: 11px; font-weight: 700; color: #445; text-transform: uppercase; letter-spacing: 0.1em; padding: 20px 24px 8px; }
 
     @media (max-width: 600px) {
-      .period-bar { padding: 12px 16px; }
-      .kpi-grid { padding: 16px 16px 0; }
-      .charts-grid { padding: 12px 16px; grid-template-columns: 1fr; }
-      .table-card { margin: 0 16px 16px; }
+      .period-bar, .product-selector { padding: 10px 16px; }
+      .kpi-grid { padding: 14px 16px 0; }
+      .charts-grid { padding: 10px 16px; grid-template-columns: 1fr; }
+      .table-card { margin: 0 16px 12px; }
     }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>📊 Statistiche Magazzino</h1>
-  <a href="/" class="back-btn">← Torna al magazzino</a>
+  <h1>📊 Statistiche</h1>
+  <a href="/" class="back-btn">← Magazzino</a>
 </header>
 
 <div class="period-bar">
@@ -244,23 +105,39 @@
   </div>
 </div>
 
+<div class="product-selector">
+  <div class="selector-row">
+    <div class="product-search-wrap">
+      <input type="text" id="productSearch" placeholder="🔍 Cerca prodotto da statisticare..." autocomplete="off">
+      <div class="search-dropdown" id="searchDropdown"></div>
+    </div>
+    <button class="clear-all" onclick="clearSelection()" id="clearBtn" style="display:none;">✕ Rimuovi tutti</button>
+  </div>
+  <div class="selected-chips" id="selectedChips"></div>
+</div>
+
 <div id="loading" class="loading">Caricamento dati...</div>
 <div id="content" style="display:none;">
 
   <div class="kpi-grid" id="kpiGrid"></div>
 
+  <div class="section-title">Andamento nel periodo</div>
   <div class="charts-grid">
     <div class="chart-card">
       <h2>Bottiglie aperte per mese</h2>
       <canvas id="chartAperte"></canvas>
     </div>
     <div class="chart-card">
-      <h2>Bottiglie chiuse (consumate) per mese</h2>
+      <h2>Bottiglie consumate per mese</h2>
       <canvas id="chartChiuse"></canvas>
     </div>
     <div class="chart-card">
-      <h2>Top 10 reagenti più consumati</h2>
+      <h2>Top 10 più consumati</h2>
       <canvas id="chartTop10"></canvas>
+    </div>
+    <div class="chart-card">
+      <h2>Tempo medio consumo per prodotto (giorni)</h2>
+      <canvas id="chartTempoConsumo"></canvas>
     </div>
     <div class="chart-card">
       <h2>Distribuzione per fornitore</h2>
@@ -268,26 +145,29 @@
     </div>
   </div>
 
+  <div class="section-title">Scorte</div>
   <div class="table-card">
-    <h2>Bottiglie aperte da più di 6 mesi (rischio scadenza in uso)</h2>
-    <table id="tableVecchie">
-      <thead><tr><th>Progressivo</th><th>Prodotto</th><th>Aperta il</th><th>Giorni apertura</th></tr></thead>
+    <h2>Prodotti sotto scorta minima</h2>
+    <table id="tableSottoscorta">
+      <thead><tr><th>Prodotto</th><th>Giacenza attuale</th><th>Scorta minima</th><th>Mancanti</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
 
+  <div class="section-title">Scadenze</div>
   <div class="table-card">
-    <h2>Reagenti mai aperti con scadenza entro 90 giorni</h2>
+    <h2>Non ancora aperte con scadenza entro 90 giorni</h2>
     <table id="tableScadenti">
       <thead><tr><th>Progressivo</th><th>Prodotto</th><th>Scadenza</th><th>Giorni rimasti</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
 
+  <div class="section-title">Monitoraggio uso</div>
   <div class="table-card">
-    <h2>Prodotti sotto scorta minima</h2>
-    <table id="tableSottoscorta">
-      <thead><tr><th>Prodotto</th><th>Giacenza</th><th>Scorta minima</th><th>Stato</th></tr></thead>
+    <h2>Bottiglie aperte da più di 6 mesi</h2>
+    <table id="tableVecchie">
+      <thead><tr><th>Progressivo</th><th>Prodotto</th><th>Aperta il</th><th>Giorni apertura</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -299,46 +179,96 @@ const SUPABASE_URL = 'https://wonuzdqupujzeqhucxok.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvbnV6ZHF1cHVqemVxaHVjeG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxNzYzMjQsImV4cCI6MjA3Mzc1MjMyNH0.UVNF-cb7W9nynV327q4Qz8-vdDk6_6IKbwrvFwVA2Mw';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ── Periodo attivo ─────────────────────────────────────────────────────────
-let periodFrom = null;
-let periodTo = null;
+let allData = [];
+let selectedProducts = new Set();
 let charts = {};
+let periodFrom, periodTo;
 
+// ── Fetch ──────────────────────────────────────────────────────────────────
+async function fetchAll() {
+  let data = [];
+  let from = 0;
+  while (true) {
+    const { data: page, error } = await sb.from('reagenti').select('*').range(from, from+999);
+    if (error || !page || page.length === 0) break;
+    data = data.concat(page);
+    if (page.length < 1000) break;
+    from += 1000;
+  }
+  return data;
+}
+
+// ── Period ─────────────────────────────────────────────────────────────────
 function getPeriodDates(period) {
   const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const d = now.getDate();
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
   switch(period) {
-    case 'today':
-      return [new Date(y,m,d), new Date(y,m,d,23,59,59)];
-    case 'yesterday':
-      return [new Date(y,m,d-1), new Date(y,m,d-1,23,59,59)];
-    case 'this_month':
-      return [new Date(y,m,1), new Date(y,m+1,0,23,59,59)];
-    case 'last_month':
-      return [new Date(y,m-1,1), new Date(y,m,0,23,59,59)];
-    case 'this_year':
-      return [new Date(y,0,1), new Date(y,11,31,23,59,59)];
-    case 'last_year':
-      return [new Date(y-1,0,1), new Date(y-1,11,31,23,59,59)];
-    case 'all':
-      return [new Date(2015,0,1), new Date(2099,11,31)];
+    case 'today':     return [new Date(y,m,d), new Date(y,m,d,23,59,59)];
+    case 'yesterday': return [new Date(y,m,d-1), new Date(y,m,d-1,23,59,59)];
+    case 'this_month':return [new Date(y,m,1), new Date(y,m+1,0,23,59,59)];
+    case 'last_month':return [new Date(y,m-1,1), new Date(y,m,0,23,59,59)];
+    case 'this_year': return [new Date(y,0,1), new Date(y,11,31,23,59,59)];
+    case 'last_year': return [new Date(y-1,0,1), new Date(y-1,11,31,23,59,59)];
+    case 'all':       return [new Date(2015,0,1), new Date(2099,11,31)];
   }
 }
 
-// ── Fetch dati ─────────────────────────────────────────────────────────────
-async function fetchAll() {
-  let allData = [];
-  let from = 0;
-  while (true) {
-    const { data, error } = await sb.from('reagenti').select('*').range(from, from+999);
-    if (error || !data || data.length === 0) break;
-    allData = allData.concat(data);
-    if (data.length < 1000) break;
-    from += 1000;
+// ── Product selector ───────────────────────────────────────────────────────
+const searchInput = document.getElementById('productSearch');
+const dropdown = document.getElementById('searchDropdown');
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.toLowerCase().trim();
+  if (!q || allData.length === 0) { dropdown.classList.remove('open'); return; }
+  const names = [...new Set(allData.map(r => r.nome_prodotto))].filter(n => n.toLowerCase().includes(q)).slice(0, 20);
+  if (names.length === 0) { dropdown.classList.remove('open'); return; }
+  dropdown.innerHTML = names.map(n =>
+    `<div class="search-item" onclick="addProduct('${n.replace(/'/g,"\\'")}')">
+      ${n.length > 60 ? n.substring(0,60)+'…' : n}
+    </div>`
+  ).join('');
+  dropdown.classList.add('open');
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.product-search-wrap')) dropdown.classList.remove('open');
+});
+
+function addProduct(name) {
+  selectedProducts.add(name);
+  searchInput.value = '';
+  dropdown.classList.remove('open');
+  renderChips();
+  render(periodFrom, periodTo);
+}
+
+function removeProduct(name) {
+  selectedProducts.delete(name);
+  renderChips();
+  render(periodFrom, periodTo);
+}
+
+function clearSelection() {
+  selectedProducts.clear();
+  renderChips();
+  render(periodFrom, periodTo);
+}
+
+function renderChips() {
+  const chips = document.getElementById('selectedChips');
+  const clearBtn = document.getElementById('clearBtn');
+  if (selectedProducts.size === 0) {
+    chips.innerHTML = '';
+    clearBtn.style.display = 'none';
+    return;
   }
-  return allData;
+  clearBtn.style.display = 'inline-block';
+  chips.innerHTML = [...selectedProducts].map(n =>
+    `<div class="chip">
+      <span>${n.length > 40 ? n.substring(0,40)+'…' : n}</span>
+      <button onclick="removeProduct('${n.replace(/'/g,"\\'")}')">×</button>
+    </div>`
+  ).join('');
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────
@@ -346,127 +276,137 @@ async function render(from, to) {
   document.getElementById('loading').style.display = 'block';
   document.getElementById('content').style.display = 'none';
 
-  const data = await fetchAll();
-  const fromMs = from.getTime();
-  const toMs = to.getTime();
+  let data = allData;
 
-  // Filtra per periodo su data_apertura e data_chiusura
+  // Filtra per prodotti selezionati
+  if (selectedProducts.size > 0) {
+    data = data.filter(r => selectedProducts.has(r.nome_prodotto));
+  }
+
   const aperteNelPeriodo = data.filter(r => r.data_apertura && new Date(r.data_apertura) >= from && new Date(r.data_apertura) <= to);
   const chiuseNelPeriodo = data.filter(r => r.data_chiusura && new Date(r.data_chiusura) >= from && new Date(r.data_chiusura) <= to);
-  const aperturaOnly = data.filter(r => r.data_apertura && !r.data_chiusura);
+  const inUso = data.filter(r => r.data_apertura && !r.data_chiusura);
   const maiAperte = data.filter(r => !r.data_apertura && !r.data_chiusura);
 
   // ── KPI ──────────────────────────────────────────────────────────────────
-  const kpiGrid = document.getElementById('kpiGrid');
   const giacenzePerProdotto = {};
-  data.forEach(r => {
+  allData.forEach(r => {
     if (!r.data_chiusura) {
-      giacenzePerProdotto[r.nome_prodotto] = giacenzePerProdotto[r.nome_prodotto] || { g: 0, sm: r.scorta_minima || 0 };
+      if (!giacenzePerProdotto[r.nome_prodotto]) giacenzePerProdotto[r.nome_prodotto] = { g: 0, sm: r.scorta_minima || 0 };
       giacenzePerProdotto[r.nome_prodotto].g++;
     }
   });
-  const sottoscorta = Object.entries(giacenzePerProdotto).filter(([,v]) => v.sm > 0 && v.g < v.sm).length;
 
-  kpiGrid.innerHTML = `
-    <div class="kpi-card"><div class="kpi-label">Bottiglie aperte nel periodo</div><div class="kpi-value ok">${aperteNelPeriodo.length}</div></div>
-    <div class="kpi-card"><div class="kpi-label">Bottiglie consumate nel periodo</div><div class="kpi-value">${chiuseNelPeriodo.length}</div></div>
-    <div class="kpi-card"><div class="kpi-label">Attualmente in uso</div><div class="kpi-value ok">${aperturaOnly.length}</div></div>
+  // Tempo medio consumo (giorni)
+  const tempi = chiuseNelPeriodo.filter(r => r.data_apertura && r.data_chiusura).map(r =>
+    Math.round((new Date(r.data_chiusura) - new Date(r.data_apertura)) / (24*3600*1000))
+  ).filter(d => d >= 0);
+  const tempoMedio = tempi.length > 0 ? Math.round(tempi.reduce((a,b)=>a+b,0) / tempi.length) : null;
+
+  const sottoscorta = selectedProducts.size > 0
+    ? [...selectedProducts].filter(n => giacenzePerProdotto[n] && giacenzePerProdotto[n].sm > 0 && giacenzePerProdotto[n].g < giacenzePerProdotto[n].sm).length
+    : Object.values(giacenzePerProdotto).filter(v => v.sm > 0 && v.g < v.sm).length;
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi-card ok"><div class="kpi-label">Aperte nel periodo</div><div class="kpi-value">${aperteNelPeriodo.length}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Consumate nel periodo</div><div class="kpi-value">${chiuseNelPeriodo.length}</div></div>
+    <div class="kpi-card ok"><div class="kpi-label">Attualmente in uso</div><div class="kpi-value">${inUso.length}</div></div>
     <div class="kpi-card"><div class="kpi-label">Mai aperte</div><div class="kpi-value">${maiAperte.length}</div></div>
-    <div class="kpi-card ${sottoscorta > 0 ? 'danger' : 'ok'}"><div class="kpi-label">Prodotti sottoscorta</div><div class="kpi-value">${sottoscorta}</div></div>
-    <div class="kpi-card"><div class="kpi-label">Totale progressivi</div><div class="kpi-value">${data.length}</div></div>
+    <div class="kpi-card ${sottoscorta > 0 ? 'danger' : 'ok'}"><div class="kpi-label">Sottoscorta</div><div class="kpi-value">${sottoscorta}</div></div>
+    ${tempoMedio !== null ? `<div class="kpi-card warn"><div class="kpi-label">Tempo medio consumo</div><div class="kpi-value">${tempoMedio}</div><div class="kpi-sub">giorni per bottiglia</div></div>` : ''}
   `;
 
-  // ── Chart: bottiglie aperte per mese ─────────────────────────────────────
-  const mesiAperte = {};
-  aperteNelPeriodo.forEach(r => {
-    const d = new Date(r.data_apertura);
-    const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    mesiAperte[k] = (mesiAperte[k] || 0) + 1;
+  // ── Chart: aperte per mese ────────────────────────────────────────────────
+  const mesiAp = {};
+  aperteNelPeriodo.forEach(r => { const k = fmtMese(r.data_apertura); mesiAp[k] = (mesiAp[k]||0)+1; });
+  renderBar('chartAperte', mesiAp, '#00B4CC');
+
+  // ── Chart: chiuse per mese ────────────────────────────────────────────────
+  const mesiCh = {};
+  chiuseNelPeriodo.forEach(r => { const k = fmtMese(r.data_chiusura); mesiCh[k] = (mesiCh[k]||0)+1; });
+  renderBar('chartChiuse', mesiCh, '#e74c3c');
+
+  // ── Chart: top 10 consumati ───────────────────────────────────────────────
+  const consumo = {};
+  chiuseNelPeriodo.forEach(r => { consumo[r.nome_prodotto] = (consumo[r.nome_prodotto]||0)+1; });
+  const top10 = Object.entries(consumo).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  renderHBar('chartTop10', top10, '#8e44ad');
+
+  // ── Chart: tempo medio consumo per prodotto ───────────────────────────────
+  const tempoPerProdotto = {};
+  chiuseNelPeriodo.filter(r => r.data_apertura && r.data_chiusura).forEach(r => {
+    const giorni = Math.round((new Date(r.data_chiusura) - new Date(r.data_apertura)) / (24*3600*1000));
+    if (giorni < 0) return;
+    if (!tempoPerProdotto[r.nome_prodotto]) tempoPerProdotto[r.nome_prodotto] = [];
+    tempoPerProdotto[r.nome_prodotto].push(giorni);
   });
-  renderBarChart('chartAperte', mesiAperte, '#00B4CC');
+  const tempoMedioPerProd = Object.entries(tempoPerProdotto)
+    .map(([n, arr]) => [n, Math.round(arr.reduce((a,b)=>a+b,0)/arr.length)])
+    .sort((a,b)=>b[1]-a[1]).slice(0,10);
+  renderHBar('chartTempoConsumo', tempoMedioPerProd, '#f39c12');
 
-  // ── Chart: bottiglie chiuse per mese ──────────────────────────────────────
-  const mesiChiuse = {};
-  chiuseNelPeriodo.forEach(r => {
-    const d = new Date(r.data_chiusura);
-    const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    mesiChiuse[k] = (mesiChiuse[k] || 0) + 1;
-  });
-  renderBarChart('chartChiuse', mesiChiuse, '#e74c3c');
+  // ── Chart: fornitori ──────────────────────────────────────────────────────
+  const forn = {};
+  data.forEach(r => { if (r.fornitore) forn[r.fornitore] = (forn[r.fornitore]||0)+1; });
+  renderDoughnut('chartFornitori', Object.entries(forn).sort((a,b)=>b[1]-a[1]).slice(0,8));
 
-  // ── Chart: Top 10 più consumati ───────────────────────────────────────────
-  const consumoPerProdotto = {};
-  chiuseNelPeriodo.forEach(r => {
-    consumoPerProdotto[r.nome_prodotto] = (consumoPerProdotto[r.nome_prodotto] || 0) + 1;
-  });
-  const top10 = Object.entries(consumoPerProdotto).sort((a,b) => b[1]-a[1]).slice(0,10);
-  renderHBarChart('chartTop10', top10);
-
-  // ── Chart: distribuzione fornitori ───────────────────────────────────────
-  const fornitori = {};
-  data.forEach(r => {
-    if (r.fornitore) fornitori[r.fornitore] = (fornitori[r.fornitore] || 0) + 1;
-  });
-  const fTop = Object.entries(fornitori).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  renderDoughnut('chartFornitori', fTop);
-
-  // ── Tabella: aperte da più di 6 mesi ─────────────────────────────────────
-  const oggi = new Date();
-  const vecchie = data.filter(r => r.data_apertura && !r.data_chiusura && (oggi - new Date(r.data_apertura)) > 180*24*3600*1000)
-    .sort((a,b) => new Date(a.data_apertura) - new Date(b.data_apertura));
-  const tbVecchie = document.querySelector('#tableVecchie tbody');
-  tbVecchie.innerHTML = vecchie.length === 0 ? '<tr><td colspan="4" style="color:#445; text-align:center; padding:20px;">Nessuna bottiglia a rischio</td></tr>' :
-    vecchie.map(r => {
-      const giorni = Math.floor((oggi - new Date(r.data_apertura)) / (24*3600*1000));
-      return `<tr><td>${r.progressivo}</td><td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.nome_prodotto}</td><td>${fmtDate(r.data_apertura)}</td><td><span class="badge badge-red">${giorni}gg</span></td></tr>`;
-    }).join('');
-
-  // ── Tabella: mai aperte con scadenza imminente ────────────────────────────
-  const scadenti = data.filter(r => !r.data_apertura && !r.data_chiusura && r.scadenza_sepack)
-    .map(r => {
-      const scad = parseScadenza(r.scadenza_sepack);
-      if (!scad) return null;
-      const diff = Math.floor((scad - oggi) / (24*3600*1000));
-      return { ...r, diff };
-    })
-    .filter(r => r && r.diff >= 0 && r.diff <= 90)
-    .sort((a,b) => a.diff - b.diff);
-
-  const tbScad = document.querySelector('#tableScadenti tbody');
-  tbScad.innerHTML = scadenti.length === 0 ? '<tr><td colspan="4" style="color:#445; text-align:center; padding:20px;">Nessuna scadenza imminente</td></tr>' :
-    scadenti.map(r => `<tr><td>${r.progressivo}</td><td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.nome_prodotto}</td><td>${r.scadenza_sepack}</td><td><span class="badge ${r.diff <= 30 ? 'badge-red' : 'badge-yellow'}">${r.diff}gg</span></td></tr>`).join('');
-
-  // ── Tabella: sottoscorta ──────────────────────────────────────────────────
+  // ── Tabella sottoscorta ───────────────────────────────────────────────────
+  const filteredGiac = selectedProducts.size > 0
+    ? Object.fromEntries(Object.entries(giacenzePerProdotto).filter(([n]) => selectedProducts.has(n)))
+    : giacenzePerProdotto;
+  const sottoList = Object.entries(filteredGiac).filter(([,v]) => v.sm > 0 && v.g < v.sm).sort((a,b) => (a[1].g/a[1].sm)-(b[1].g/b[1].sm));
   const tbSotto = document.querySelector('#tableSottoscorta tbody');
-  const sottoList = Object.entries(giacenzePerProdotto).filter(([,v]) => v.sm > 0 && v.g < v.sm)
-    .sort((a,b) => (a[1].g/a[1].sm) - (b[1].g/b[1].sm));
-  tbSotto.innerHTML = sottoList.length === 0 ? '<tr><td colspan="4" style="color:#445; text-align:center; padding:20px;">Tutto in ordine ✓</td></tr>' :
-    sottoList.map(([nome, v]) => `<tr><td style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${nome}</td><td>${v.g}</td><td>${v.sm}</td><td><span class="badge badge-red">−${v.sm - v.g}</span></td></tr>`).join('');
+  tbSotto.innerHTML = sottoList.length === 0
+    ? '<tr><td colspan="4" style="color:#445; text-align:center; padding:20px;">Tutto in ordine ✓</td></tr>'
+    : sottoList.map(([n,v]) => `<tr><td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${n}</td><td>${v.g}</td><td>${v.sm}</td><td><span class="badge badge-red">−${v.sm-v.g}</span></td></tr>`).join('');
+
+  // ── Tabella scadenti ──────────────────────────────────────────────────────
+  const oggi = new Date();
+  const scadenti = data.filter(r => !r.data_apertura && !r.data_chiusura && r.scadenza_sepack)
+    .map(r => { const scad = parseScad(r.scadenza_sepack); return scad ? { ...r, diff: Math.floor((scad-oggi)/(24*3600*1000)) } : null; })
+    .filter(r => r && r.diff >= 0 && r.diff <= 90)
+    .sort((a,b) => a.diff-b.diff);
+  const tbScad = document.querySelector('#tableScadenti tbody');
+  tbScad.innerHTML = scadenti.length === 0
+    ? '<tr><td colspan="4" style="color:#445; text-align:center; padding:20px;">Nessuna scadenza imminente</td></tr>'
+    : scadenti.map(r => `<tr><td>${r.progressivo}</td><td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.nome_prodotto}</td><td>${r.scadenza_sepack}</td><td><span class="badge ${r.diff<=30?'badge-red':'badge-yellow'}">${r.diff}gg</span></td></tr>`).join('');
+
+  // ── Tabella vecchie ───────────────────────────────────────────────────────
+  const vecchie = data.filter(r => r.data_apertura && !r.data_chiusura && (oggi-new Date(r.data_apertura)) > 180*24*3600*1000)
+    .sort((a,b) => new Date(a.data_apertura)-new Date(b.data_apertura));
+  const tbVecchie = document.querySelector('#tableVecchie tbody');
+  tbVecchie.innerHTML = vecchie.length === 0
+    ? '<tr><td colspan="4" style="color:#445; text-align:center; padding:20px;">Nessuna bottiglia a rischio</td></tr>'
+    : vecchie.map(r => {
+        const giorni = Math.floor((oggi-new Date(r.data_apertura))/(24*3600*1000));
+        return `<tr><td>${r.progressivo}</td><td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.nome_prodotto}</td><td>${fmtDate(r.data_apertura)}</td><td><span class="badge badge-red">${giorni}gg</span></td></tr>`;
+      }).join('');
 
   document.getElementById('loading').style.display = 'none';
   document.getElementById('content').style.display = 'block';
 }
 
 // ── Chart helpers ──────────────────────────────────────────────────────────
-function renderBarChart(id, dataObj, color) {
-  const labels = Object.keys(dataObj).sort();
-  const values = labels.map(k => dataObj[k]);
+const CHART_OPTS = { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#556', font: { size: 10 } }, grid: { color: '#1a1e2a' } }, y: { ticks: { color: '#556' }, grid: { color: '#1a1e2a' } } } };
+
+function renderBar(id, obj, color) {
+  const labels = Object.keys(obj).sort();
   if (charts[id]) charts[id].destroy();
   charts[id] = new Chart(document.getElementById(id), {
     type: 'bar',
-    data: { labels, datasets: [{ data: values, backgroundColor: color + '99', borderColor: color, borderWidth: 1, borderRadius: 4 }] },
-    options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#556', font: { size: 10 } }, grid: { color: '#1a1e2a' } }, y: { ticks: { color: '#556' }, grid: { color: '#1a1e2a' } } } }
+    data: { labels, datasets: [{ data: labels.map(k=>obj[k]), backgroundColor: color+'99', borderColor: color, borderWidth: 1, borderRadius: 4 }] },
+    options: CHART_OPTS
   });
 }
 
-function renderHBarChart(id, entries) {
-  const labels = entries.map(([n]) => n.length > 30 ? n.substring(0,30)+'…' : n);
-  const values = entries.map(([,v]) => v);
+function renderHBar(id, entries, color) {
   if (charts[id]) charts[id].destroy();
+  if (entries.length === 0) { document.getElementById(id).parentElement.style.display='none'; return; }
+  document.getElementById(id).parentElement.style.display='block';
   charts[id] = new Chart(document.getElementById(id), {
     type: 'bar',
-    data: { labels, datasets: [{ data: values, backgroundColor: '#8e44ad99', borderColor: '#8e44ad', borderWidth: 1, borderRadius: 4 }] },
-    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#556' }, grid: { color: '#1a1e2a' } }, y: { ticks: { color: '#ccd', font: { size: 10 } }, grid: { color: '#1a1e2a' } } } }
+    data: { labels: entries.map(([n])=>n.length>35?n.substring(0,35)+'…':n), datasets: [{ data: entries.map(([,v])=>v), backgroundColor: color+'99', borderColor: color, borderWidth: 1, borderRadius: 4 }] },
+    options: { ...CHART_OPTS, indexAxis: 'y', scales: { x: { ticks: { color: '#556' }, grid: { color: '#1a1e2a' } }, y: { ticks: { color: '#ccd', font: { size: 10 } }, grid: { color: '#1a1e2a' } } } }
   });
 }
 
@@ -480,16 +420,15 @@ function renderDoughnut(id, entries) {
   });
 }
 
-function fmtDate(ts) {
-  if (!ts) return '—';
-  return new Date(ts).toLocaleDateString('it-IT');
+function fmtMese(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
-
-function parseScadenza(s) {
+function fmtDate(ts) { return ts ? new Date(ts).toLocaleDateString('it-IT') : '—'; }
+function parseScad(s) {
   if (!s) return null;
-  const parts = s.split('/');
-  if (parts.length === 3) return new Date(parts[2], parts[1]-1, parts[0]);
-  return null;
+  const p = s.split('/');
+  return p.length === 3 ? new Date(p[2], p[1]-1, p[0]) : null;
 }
 
 // ── Period buttons ─────────────────────────────────────────────────────────
@@ -497,9 +436,8 @@ document.querySelectorAll('.period-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    const [f, t] = getPeriodDates(btn.dataset.period);
-    periodFrom = f; periodTo = t;
-    render(f, t);
+    [periodFrom, periodTo] = getPeriodDates(btn.dataset.period);
+    render(periodFrom, periodTo);
   });
 });
 
@@ -509,14 +447,16 @@ function applyCustom() {
   if (!f || !t) return;
   document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
   periodFrom = new Date(f);
-  periodTo = new Date(t + 'T23:59:59');
+  periodTo = new Date(t+'T23:59:59');
   render(periodFrom, periodTo);
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
-const [initFrom, initTo] = getPeriodDates('this_year');
-periodFrom = initFrom; periodTo = initTo;
-render(initFrom, initTo);
+(async () => {
+  allData = await fetchAll();
+  [periodFrom, periodTo] = getPeriodDates('this_year');
+  render(periodFrom, periodTo);
+})();
 </script>
 </body>
 </html>
