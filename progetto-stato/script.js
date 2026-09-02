@@ -142,6 +142,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       adminBtn.textContent = "🔓 Admin ON";
       adminBtn.style.backgroundColor = "#27ae60";
       if (nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "inline-flex";
+      const statsBtn = document.getElementById('statsBtn');
+      if (statsBtn) statsBtn.style.display = "inline-flex";
       loadTuttiFornitori();
     } else {
       adminBtn.textContent = "🚪 Esci";
@@ -162,6 +164,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         adminBtn.textContent = "🔓 Admin ON";
         adminBtn.style.backgroundColor = "#27ae60";
         if (nuovoFornitoreBtn) nuovoFornitoreBtn.style.display = "inline-flex";
+        const statsBtn = document.getElementById('statsBtn');
+        if (statsBtn) statsBtn.style.display = "inline-flex";
         loadTuttiFornitori();
         alert("Modalità admin attivata!");
       } else {
