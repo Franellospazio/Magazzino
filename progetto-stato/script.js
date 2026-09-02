@@ -344,15 +344,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (showingAll) { results.innerHTML = ""; renderAll(); }
     else if (showingSottoscorta) {
       results.innerHTML = "";
-      prodotti.filter(p => p.Giacenza < p.ScortaMinima).forEach(p => results.appendChild(createProductLi(p)));
-      const rsub = reagenti.filter(g => g.scorta_minima > 0 && g.giacenza < g.scorta_minima);
-      if (rsub.length > 0) {
+      const prodSotto = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
+      const reagSotto = reagenti.filter(g => g.scorta_minima > 0 && g.giacenza < g.scorta_minima);
+      const gruppi = {};
+      prodSotto.forEach(p => {
+        const key = p.fornitore_selezionato_nome || "— Senza fornitore —";
+        if (!gruppi[key]) gruppi[key] = [];
+        gruppi[key].push({ tipo: 'prodotto', data: p });
+      });
+      reagSotto.forEach(g => {
+        const key = g.fornitore || "— Senza fornitore —";
+        if (!gruppi[key]) gruppi[key] = [];
+        gruppi[key].push({ tipo: 'reagente', data: g });
+      });
+      Object.entries(gruppi).sort(([a],[b]) => a.localeCompare(b)).forEach(([fornitore, lista]) => {
         const header = document.createElement("li");
-        header.style.cssText = "background:#16a085; color:white; font-weight:bold; padding:8px 12px; font-size:13px; list-style:none; border-radius:6px; margin-top:8px;";
-        header.textContent = "🧪 Reagenti sottoscorta";
+        header.style.cssText = "background:#e67e22; color:white; font-weight:bold; padding:8px 12px; font-size:14px; list-style:none; border-radius:6px; margin-top:8px;";
+        header.textContent = "🏭 " + fornitore;
         results.appendChild(header);
-        rsub.forEach(g => results.appendChild(createReagenteLi(g)));
-      }
+        lista.forEach(item => {
+          if (item.tipo === 'prodotto') results.appendChild(createProductLi(item.data));
+          else results.appendChild(createReagenteLi(item.data));
+        });
+      });
     }
     else if (showingInOrdine) { results.innerHTML = ""; renderInOrdine(); }
     else if (showingCategorie && activeCategoryBtn) {
@@ -377,20 +391,41 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   sottoscortaBtn.addEventListener("click", () => {
-    if (showingSottoscorta) resetAll();
-    else {
-      resetAll();
-      prodotti.filter(p => p.Giacenza < p.ScortaMinima).forEach(p => results.appendChild(createProductLi(p)));
-      const rsub = reagenti.filter(g => g.scorta_minima > 0 && g.giacenza < g.scorta_minima);
-      if (rsub.length > 0) {
-        const header = document.createElement("li");
-        header.style.cssText = "background:#16a085; color:white; font-weight:bold; padding:8px 12px; font-size:13px; list-style:none; border-radius:6px; margin-top:8px;";
-        header.textContent = "🧪 Reagenti sottoscorta";
-        results.appendChild(header);
-        rsub.forEach(g => results.appendChild(createReagenteLi(g)));
-      }
-      showingSottoscorta = true;
+    if (showingSottoscorta) { resetAll(); return; }
+    resetAll();
+    showingSottoscorta = true;
+
+    const prodSotto = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
+    const reagSotto = reagenti.filter(g => g.scorta_minima > 0 && g.giacenza < g.scorta_minima);
+
+    if (prodSotto.length === 0 && reagSotto.length === 0) {
+      results.innerHTML = "<li style='padding:10px; color:#999;'>Nessun prodotto sottoscorta.</li>";
+      return;
     }
+
+    // Raggruppa per fornitore
+    const gruppi = {};
+    prodSotto.forEach(p => {
+      const key = p.fornitore_selezionato_nome || "— Senza fornitore —";
+      if (!gruppi[key]) gruppi[key] = [];
+      gruppi[key].push({ tipo: 'prodotto', data: p });
+    });
+    reagSotto.forEach(g => {
+      const key = g.fornitore || "— Senza fornitore —";
+      if (!gruppi[key]) gruppi[key] = [];
+      gruppi[key].push({ tipo: 'reagente', data: g });
+    });
+
+    Object.entries(gruppi).sort(([a], [b]) => a.localeCompare(b)).forEach(([fornitore, lista]) => {
+      const header = document.createElement("li");
+      header.style.cssText = "background:#e67e22; color:white; font-weight:bold; padding:8px 12px; font-size:14px; list-style:none; border-radius:6px; margin-top:8px;";
+      header.textContent = "🏭 " + fornitore;
+      results.appendChild(header);
+      lista.forEach(item => {
+        if (item.tipo === 'prodotto') results.appendChild(createProductLi(item.data));
+        else results.appendChild(createReagenteLi(item.data));
+      });
+    });
   });
 
   inOrdineBtn.addEventListener("click", () => {
