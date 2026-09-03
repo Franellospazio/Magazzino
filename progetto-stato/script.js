@@ -1172,12 +1172,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     modalScorta.innerHTML = html;
     document.getElementById("backToGruppo").addEventListener("click", () => openReagenteModal(gruppo));
 
-    // Debug: verifica dati progressivo
-      data_apertura: r.data_apertura,
-      data_chiusura: r.data_chiusura,
-      aperto: aperto
-    });
-
     // Apri bottiglia
     if (!aperto && !r.data_chiusura) {
       document.getElementById("apriBtn").addEventListener("click", async () => {
