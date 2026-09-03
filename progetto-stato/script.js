@@ -885,13 +885,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const nonAperti = gruppo.progressivi.filter(r => !r.data_apertura && !r.data_chiusura);
     const chiusi    = gruppo.progressivi.filter(r => r.data_chiusura);
 
-      totale: gruppo.progressivi.length,
-      aperti: aperti.length,
-      nonAperti: nonAperti.length,
-      chiusi: chiusi.length,
-      campione_chiusi: chiusi.slice(0,3).map(r => ({ prog: r.progressivo, chiusura: r.data_chiusura }))
-    });
-
     function rowHTML(r, style = "") {
       const scadenza = r.scadenza_sepack ? `<span style="color:#e74c3c; font-size:11px;">⏰ ${r.scadenza_sepack}</span>` : '';
       let statoLabel = '';
