@@ -236,6 +236,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return "— Senza fornitore —";
   }
   function getFornitoreKeyReagente(g) {
+    if (g.fornitore_selezionato_nome) return g.fornitore_selezionato_nome;
     return g.fornitore || "— Senza fornitore —";
   }
 
@@ -875,6 +876,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (isAdmin) {
       html += `
         <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+          <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">🏭 Fornitore ordine</div>
+          <select id="reagenteFornitoreSelect" style="width:100%; padding:6px; border:1.5px solid #8e44ad; border-radius:5px; font-size:13px;">
+            <option value="">— Nessun fornitore selezionato —</option>
+            ${tuttiFornitori.map(f => `<option value="${f.id}" ${gruppo.fornitore_selezionato === f.id ? 'selected' : ''}>${f.nome}</option>`).join('')}
+          </select>
+          <button id="salvaFornitoreReagenteBtn" style="margin-top:6px; padding:5px 14px; background:#8e44ad; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Salva fornitore</button>
+        </div>
+        <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
           <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">In ordine</div>
           <div class="admin-in-ordine-container">
             <button type="button" id="decInOrdineR" class="qty-btn minus">−</button>
@@ -913,6 +922,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         const el = document.getElementById("inOrdineValueR");
         el.textContent = parseInt(el.textContent) + 1;
       });
+      document.getElementById("salvaFornitoreReagenteBtn").addEventListener("click", async () => {
+        const sel = document.getElementById("reagenteFornitoreSelect");
+        const fId = sel.value ? parseInt(sel.value) : null;
+        const fNome = sel.value ? sel.options[sel.selectedIndex].text : null;
+        await fetch("/api/reagenti", {
+          method: "PATCH",
+          headers: authHeaders(),
+          body: JSON.stringify({ nome_prodotto: gruppo.nome_prodotto, fornitore_selezionato: fId })
+        });
+        gruppo.fornitore_selezionato = fId;
+        gruppo.fornitore_selezionato_nome = fNome;
+        patchReagenteLiInList(gruppo);
+        alert("Fornitore salvato!");
+      });
+
       document.getElementById("salvaInOrdineBtn").addEventListener("click", async () => {
         const val = parseInt(document.getElementById("inOrdineValueR").textContent);
         await fetch("/api/reagenti", {
