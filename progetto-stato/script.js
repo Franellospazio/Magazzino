@@ -1012,22 +1012,18 @@ document.addEventListener("DOMContentLoaded", async () => {
           document.getElementById("reagenteModalOverlay").click();
         });
       } else {
-document.getElementById("aggiungiAGruppoBtn")?.addEventListener("click", async () => {
-  const sel = document.getElementById("gruppoSelect");
-  if (!sel.value) { alert("Seleziona un gruppo."); return; }
-  const res = await fetch("/api/gruppi", {
-    method: "PATCH",
-    headers: authHeaders(),
-    body: JSON.stringify({ id: parseInt(sel.value), aggiungi_membri: [gruppo.nome_prodotto] })
-  });
-  console.log('status:', res.status);
-  const body = await res.json();
-  console.log('body:', body);
-  alert("status: " + res.status + " — " + JSON.stringify(body));
-});
-          alert("Aggiunto al gruppo!");
-          document.getElementById("reagenteModalOverlay").click();
-          await reloadReagenti();
+        document.getElementById("aggiungiAGruppoBtn")?.addEventListener("click", async () => {
+          const sel = document.getElementById("gruppoSelect");
+          if (!sel.value) { alert("Seleziona un gruppo."); return; }
+          const res = await fetch("/api/gruppi", {
+            method: "PATCH",
+            headers: authHeaders(),
+            body: JSON.stringify({ id: parseInt(sel.value), aggiungi_membri: [gruppo.nome_prodotto] })
+          });
+          console.log('status:', res.status);
+          const body = await res.json();
+          console.log('body:', body);
+          alert("status: " + res.status + " — " + JSON.stringify(body));
         });
 
         document.getElementById("nuovoGruppoBtn")?.addEventListener("click", async () => {
