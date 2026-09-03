@@ -77,13 +77,18 @@ export default async function handler(req, res) {
       from += pageSize;
     }
 
-    // Fetch ordini (inclusa nota)
+    // Fetch ordini (inclusa nota e fornitore_selezionato)
     const { data: ordini } = await supabase
       .from('reagenti_ordini')
-      .select('nome_prodotto, inordine, nota');
+      .select('nome_prodotto, inordine, nota, fornitore_selezionato, fornitori(id, nome)');
     const ordiniMap = {};
     (ordini || []).forEach(o => {
-      ordiniMap[o.nome_prodotto] = { inordine: o.inordine, nota: o.nota || '' };
+      ordiniMap[o.nome_prodotto] = {
+        inordine: o.inordine,
+        nota: o.nota || '',
+        fornitore_selezionato: o.fornitore_selezionato || null,
+        fornitore_selezionato_nome: o.fornitori?.nome || null
+      };
     });
 
     // Raggruppa per nome_prodotto
@@ -96,6 +101,8 @@ export default async function handler(req, res) {
           scorta_minima: r.scorta_minima,
           inordine: ord.inordine || 0,
           nota: ord.nota || '',
+          fornitore_selezionato: ord.fornitore_selezionato || null,
+          fornitore_selezionato_nome: ord.fornitore_selezionato_nome || null,
           giacenza: 0,
           progressivi: []
         };
@@ -130,12 +137,13 @@ export default async function handler(req, res) {
 
   // ── PATCH /api/reagenti ───────────────────────────────────────────────────
   if (req.method === 'PATCH') {
-    const { progressivo, data_apertura, data_chiusura, scorta_minima, inordine, nota, nome_prodotto } = req.body;
+    const { progressivo, data_apertura, data_chiusura, scorta_minima, inordine, nota, fornitore_selezionato, nome_prodotto } = req.body;
 
-    if ((inordine !== undefined || nota !== undefined) && nome_prodotto) {
+    if ((inordine !== undefined || nota !== undefined || fornitore_selezionato !== undefined) && nome_prodotto) {
       const upsertData = { nome_prodotto };
       if (inordine !== undefined) upsertData.inordine = inordine;
       if (nota !== undefined) upsertData.nota = nota;
+      if (fornitore_selezionato !== undefined) upsertData.fornitore_selezionato = fornitore_selezionato;
       const { error } = await supabase
         .from('reagenti_ordini')
         .upsert(upsertData, { onConflict: 'nome_prodotto' });
