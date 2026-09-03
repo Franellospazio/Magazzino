@@ -635,7 +635,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     const query = search.value.toLowerCase();
     if (!query) return;
     prodotti.filter(p => p.Descrizione.toLowerCase().includes(query)).forEach(p => results.appendChild(createProductLi(p)));
-    const reagentiFiltrati = reagenti.filter(g => g.nome_prodotto.toLowerCase().includes(query));
+    const reagentiFiltrati = reagenti
+      .filter(g => g.nome_prodotto.toLowerCase().includes(query))
+      .sort((a, b) => {
+        const aN = a.nota ? 1 : 0;
+        const bN = b.nota ? 1 : 0;
+        if (bN !== aN) return bN - aN;
+        return a.nome_prodotto.localeCompare(b.nome_prodotto);
+      });
     if (reagentiFiltrati.length > 0) {
       const header = document.createElement("li");
       header.style.cssText = "background:#16a085; color:white; font-weight:bold; padding:8px 12px; font-size:13px; list-style:none; border-radius:6px; margin-top:8px;";
