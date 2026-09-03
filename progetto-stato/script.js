@@ -210,6 +210,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (err) { console.error("Errore caricamento reagenti:", err); }
   }
 
+  async function reloadReagenti() {
+    await loadReagenti();
+    if (showingSottoscorta) sottoscortaBtn.click(); // refresh vista
+  }
+
+  async function loadGruppiEq() {
+    try {
+      const res = await fetch("/api/gruppi", { headers: authHeaders() });
+      if (!res.ok) return;
+      window._gruppiEq = await res.json();
+    } catch (err) { console.error("Errore gruppi:", err); }
+  }
+
   async function loadTuttiFornitori() {
     try {
       const res = await fetch("/api/fornitori?tutti=1", { headers: authHeaders() });
@@ -238,6 +251,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   function getFornitoreKeyReagente(g) {
     if (g.fornitore_selezionato_nome) return g.fornitore_selezionato_nome;
     return g.fornitore || "— Senza fornitore —";
+  }
+
+  // ─── Li gruppo equivalenza (sottoscorta) ─────────────────────────────────
+  function createGruppoLi(g) {
+    const li = document.createElement("li");
+    li.style.cssText = "border-bottom:1px solid #ccc; padding:6px 0;";
+    const mancanti = g._gruppoScorta - g._gruppoGiacenza;
+    li.innerHTML = `
+      <strong style="color:#c0392b;">⚠️ Gruppo: ${g._gruppoNome}</strong>
+      <br><span style="font-size:12px; color:#666;">Giacenza totale gruppo: <span style="color:red; font-weight:bold;">${g._gruppoGiacenza}</span> / scorta minima: <span style="color:blue;">${g._gruppoScorta}</span> — mancanti: <span style="color:red;">−${mancanti}</span></span>
+      <br><span style="font-size:11px; color:#999;">Prodotti nel gruppo intercambiabili tra loro</span>
+    `;
+    return li;
   }
 
   // ─── Li prodotto normale ──────────────────────────────────────────────────
@@ -357,25 +383,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     else if (showingSottoscorta) {
       results.innerHTML = "";
       const prodSotto = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
-      const reagSotto = reagenti.filter(g => g.scorta_minima > 0 && g.giacenza < g.scorta_minima);
-      const gruppi = {};
-      prodSotto.forEach(p => {
-        const key = getFornitoreKeyProdotto(p);
-        if (!gruppi[key]) gruppi[key] = [];
-        gruppi[key].push({ tipo: 'prodotto', data: p });
+      const gruppiGiaVisti2 = new Set();
+      const reagSotto = [];
+      reagenti.forEach(g => {
+        if (g.in_gruppo) {
+          if (!gruppiGiaVisti2.has(g.gruppo_id) && g.gruppo_sottoscorta) {
+            gruppiGiaVisti2.add(g.gruppo_id);
+            reagSotto.push({ ...g, _isGruppo: true, _gruppoNome: g.gruppo_nome, _gruppoGiacenza: g.gruppo_giacenza, _gruppoScorta: g.gruppo_scorta_minima });
+          }
+        } else {
+          if (g.scorta_minima > 0 && g.giacenza < g.scorta_minima) reagSotto.push(g);
+        }
       });
-      reagSotto.forEach(g => {
-        const key = getFornitoreKeyReagente(g);
-        if (!gruppi[key]) gruppi[key] = [];
-        gruppi[key].push({ tipo: 'reagente', data: g });
-      });
-      Object.entries(gruppi).sort(([a],[b]) => a.localeCompare(b)).forEach(([fornitore, lista]) => {
+      const grpForn = {};
+      prodSotto.forEach(p => { const k = getFornitoreKeyProdotto(p); if (!grpForn[k]) grpForn[k] = []; grpForn[k].push({ tipo: 'prodotto', data: p }); });
+      reagSotto.forEach(g => { const k = g._isGruppo ? '— Gruppo equivalenza —' : getFornitoreKeyReagente(g); if (!grpForn[k]) grpForn[k] = []; grpForn[k].push({ tipo: g._isGruppo ? 'gruppo' : 'reagente', data: g }); });
+      Object.entries(grpForn).sort(([a],[b]) => a.localeCompare(b)).forEach(([fornitore, lista]) => {
         const header = document.createElement("li");
         header.style.cssText = "background:#e67e22; color:white; font-weight:bold; padding:8px 12px; font-size:14px; list-style:none; border-radius:6px; margin-top:8px;";
         header.textContent = "🏭 " + fornitore;
         results.appendChild(header);
         lista.forEach(item => {
           if (item.tipo === 'prodotto') results.appendChild(createProductLi(item.data));
+          else if (item.tipo === 'gruppo') results.appendChild(createGruppoLi(item.data));
           else results.appendChild(createReagenteLi(item.data));
         });
       });
@@ -408,7 +438,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     showingSottoscorta = true;
 
     const prodSotto = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
-    const reagSotto = reagenti.filter(g => g.scorta_minima > 0 && g.giacenza < g.scorta_minima);
+
+    // Reagenti: prodotti in gruppo → usa giacenza gruppo; altrimenti individuale
+    const gruppiGiaVisti = new Set(); // evita duplicati per gruppo
+    const reagSotto = [];
+    reagenti.forEach(g => {
+      if (g.in_gruppo) {
+        // Considera il gruppo solo una volta
+        if (!gruppiGiaVisti.has(g.gruppo_id) && g.gruppo_sottoscorta) {
+          gruppiGiaVisti.add(g.gruppo_id);
+          // Aggiungi un elemento rappresentativo del gruppo
+          reagSotto.push({
+            ...g,
+            _isGruppo: true,
+            _gruppoNome: g.gruppo_nome,
+            _gruppoGiacenza: g.gruppo_giacenza,
+            _gruppoScorta: g.gruppo_scorta_minima
+          });
+        }
+      } else {
+        if (g.scorta_minima > 0 && g.giacenza < g.scorta_minima) {
+          reagSotto.push(g);
+        }
+      }
+    });
 
     if (prodSotto.length === 0 && reagSotto.length === 0) {
       results.innerHTML = "<li style='padding:10px; color:#999;'>Nessun prodotto sottoscorta.</li>";
@@ -416,25 +469,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Raggruppa per fornitore
-    const gruppi = {};
+    const grpForn = {};
     prodSotto.forEach(p => {
       const key = getFornitoreKeyProdotto(p);
-      if (!gruppi[key]) gruppi[key] = [];
-      gruppi[key].push({ tipo: 'prodotto', data: p });
+      if (!grpForn[key]) grpForn[key] = [];
+      grpForn[key].push({ tipo: 'prodotto', data: p });
     });
     reagSotto.forEach(g => {
-      const key = getFornitoreKeyReagente(g);
-      if (!gruppi[key]) gruppi[key] = [];
-      gruppi[key].push({ tipo: 'reagente', data: g });
+      const key = g._isGruppo ? '— Gruppo equivalenza —' : getFornitoreKeyReagente(g);
+      if (!grpForn[key]) grpForn[key] = [];
+      grpForn[key].push({ tipo: g._isGruppo ? 'gruppo' : 'reagente', data: g });
     });
 
-    Object.entries(gruppi).sort(([a], [b]) => a.localeCompare(b)).forEach(([fornitore, lista]) => {
+    Object.entries(grpForn).sort(([a], [b]) => a.localeCompare(b)).forEach(([fornitore, lista]) => {
       const header = document.createElement("li");
       header.style.cssText = "background:#e67e22; color:white; font-weight:bold; padding:8px 12px; font-size:14px; list-style:none; border-radius:6px; margin-top:8px;";
       header.textContent = "🏭 " + fornitore;
       results.appendChild(header);
       lista.forEach(item => {
         if (item.tipo === 'prodotto') results.appendChild(createProductLi(item.data));
+        else if (item.tipo === 'gruppo') results.appendChild(createGruppoLi(item.data));
         else results.appendChild(createReagenteLi(item.data));
       });
     });
@@ -905,7 +959,22 @@ document.addEventListener("DOMContentLoaded", async () => {
           <button id="salvaScortaBtn" style="margin-left:8px; padding:5px 14px; background:#16a085; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Salva</button>
         </div>
         <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
-          <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">📌 Nota / Uso</div>
+          <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">🔗 Gruppo equivalenza</div>
+          ${gruppo.in_gruppo
+            ? `<div style="background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:8px; font-size:12px; color:#856404;">
+                Questo prodotto appartiene al gruppo <strong>${gruppo.gruppo_nome}</strong><br>
+                Giacenza totale gruppo: <strong>${gruppo.gruppo_giacenza}</strong> / scorta minima: <strong>${gruppo.gruppo_scorta_minima}</strong>
+                <br><button id="rimuoviDaGruppoBtn" style="margin-top:6px; padding:4px 10px; background:#e74c3c; color:white; border:none; border-radius:5px; font-size:11px; cursor:pointer;">Rimuovi dal gruppo</button>
+              </div>`
+            : `<div style="font-size:12px; color:#999; margin-bottom:6px;">Nessun gruppo assegnato — la scorta minima individuale è attiva.</div>
+               <select id="gruppoSelect" style="width:100%; padding:6px; border:1.5px solid #16a085; border-radius:5px; font-size:13px;">
+                 <option value="">— Seleziona gruppo —</option>
+                 ${(window._gruppiEq || []).map(g => `<option value="${g.id}">${g.nome} (scorta: ${g.scorta_minima})</option>`).join('')}
+               </select>
+               <button id="aggiungiAGruppoBtn" style="margin-top:6px; padding:5px 14px; background:#16a085; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Aggiungi al gruppo</button>
+               <button id="nuovoGruppoBtn" style="margin-top:6px; margin-left:8px; padding:5px 14px; background:#8e44ad; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">+ Nuovo gruppo</button>`
+          }
+        </div>
           <input type="text" id="reagenteNotaInput" value="${gruppo.nota || ''}" placeholder="Es: Lavaggio celle, GC-MS..." style="width:100%; padding:6px; border:1.5px solid #2980b9; border-radius:5px; font-size:13px; box-sizing:border-box;">
           <button id="salvaNotaBtn" style="margin-top:6px; padding:5px 14px; background:#2980b9; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Salva nota</button>
         </div>`;
@@ -929,6 +998,51 @@ document.addEventListener("DOMContentLoaded", async () => {
         const el = document.getElementById("inOrdineValueR");
         el.textContent = parseInt(el.textContent) + 1;
       });
+      // Gestione gruppo equivalenza
+      if (gruppo.in_gruppo) {
+        document.getElementById("rimuoviDaGruppoBtn")?.addEventListener("click", async () => {
+          if (!confirm(`Rimuovere "${gruppo.nome_prodotto}" dal gruppo "${gruppo.gruppo_nome}"?`)) return;
+          await fetch("/api/gruppi", {
+            method: "PATCH",
+            headers: authHeaders(),
+            body: JSON.stringify({ id: gruppo.gruppo_id, rimuovi_membri: [gruppo.nome_prodotto] })
+          });
+          gruppo.in_gruppo = false; gruppo.gruppo_id = null; gruppo.gruppo_nome = null;
+          alert("Rimosso dal gruppo.");
+          document.getElementById("reagenteModalOverlay").click();
+        });
+      } else {
+        document.getElementById("aggiungiAGruppoBtn")?.addEventListener("click", async () => {
+          const sel = document.getElementById("gruppoSelect");
+          if (!sel.value) { alert("Seleziona un gruppo."); return; }
+          await fetch("/api/gruppi", {
+            method: "PATCH",
+            headers: authHeaders(),
+            body: JSON.stringify({ id: parseInt(sel.value), aggiungi_membri: [gruppo.nome_prodotto] })
+          });
+          alert("Aggiunto al gruppo!");
+          document.getElementById("reagenteModalOverlay").click();
+          await reloadReagenti();
+        });
+
+        document.getElementById("nuovoGruppoBtn")?.addEventListener("click", async () => {
+          const nome = prompt("Nome del nuovo gruppo:");
+          if (!nome) return;
+          const scorta = parseInt(prompt("Scorta minima del gruppo:") || "0");
+          const res = await fetch("/api/gruppi", {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify({ nome, scorta_minima: scorta, membri: [gruppo.nome_prodotto] })
+          });
+          const newGruppo = await res.json();
+          window._gruppiEq = window._gruppiEq || [];
+          window._gruppiEq.push(newGruppo);
+          alert(`Gruppo "${nome}" creato!`);
+          document.getElementById("reagenteModalOverlay").click();
+          await reloadReagenti();
+        });
+      }
+
       document.getElementById("salvaFornitoreReagenteBtn").addEventListener("click", async () => {
         const sel = document.getElementById("reagenteFornitoreSelect");
         const fId = sel.value ? parseInt(sel.value) : null;
@@ -1245,5 +1359,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // ─── Init ─────────────────────────────────────────────────────────────────
-  Promise.all([loadProdotti(), loadReagenti()]);
+  Promise.all([loadProdotti(), loadReagenti(), loadGruppiEq()]);
 });
