@@ -885,7 +885,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const nonAperti = gruppo.progressivi.filter(r => !r.data_apertura && !r.data_chiusura);
     const chiusi    = gruppo.progressivi.filter(r => r.data_chiusura);
 
-    console.log(`[DEBUG] openReagenteModal: ${gruppo.nome_prodotto}`, {
       totale: gruppo.progressivi.length,
       aperti: aperti.length,
       nonAperti: nonAperti.length,
@@ -1024,10 +1023,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             headers: authHeaders(),
             body: JSON.stringify({ id: parseInt(sel.value), aggiungi_membri: [gruppo.nome_prodotto] })
           });
-          console.log('status:', res.status);
-          const body = await res.json();
-          console.log('body:', body);
-          alert("status: " + res.status + " — " + JSON.stringify(body));
+          if (res.ok) {
+            alert("Aggiunto al gruppo!");
+            document.getElementById("reagenteModalOverlay").click();
+            await reloadReagenti();
+          } else {
+            alert("Errore nel salvataggio.");
+          }
         });
 
         document.getElementById("nuovoGruppoBtn")?.addEventListener("click", async () => {
@@ -1178,7 +1180,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("backToGruppo").addEventListener("click", () => openReagenteModal(gruppo));
 
     // Debug: verifica dati progressivo
-    console.log(`[DEBUG] openProgressivoDetail: progressivo=${r.progressivo}`, {
       data_apertura: r.data_apertura,
       data_chiusura: r.data_chiusura,
       aperto: aperto
@@ -1200,7 +1201,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     } else if (aperto && !r.data_chiusura && !isAdmin) {
       document.getElementById("chiudiBtn").addEventListener("click", async () => {
-        console.log(`[DEBUG] chiudiBtn click: progressivo=${r.progressivo}, data_chiusura attuale=`, r.data_chiusura);
         if (r.data_chiusura) {
           alert("Questa bottiglia è già chiusa.");
           return;
@@ -1213,10 +1213,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           body: JSON.stringify({ progressivo: r.progressivo, data_chiusura: oggi })
         });
         const respJson = await resp.json();
-        console.log(`[DEBUG] PATCH chiusura risposta:`, resp.status, respJson);
         r.data_chiusura = oggi;
         gruppo.giacenza = Math.max(0, gruppo.giacenza - 1);
-        console.log(`[DEBUG] giacenza aggiornata:`, gruppo.giacenza, `scorta_minima:`, gruppo.scorta_minima);
 
         // Mail solo se NON admin e giacenza scende sotto scorta minima
         if (!isAdmin && gruppo.scorta_minima > 0 && gruppo.giacenza < gruppo.scorta_minima) {
@@ -1253,7 +1251,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           headers: authHeaders(),
           body: JSON.stringify(body)
         });
-        console.log(`[DEBUG] admin PATCH risposta:`, resp.status, await resp.json());
 
         const eraChiuso = !!r.data_chiusura;
 
