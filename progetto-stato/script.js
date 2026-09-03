@@ -864,6 +864,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ─── Modal reagente ───────────────────────────────────────────────────────
   async function openReagenteModal(gruppo) {
+    // Assicura che i gruppi siano caricati prima di aprire il modal
+    if (!window._gruppiEq || window._gruppiEq.length === 0) {
+      await loadGruppiEq();
+    }
     selectedReagente = gruppo;
     selectedProdotto = null;
     modalTitle.textContent = isAdmin ? "Reagente — Admin" : "Reagente";
