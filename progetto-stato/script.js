@@ -1005,7 +1005,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           });
           gruppo.in_gruppo = false; gruppo.gruppo_id = null; gruppo.gruppo_nome = null;
           alert("Rimosso dal gruppo.");
-          document.getElementById("reagenteModalOverlay").click();
+          closeModal();
         });
       } else {
         document.getElementById("aggiungiAGruppoBtn")?.addEventListener("click", async () => {
@@ -1018,7 +1018,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           });
           if (res.ok) {
             alert("Aggiunto al gruppo!");
-            document.getElementById("reagenteModalOverlay").click();
+            closeModal();
             await reloadReagenti();
           } else {
             alert("Errore nel salvataggio.");
@@ -1038,7 +1038,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           window._gruppiEq = window._gruppiEq || [];
           window._gruppiEq.push(newGruppo);
           alert(`Gruppo "${nome}" creato!`);
-          document.getElementById("reagenteModalOverlay").click();
+          closeModal();
           await reloadReagenti();
         });
       }
