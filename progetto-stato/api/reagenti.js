@@ -111,6 +111,34 @@ export default async function handler(req, res) {
       gruppi[r.nome_prodotto].progressivi.push(r);
     });
 
+    // Fetch gruppi di equivalenza
+    const { data: gruppiEq } = await supabase
+      .from('reagenti_gruppi')
+      .select('*, reagenti_gruppi_membri(nome_prodotto)');
+
+    // Mappa nome_prodotto → gruppo_id
+    const prodottoInGruppo = {};
+    (gruppiEq || []).forEach(g => {
+      g.reagenti_gruppi_membri.forEach(m => {
+        prodottoInGruppo[m.nome_prodotto] = g.id;
+      });
+    });
+
+    // Calcola giacenza aggregata per ogni gruppo
+    const giacenzaGruppo = {};
+    (gruppiEq || []).forEach(g => {
+      giacenzaGruppo[g.id] = 0;
+    });
+    allData.forEach(r => {
+      if (!r.data_chiusura && prodottoInGruppo[r.nome_prodotto] !== undefined) {
+        giacenzaGruppo[prodottoInGruppo[r.nome_prodotto]]++;
+      }
+    });
+
+    // Aggiungi info gruppo a ogni prodotto
+    const gruppiEqMap = {};
+    (gruppiEq || []).forEach(g => { gruppiEqMap[g.id] = g; });
+
     // Ordina progressivi: aperti → non aperti → chiusi, ognuno per progressivo asc
     Object.values(gruppi).forEach(g => {
       g.progressivi.sort((a, b) => {
@@ -122,6 +150,21 @@ export default async function handler(req, res) {
       // Fornitore: primo progressivo non chiuso
       const primo = g.progressivi.find(p => !p.data_chiusura) || g.progressivi[0];
       g.fornitore = primo?.fornitore || null;
+
+      // Info gruppo equivalenza
+      const gId = prodottoInGruppo[g.nome_prodotto];
+      if (gId !== undefined) {
+        const grp = gruppiEqMap[gId];
+        g.gruppo_id = gId;
+        g.gruppo_nome = grp.nome;
+        g.gruppo_scorta_minima = grp.scorta_minima;
+        g.gruppo_giacenza = giacenzaGruppo[gId];
+        g.gruppo_sottoscorta = giacenzaGruppo[gId] < grp.scorta_minima;
+        // La scorta minima individuale viene ignorata se in un gruppo
+        g.in_gruppo = true;
+      } else {
+        g.in_gruppo = false;
+      }
     });
 
     const risultato = Object.values(gruppi).sort((a, b) => {
