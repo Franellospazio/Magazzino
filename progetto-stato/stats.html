@@ -28,14 +28,15 @@
     /* Product selector */
     .product-selector { background: #13161f; border-bottom: 1px solid #1e2232; padding: 12px 24px; }
     .selector-row { display: flex; gap: 10px; align-items: center; }
-    .product-search-wrap { position: relative; flex: 1; max-width: 380px; }
+    .product-search-wrap { position: relative; flex: 1; max-width: 560px; }
     .product-search-wrap input { width: 100%; background: #1e2232; border: 1px solid #2a2f42; color: #e8eaf0; border-radius: 8px; padding: 8px 12px; font-size: 13px; outline: none; }
     .product-search-wrap input:focus { border-color: #00B4CC; }
-    .search-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: #1e2232; border: 1px solid #2a2f42; border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 200; display: none; }
+    .search-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: #1e2232; border: 1px solid #2a2f42; border-radius: 8px; max-height: 300px; overflow-y: auto; z-index: 200; display: none; min-width: 500px; }
     .search-dropdown.open { display: block; }
-    .search-item { padding: 9px 12px; font-size: 12px; cursor: pointer; color: #ccd; border-bottom: 1px solid #252a38; }
+    .search-item { padding: 9px 12px; font-size: 12px; cursor: pointer; color: #ccd; border-bottom: 1px solid #252a38; line-height: 1.4; }
     .search-item:last-child { border-bottom: none; }
     .search-item:hover { background: #252a38; color: #fff; }
+    .search-add-all { background: #00B4CC11; color: #00B4CC; font-weight: 600; border-bottom: 2px solid #00B4CC33 !important; }
     .selected-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .chip { display: inline-flex; align-items: center; gap: 6px; background: #00B4CC22; border: 1px solid #00B4CC55; color: #00B4CC; border-radius: 20px; padding: 4px 10px; font-size: 11px; }
     .chip button { background: none; border: none; color: #00B4CC; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
@@ -217,22 +218,68 @@ function getPeriodDates(period) {
 const searchInput = document.getElementById('productSearch');
 const dropdown = document.getElementById('searchDropdown');
 
+// Mappa note per nome_prodotto (caricata da reagenti_ordini)
+let noteMap = {};
+
+async function fetchNote() {
+  const { data } = await sb.from('reagenti_ordini').select('nome_prodotto, nota');
+  (data || []).forEach(r => { if (r.nota) noteMap[r.nome_prodotto] = r.nota; });
+}
+
+function getNomiProdotti() {
+  // Unici, con nota prima poi alfabetico
+  const names = [...new Set(allData.map(r => r.nome_prodotto))];
+  return names.sort((a, b) => {
+    const aN = noteMap[a] ? 1 : 0;
+    const bN = noteMap[b] ? 1 : 0;
+    if (bN !== aN) return bN - aN;
+    return a.localeCompare(b);
+  });
+}
+
+function getProgressiviCount(name) {
+  return allData.filter(r => r.nome_prodotto === name).length;
+}
+
 searchInput.addEventListener('input', () => {
   const q = searchInput.value.toLowerCase().trim();
   if (!q || allData.length === 0) { dropdown.classList.remove('open'); return; }
-  const names = [...new Set(allData.map(r => r.nome_prodotto))].filter(n => n.toLowerCase().includes(q)).slice(0, 20);
-  if (names.length === 0) { dropdown.classList.remove('open'); return; }
-  dropdown.innerHTML = names.map(n =>
-    `<div class="search-item" onclick="addProduct('${n.replace(/'/g,"\\'")}')">
-      ${n.length > 60 ? n.substring(0,60)+'…' : n}
-    </div>`
-  ).join('');
+
+  const filtered = getNomiProdotti().filter(n => n.toLowerCase().includes(q) && !selectedProducts.has(n));
+
+  if (filtered.length === 0) { dropdown.classList.remove('open'); return; }
+
+  const addAllBtn = `<div class="search-item search-add-all" onclick="addAllFiltered('${q.replace(/'/g,"\\'")}')">
+    ➕ Aggiungi tutti i risultati (${filtered.length} prodotti)
+  </div>`;
+
+  dropdown.innerHTML = addAllBtn + filtered.map(n => {
+    const count = getProgressiviCount(n);
+    const nota = noteMap[n] ? `<span style="color:#00B4CC; font-size:10px; margin-left:6px;">📌 ${noteMap[n]}</span>` : '';
+    const totale = `<span style="color:#445; font-size:10px; float:right;">${count} prog.</span>`;
+    return `<div class="search-item" onclick="addProduct('${n.replace(/'/g,"\\'")}')">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+        <span>${n}</span>
+        ${totale}
+      </div>
+      ${nota ? `<div>${nota}</div>` : ''}
+    </div>`;
+  }).join('');
   dropdown.classList.add('open');
 });
 
 document.addEventListener('click', e => {
   if (!e.target.closest('.product-search-wrap')) dropdown.classList.remove('open');
 });
+
+function addAllFiltered(q) {
+  const filtered = getNomiProdotti().filter(n => n.toLowerCase().includes(q) && !selectedProducts.has(n));
+  filtered.forEach(n => selectedProducts.add(n));
+  searchInput.value = '';
+  dropdown.classList.remove('open');
+  renderChips();
+  render(periodFrom, periodTo);
+}
 
 function addProduct(name) {
   selectedProducts.add(name);
@@ -263,11 +310,15 @@ function renderChips() {
     return;
   }
   clearBtn.style.display = 'inline-block';
-  chips.innerHTML = [...selectedProducts].map(n =>
-    `<div class="chip">
-      <span>${n.length > 40 ? n.substring(0,40)+'…' : n}</span>
+  chips.innerHTML = [...selectedProducts].map(n => {
+    const count = getProgressiviCount(n);
+    const nota = noteMap[n] ? `· 📌 ${noteMap[n]}` : '';
+    return `<div class="chip">
+      <span title="${n}">${n.length > 35 ? n.substring(0,35)+'…' : n} <span style="opacity:0.6">(${count}${nota})</span></span>
       <button onclick="removeProduct('${n.replace(/'/g,"\\'")}')">×</button>
-    </div>`
+    </div>`;
+  }).join('');
+}
   ).join('');
 }
 
@@ -454,6 +505,7 @@ function applyCustom() {
 // ── Init ───────────────────────────────────────────────────────────────────
 (async () => {
   allData = await fetchAll();
+  await fetchNote();
   [periodFrom, periodTo] = getPeriodDates('this_year');
   render(periodFrom, periodTo);
 })();
