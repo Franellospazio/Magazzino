@@ -545,21 +545,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       activeCategoryBtn = fornitoriBtn; fornitoriBtn.classList.add("active");
       results.innerHTML = ""; selectedFornitori.clear();
 
-      // Raccogli fornitori unici solo da prodotti/reagenti con scorta minima
-      // e solo dai fornitori "reali" (tabella fornitori), non da Excel
+      // Fornitori reali (tabella fornitori) → sempre
+      // Fornitore Excel (fallback) → solo se il prodotto ha scorta minima
       const fornitoreiReali = new Set(tuttiFornitori.map(f => f.nome));
       const fornSet = new Set();
       prodotti.forEach(p => {
-        if (p.ScortaMinima > 0) {
-          const k = getFornitoreKeyProdotto(p);
-          if (k !== "— Senza fornitore —" && fornitoreiReali.has(k)) fornSet.add(k);
-        }
+        const k = getFornitoreKeyProdotto(p);
+        if (k === "— Senza fornitore —") return;
+        if (fornitoreiReali.has(k)) fornSet.add(k);
+        else if (p.ScortaMinima > 0) fornSet.add(k);
       });
       reagenti.forEach(g => {
-        const haScorta = g.in_gruppo ? g.gruppo_scorta_minima > 0 : g.scorta_minima > 0;
-        if (haScorta) {
-          const k = getFornitoreKeyReagente(g);
-          if (k !== "— Senza fornitore —" && fornitoreiReali.has(k)) fornSet.add(k);
+        const k = getFornitoreKeyReagente(g);
+        if (k === "— Senza fornitore —") return;
+        if (fornitoreiReali.has(k)) fornSet.add(k);
+        else {
+          const haScorta = g.in_gruppo ? g.gruppo_scorta_minima > 0 : g.scorta_minima > 0;
+          if (haScorta) fornSet.add(k);
         }
       });
       const fornList = [...fornSet].sort((a, b) => a.localeCompare(b));
