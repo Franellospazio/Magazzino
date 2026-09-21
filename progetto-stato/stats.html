@@ -443,7 +443,13 @@ async function render(from, to) {
   // ── Tabella accessi ───────────────────────────────────────────────────────
   let accessi = [];
   try {
-    const accessRes = await fetch('/api/access-log');
+    const { data: { session: statSession } } = await sb.auth.getSession();
+    const accessRes = await fetch('/api/access-log', {
+      headers: statSession ? {
+        'Authorization': `Bearer ${statSession.access_token}`,
+        'Content-Type': 'application/json'
+      } : {}
+    });
     if (accessRes.ok) accessi = await accessRes.json();
   } catch(e) { /* silenzioso */ }
 
