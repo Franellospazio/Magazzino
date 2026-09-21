@@ -173,6 +173,15 @@
     </table>
   </div>
 
+  <div class="section-title">Accessi</div>
+  <div class="table-card">
+    <h2>Storico accessi utenti</h2>
+    <table id="tableAccessi">
+      <thead><tr><th>Email</th><th>Data e ora</th><th>Dispositivo</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
 </div>
 
 <script>
@@ -429,6 +438,32 @@ async function render(from, to) {
     : vecchie.map(r => {
         const giorni = Math.floor((oggi-new Date(r.data_apertura))/(24*3600*1000));
         return `<tr><td>${r.progressivo}</td><td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.nome_prodotto}</td><td>${fmtDate(r.data_apertura)}</td><td><span class="badge badge-red">${giorni}gg</span></td></tr>`;
+      }).join('');
+
+  // ── Tabella accessi ───────────────────────────────────────────────────────
+  let accessi = [];
+  try {
+    const accessRes = await fetch('/api/access-log');
+    if (accessRes.ok) accessi = await accessRes.json();
+  } catch(e) { /* silenzioso */ }
+
+  const tbAccessi = document.querySelector('#tableAccessi tbody');
+  tbAccessi.innerHTML = !accessi || accessi.length === 0
+    ? '<tr><td colspan="3" style="color:#445; text-align:center; padding:20px;">Nessun accesso registrato</td></tr>'
+    : accessi.map(a => {
+        const ua = a.user_agent || '';
+        const device = ua.includes('iPhone') || ua.includes('Android') ? '📱 Mobile'
+                     : ua.includes('iPad') ? '📱 Tablet'
+                     : '💻 Desktop';
+        const browser = ua.includes('Chrome') ? 'Chrome'
+                      : ua.includes('Firefox') ? 'Firefox'
+                      : ua.includes('Safari') ? 'Safari'
+                      : 'Altro';
+        return `<tr>
+          <td>${a.email}</td>
+          <td>${new Date(a.accessed_at).toLocaleString('it-IT')}</td>
+          <td>${device} · ${browser}</td>
+        </tr>`;
       }).join('');
 
   document.getElementById('loading').style.display = 'none';
