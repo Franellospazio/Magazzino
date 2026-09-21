@@ -45,6 +45,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
     const profileData = await profileRes.json();
     isAdminFromDB = profileData?.[0]?.is_admin === true;
+
+    // Registra accesso nel log
+    try {
+      await fetch(`${SUPABASE_URL_CLIENT}/rest/v1/access_log`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          user_id: session.user.id,
+          email: session.user.email,
+          user_agent: navigator.userAgent
+        })
+      });
+    } catch(e) { /* silenzioso */ }
   }
   const search = document.getElementById("search");
   const results = document.getElementById("results");
