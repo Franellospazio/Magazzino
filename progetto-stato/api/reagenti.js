@@ -80,14 +80,16 @@ export default async function handler(req, res) {
     // Fetch ordini (inclusa nota e fornitore_selezionato)
     const { data: ordini } = await supabase
       .from('reagenti_ordini')
-      .select('nome_prodotto, inordine, nota, fornitore_selezionato, fornitori(id, nome)');
+      .select('nome_prodotto, inordine, nota, fornitore_selezionato, unita, volume_per_unita, fornitori(id, nome)');
     const ordiniMap = {};
     (ordini || []).forEach(o => {
       ordiniMap[o.nome_prodotto] = {
         inordine: o.inordine,
         nota: o.nota || '',
         fornitore_selezionato: o.fornitore_selezionato || null,
-        fornitore_selezionato_nome: o.fornitori?.nome || null
+        fornitore_selezionato_nome: o.fornitori?.nome || null,
+        unita: o.unita || 'pz',
+        volume_per_unita: o.volume_per_unita || 1
       };
     });
 
@@ -103,18 +105,24 @@ export default async function handler(req, res) {
           nota: ord.nota || '',
           fornitore_selezionato: ord.fornitore_selezionato || null,
           fornitore_selezionato_nome: ord.fornitore_selezionato_nome || null,
+          unita: ord.unita || 'pz',
+          volume_per_unita: ord.volume_per_unita || 1,
           giacenza: 0,
+          giacenza_effettiva: 0,
           progressivi: []
         };
       }
-      if (!r.data_chiusura) gruppi[r.nome_prodotto].giacenza++;
+      if (!r.data_chiusura) {
+        gruppi[r.nome_prodotto].giacenza++;
+        gruppi[r.nome_prodotto].giacenza_effettiva += (gruppi[r.nome_prodotto].volume_per_unita || 1);
+      }
       gruppi[r.nome_prodotto].progressivi.push(r);
     });
 
     // Fetch gruppi di equivalenza
     const { data: gruppiEq } = await supabase
       .from('reagenti_gruppi')
-      .select('*, reagenti_gruppi_membri(nome_prodotto)');
+      .select('*, reagenti_gruppi_membri(nome_prodotto, contributo_per_unita)');
 
     // Mappa nome_prodotto → gruppo_id
     const prodottoInGruppo = {};
@@ -129,9 +137,17 @@ export default async function handler(req, res) {
     (gruppiEq || []).forEach(g => {
       giacenzaGruppo[g.id] = 0;
     });
+    // Mappa nome_prodotto → contributo_per_unita
+    const contributoMap = {};
+    (gruppiEq || []).forEach(g => {
+      g.reagenti_gruppi_membri.forEach(m => {
+        contributoMap[m.nome_prodotto] = m.contributo_per_unita || 1;
+      });
+    });
+
     allData.forEach(r => {
       if (!r.data_chiusura && prodottoInGruppo[r.nome_prodotto] !== undefined) {
-        giacenzaGruppo[prodottoInGruppo[r.nome_prodotto]]++;
+        giacenzaGruppo[prodottoInGruppo[r.nome_prodotto]] += (contributoMap[r.nome_prodotto] || 1);
       }
     });
 
@@ -158,11 +174,15 @@ export default async function handler(req, res) {
         g.gruppo_id = gId;
         g.gruppo_nome = grp.nome;
         g.gruppo_scorta_minima = grp.scorta_minima;
+        g.gruppo_unita = grp.unita || 'pz';
         g.gruppo_giacenza = giacenzaGruppo[gId];
         g.gruppo_sottoscorta = giacenzaGruppo[gId] < grp.scorta_minima;
+        g.contributo_per_unita = contributoMap[g.nome_prodotto] || 1;
         // La scorta minima individuale viene ignorata se in un gruppo
         g.in_gruppo = true;
       } else {
+        // Sottoscorta basata su giacenza_effettiva vs scorta_minima
+        g.sottoscorta = g.giacenza_effettiva < (g.scorta_minima || 0);
         g.in_gruppo = false;
       }
     });
@@ -180,13 +200,15 @@ export default async function handler(req, res) {
 
   // ── PATCH /api/reagenti ───────────────────────────────────────────────────
   if (req.method === 'PATCH') {
-    const { progressivo, data_apertura, data_chiusura, scorta_minima, inordine, nota, fornitore_selezionato, nome_prodotto } = req.body;
+    const { progressivo, data_apertura, data_chiusura, scorta_minima, inordine, nota, fornitore_selezionato, nome_prodotto, unita, volume_per_unita } = req.body;
 
-    if ((inordine !== undefined || nota !== undefined || fornitore_selezionato !== undefined) && nome_prodotto) {
+    if ((inordine !== undefined || nota !== undefined || fornitore_selezionato !== undefined || unita !== undefined || volume_per_unita !== undefined) && nome_prodotto) {
       const upsertData = { nome_prodotto };
       if (inordine !== undefined) upsertData.inordine = inordine;
       if (nota !== undefined) upsertData.nota = nota;
       if (fornitore_selezionato !== undefined) upsertData.fornitore_selezionato = fornitore_selezionato;
+      if (unita !== undefined) upsertData.unita = unita;
+      if (volume_per_unita !== undefined) upsertData.volume_per_unita = volume_per_unita;
       const { error } = await supabase
         .from('reagenti_ordini')
         .upsert(upsertData, { onConflict: 'nome_prodotto' });
