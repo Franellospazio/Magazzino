@@ -46,43 +46,51 @@ export default async function handler(req, res) {
 
   // POST — crea nuovo gruppo
   if (req.method === 'POST') {
-    const { nome, scorta_minima, membri } = req.body;
+    const { nome, scorta_minima, unita, membri } = req.body;
     if (!nome) return res.status(400).json({ error: 'nome richiesto' });
 
     const { data: gruppo, error } = await supabase
       .from('reagenti_gruppi')
-      .insert({ nome, scorta_minima: scorta_minima || 0 })
+      .insert({ nome, scorta_minima: scorta_minima || 0, unita: unita || 'pz' })
       .select().single();
     if (error) return res.status(500).json({ error: error.message });
 
     if (membri && membri.length > 0) {
       await supabase.from('reagenti_gruppi_membri').insert(
-        membri.map(m => ({ gruppo_id: gruppo.id, nome_prodotto: m }))
+        membri.map(m => ({ gruppo_id: gruppo.id, nome_prodotto: typeof m === 'object' ? m.nome_prodotto : m, contributo_per_unita: typeof m === 'object' ? (m.contributo_per_unita || 1) : 1 }))
       );
     }
     return res.status(201).json(gruppo);
   }
 
-  // PATCH — modifica gruppo (nome, scorta_minima, membri)
+  // PATCH — modifica gruppo (nome, scorta_minima, unita, membri)
   if (req.method === 'PATCH') {
-    const { id, nome, scorta_minima, aggiungi_membri, rimuovi_membri } = req.body;
+    const { id, nome, scorta_minima, unita, aggiungi_membri, rimuovi_membri, aggiorna_contributo } = req.body;
     if (!id) return res.status(400).json({ error: 'id richiesto' });
 
     const update = {};
     if (nome !== undefined) update.nome = nome;
     if (scorta_minima !== undefined) update.scorta_minima = scorta_minima;
+    if (unita !== undefined) update.unita = unita;
 
     if (Object.keys(update).length > 0) {
       await supabase.from('reagenti_gruppi').update(update).eq('id', id);
     }
     if (aggiungi_membri && aggiungi_membri.length > 0) {
       await supabase.from('reagenti_gruppi_membri').insert(
-        aggiungi_membri.map(m => ({ gruppo_id: id, nome_prodotto: m }))
+        aggiungi_membri.map(m => ({ gruppo_id: id, nome_prodotto: typeof m === 'object' ? m.nome_prodotto : m, contributo_per_unita: typeof m === 'object' ? (m.contributo_per_unita || 1) : 1 }))
       );
     }
     if (rimuovi_membri && rimuovi_membri.length > 0) {
       await supabase.from('reagenti_gruppi_membri')
         .delete().eq('gruppo_id', id).in('nome_prodotto', rimuovi_membri);
+    }
+    // Aggiorna contributo_per_unita per un singolo membro: { nome_prodotto, contributo_per_unita }
+    if (aggiorna_contributo) {
+      await supabase.from('reagenti_gruppi_membri')
+        .update({ contributo_per_unita: aggiorna_contributo.contributo_per_unita })
+        .eq('gruppo_id', id)
+        .eq('nome_prodotto', aggiorna_contributo.nome_prodotto);
     }
     return res.status(200).json({ message: 'Aggiornato' });
   }
