@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ricerca batch — Magazzino Sepack</title>
+  <style>
+    :root {
+      --primary: #00B4CC;
+      --primary-dark: #0097ae;
+      --ok: #16a085;
+      --warn: #e67e22;
+      --err: #e74c3c;
+      --bg: #f4f6f8;
+      --card: #fff;
+      --border: #dde1e7;
+      --text: #2c3e50;
+      --muted: #7f8c8d;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white; padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 17px; font-weight: 700; }
+    header a { color: rgba(255,255,255,.85); font-size: 13px; text-decoration: none; }
+    header a:hover { color: white; }
+
+    /* ── Layout ── */
+    .container { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 22px; margin-bottom: 18px; }
+    .card-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 14px; }
+
+    /* ── Tipo chiave ── */
+    .tipo-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .tipo-btn {
+      padding: 8px 18px; border: 2px solid var(--border); border-radius: 20px;
+      font-size: 13px; font-weight: 600; background: white; cursor: pointer; color: var(--muted);
+      transition: all .15s;
+    }
+    .tipo-btn.active { border-color: var(--primary); background: var(--primary); color: white; }
+    .tipo-btn:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+
+    /* ── Textarea ── */
+    textarea {
+      width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-family: monospace; font-size: 13px; line-height: 1.6; resize: vertical;
+      min-height: 160px; outline: none; transition: border-color .15s; color: var(--text);
+    }
+    textarea:focus { border-color: var(--primary); }
+    .textarea-hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+    /* ── Bottone cerca ── */
+    .btn-cerca {
+      display: block; width: 100%; padding: 13px; background: var(--primary);
+      color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 700;
+      cursor: pointer; margin-top: 14px; transition: background .15s;
+    }
+    .btn-cerca:hover:not(:disabled) { background: var(--primary-dark); }
+    .btn-cerca:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Spinner ── */
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4); border-top-color: white; border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Stats bar ── */
+    .stats-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+    .stat { background: var(--bg); border-radius: 8px; padding: 10px 16px; text-align: center; min-width: 90px; }
+    .stat .n { font-size: 24px; font-weight: 900; }
+    .stat .l { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .n-blue { color: var(--primary); }
+    .n-ok { color: var(--ok); }
+    .n-err { color: var(--err); }
+    .n-warn { color: var(--warn); }
+
+    /* ── Non trovati ── */
+    .non-trovati { background: #fff8f0; border: 1px solid #f5d5b0; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+    .non-trovati strong { font-size: 13px; color: var(--warn); }
+    .nt-list { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .nt-chip { background: #fde8cb; color: var(--warn); font-size: 12px; padding: 3px 10px; border-radius: 12px; font-family: monospace; }
+
+    /* ── Card prodotto ── */
+    .prodotto-card {
+      border: 1px solid var(--border); border-radius: 9px; margin-bottom: 12px; overflow: hidden;
+    }
+    .prodotto-header {
+      display: flex; align-items: center; gap: 12px; padding: 13px 16px;
+      background: white; cursor: default;
+    }
+    .prodotto-nome { font-size: 15px; font-weight: 700; color: var(--text); flex: 1; }
+    .prodotto-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+    .b-ok { background: #d4efdf; color: var(--ok); }
+    .b-warn { background: #fde8cb; color: var(--warn); }
+    .b-err { background: #fde8e8; color: var(--err); }
+    .b-grey { background: #ebebeb; color: #888; }
+    .b-blue { background: #d6f3f8; color: var(--primary); }
+    .giacenza-box { text-align: right; }
+    .giacenza-box .num { font-size: 20px; font-weight: 900; }
+    .giacenza-box .lbl { font-size: 10px; color: var(--muted); }
+
+    /* Info extra (nota, gruppo) */
+    .prodotto-extra { padding: 0 16px 10px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .info-chip { font-size: 12px; color: #555; background: var(--bg); padding: 4px 10px; border-radius: 6px; }
+    .info-chip strong { color: var(--text); }
+
+    /* ── Progressivi ── */
+    .progressivi-list { background: #fafafa; border-top: 1px solid var(--border); }
+    .prog-row {
+      display: flex; align-items: center; gap: 10px; padding: 9px 16px;
+      border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background .1s;
+    }
+    .prog-row:last-child { border-bottom: none; }
+    .prog-row:hover { background: #f0f8fb; }
+    .prog-row.expanded { background: #e8f7fa; }
+    .prog-code { font-family: monospace; font-size: 13px; font-weight: 700; color: var(--primary); min-width: 90px; }
+    .prog-stato { min-width: 86px; }
+    .prog-meta { font-size: 12px; color: var(--muted); flex: 1; }
+    .prog-arrow { font-size: 12px; color: var(--muted); transition: transform .2s; }
+    .prog-row.expanded .prog-arrow { transform: rotate(90deg); }
+
+    /* Dettaglio espanso */
+    .prog-detail {
+      display: none; padding: 12px 16px 14px 30px;
+      background: white; border-top: 1px solid #eef; border-bottom: 1px solid var(--border);
+    }
+    .prog-detail.open { display: block; }
+    .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+    .detail-cell { font-size: 12px; }
+    .detail-cell .lbl { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+    .detail-cell .val { font-weight: 600; color: var(--text); margin-top: 2px; word-break: break-word; }
+
+    /* Download */
+    .btn-dl {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; background: var(--ok); color: white; border: none;
+      border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; margin-bottom: 14px;
+    }
+    .btn-dl:hover { opacity: .87; }
+
+    /* Errore auth */
+    .auth-wall { text-align: center; padding: 60px 20px; }
+    .auth-wall h2 { font-size: 20px; margin-bottom: 10px; }
+    .auth-wall p { color: var(--muted); font-size: 14px; }
+    .auth-wall a { color: var(--primary); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🔍 Ricerca batch</h1>
+  <a href="/">← Torna al magazzino</a>
+</header>
+
+<div class="container" id="mainContainer">
+
+  <!-- Schermata non loggato -->
+  <div id="authWall" style="display:none;" class="auth-wall">
+    <h2>🔒 Accesso richiesto</h2>
+    <p>Devi essere loggato per usare la ricerca batch.<br><a href="/">Vai al magazzino e accedi</a></p>
+  </div>
+
+  <!-- Form ricerca -->
+  <div id="searchSection">
+    <div class="card">
+      <div class="card-title">Tipo di ricerca</div>
+      <div class="tipo-grid">
+        <button class="tipo-btn active" data-tipo="cas">🧪 Numero CAS</button>
+        <button class="tipo-btn" data-tipo="nome_prodotto">📦 Nome prodotto</button>
+        <button class="tipo-btn" data-tipo="lotto">🏷 Lotto</button>
+        <button class="tipo-btn" data-tipo="id_sepack">🔖 ID Sepack</button>
+      </div>
+
+      <div class="card-title">Valori da cercare</div>
+      <textarea id="valoriInput" placeholder="Incolla qui i valori — uno per riga&#10;&#10;Es. (per CAS):&#10;64-17-5&#10;67-64-1&#10;7732-18-5"></textarea>
+      <div class="textarea-hint" id="textareaHint">Incolla una colonna da Excel: ogni riga è un valore da cercare. I duplicati vengono ignorati.</div>
+
+      <button class="btn-cerca" id="cercaBtn" onclick="eseguiRicerca()">🔍 Cerca</button>
+    </div>
+  </div>
+
+  <!-- Risultati -->
+  <div id="risultatiSection" style="display:none;">
+    <div class="card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <div class="card-title" style="margin:0;">Risultati</div>
+        <button onclick="resetRicerca()" style="font-size:13px; color:var(--muted); background:none; border:1px solid var(--border); border-radius:6px; padding:5px 12px; cursor:pointer;">← Nuova ricerca</button>
+      </div>
+
+      <div class="stats-bar" id="statsBar"></div>
+
+      <div id="nonTrovatiBox" style="display:none;" class="non-trovati">
+        <strong>⚠ Non trovati</strong>
+        <div class="nt-list" id="nonTrovatiList"></div>
+      </div>
+
+      <button class="btn-dl" id="dlBtn" onclick="scaricaCSV()" style="display:none;">⬇ Scarica CSV</button>
+
+      <div id="prodottiList"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── Stato ────────────────────────────────────────────────────────────────────
+let tipoSelezionato = 'cas';
+let ultimoRisultato = null;
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+function getToken() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.includes('-auth-token')) {
+        const raw = localStorage.getItem(key);
+        const session = JSON.parse(raw);
+        const token = session?.access_token || session?.[0]?.access_token;
+        if (token) return token;
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+
+function authHeaders() {
+  const token = getToken();
+  const h = { 'Content-Type': 'application/json' };
+  if (token) h['Authorization'] = 'Bearer ' + token;
+  return h;
+}
+
+// Controlla login all'avvio
+window.addEventListener('DOMContentLoaded', () => {
+  const token = getToken();
+  if (!token) {
+    document.getElementById('authWall').style.display = '';
+    document.getElementById('searchSection').style.display = 'none';
+  }
+});
+
+// ─── Tipo chiave ──────────────────────────────────────────────────────────────
+const hintMap = {
+  cas: 'Es: 64-17-5 · 67-64-1 · 7732-18-5',
+  nome_prodotto: 'Es: Etanolo 96% · Acetone · Acido cloridrico',
+  lotto: 'Es: LOT-2024-XY01 · B12345',
+  id_sepack: 'Es: SEP-0042 · SEP-0101',
+};
+
+document.querySelectorAll('.tipo-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    tipoSelezionato = btn.dataset.tipo;
+    document.getElementById('valoriInput').placeholder = `Incolla qui i valori — uno per riga\n\n${hintMap[tipoSelezionato]}`;
+    document.getElementById('textareaHint').textContent = `Incolla una colonna da Excel: ogni riga è un valore di tipo "${tipoSelezionato}". I duplicati vengono ignorati.`;
+  });
+});
+
+// ─── Ricerca ──────────────────────────────────────────────────────────────────
+async function eseguiRicerca() {
+  const raw = document.getElementById('valoriInput').value;
+  const valori = raw.split('\n').map(v => v.trim()).filter(Boolean);
+
+  if (valori.length === 0) {
+    alert('Inserisci almeno un valore da cercare.');
+    return;
+  }
+  if (valori.length > 500) {
+    alert('Massimo 500 valori per ricerca.');
+    return;
+  }
+
+  const btn = document.getElementById('cercaBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Ricerca in corso...';
+
+  try {
+    const res = await fetch('/api/lookup', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ tipo: tipoSelezionato, valori }),
+    });
+    if (res.status === 401) { alert('Sessione scaduta. Ricarica la pagina e rifai il login.'); return; }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Errore sconosciuto');
+
+    ultimoRisultato = data;
+    mostraRisultati(data);
+  } catch (err) {
+    alert('Errore: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🔍 Cerca';
+  }
+}
+
+// ─── Mostra risultati ─────────────────────────────────────────────────────────
+function mostraRisultati(data) {
+  document.getElementById('searchSection').style.display = 'none';
+  document.getElementById('risultatiSection').style.display = '';
+
+  // Stats
+  const aperte = (data.prodotti || []).reduce((s, p) => s + p.giacenza_aperta, 0);
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat"><div class="n n-blue">${data.cercati}</div><div class="l">Cercati</div></div>
+    <div class="stat"><div class="n n-ok">${data.trovati}</div><div class="l">Prodotti trovati</div></div>
+    <div class="stat"><div class="n n-warn">${aperte}</div><div class="l">Bottiglie aperte</div></div>
+    <div class="stat"><div class="n n-err">${(data.non_trovati||[]).length}</div><div class="l">Non trovati</div></div>
+  `;
+
+  // Non trovati
+  const ntBox = document.getElementById('nonTrovatiBox');
+  const ntList = document.getElementById('nonTrovatiList');
+  if (data.non_trovati && data.non_trovati.length > 0) {
+    ntList.innerHTML = data.non_trovati.map(v => `<span class="nt-chip">${escHtml(v)}</span>`).join('');
+    ntBox.style.display = '';
+  } else {
+    ntBox.style.display = 'none';
+  }
+
+  // Bottone download
+  document.getElementById('dlBtn').style.display = data.prodotti?.length ? '' : 'none';
+
+  // Lista prodotti
+  const container = document.getElementById('prodottiList');
+  container.innerHTML = (data.prodotti || []).map((p, pi) => renderProdotto(p, pi)).join('');
+
+  // Listener espansione
+  container.querySelectorAll('.prog-row').forEach(row => {
+    row.addEventListener('click', () => toggleDetail(row));
+  });
+}
+
+function renderProdotto(p, pi) {
+  const giacenzaColor = p.giacenza_aperta > 0 ? 'var(--ok)' : 'var(--err)';
+  const sottoscorta = p.scorta_minima !== '' && p.giacenza_aperta < p.scorta_minima;
+  const badgeGiac = sottoscorta
+    ? `<span class="badge b-err">SOTTOSCORTA</span>`
+    : (p.inordine > 0 ? `<span class="badge b-warn">IN ORDINE: ${p.inordine}</span>` : '');
+
+  const extraChips = [
+    p.cas && data_tipo_is('cas') ? '' : (p.cas ? `<span class="info-chip">CAS <strong>${escHtml(p.cas)}</strong></span>` : ''),
+    p.nota ? `<span class="info-chip">📝 ${escHtml(p.nota)}</span>` : '',
+    p.gruppo_nome ? `<span class="info-chip">🔗 Gruppo: <strong>${escHtml(p.gruppo_nome)}</strong> (scorta: ${p.gruppo_scorta_minima} ${p.gruppo_unita})</span>` : '',
+  ].filter(Boolean).join('');
+
+  const progrHTML = p.progressivi.map((r, ri) => renderProgressivo(r, pi, ri)).join('');
+
+  return `
+    <div class="prodotto-card">
+      <div class="prodotto-header">
+        <div style="flex:1;">
+          <div class="prodotto-nome">${escHtml(p.nome_prodotto)}</div>
+          <div class="prodotto-meta">
+            ${p.chiave_cercata !== p.nome_prodotto ? `<span style="font-family:monospace;">${escHtml(p.chiave_cercata)}</span> · ` : ''}
+            ${p.progressivi.length} progressivi ${badgeGiac}
+          </div>
+        </div>
+        <div class="giacenza-box">
+          <div class="num" style="color:${giacenzaColor};">${p.giacenza_aperta}</div>
+          <div class="lbl">aperte / ${p.giacenza_totale}</div>
+        </div>
+      </div>
+      ${extraChips ? `<div class="prodotto-extra">${extraChips}</div>` : ''}
+      <div class="progressivi-list">${progrHTML}</div>
+    </div>`;
+}
+
+function data_tipo_is(tipo) {
+  // helper: controlla se stiamo cercando per quel tipo
+  return ultimoRisultato?.tipo === tipo;
+}
+
+function renderProgressivo(r, pi, ri) {
+  const statoLabel = r.stato === 'aperto'
+    ? `<span class="badge b-ok">APERTO</span>`
+    : r.stato === 'chiuso'
+      ? `<span class="badge b-grey">CHIUSO</span>`
+      : `<span class="badge b-blue">NON APERTO</span>`;
+
+  let meta = '';
+  if (r.posizione) meta += `📍 ${r.posizione}`;
+  if (r.fornitore) meta += (meta ? ' · ' : '') + r.fornitore;
+  if (r.stato === 'aperto' && r.data_apertura) meta += (meta ? ' · ' : '') + `aperto ${r.data_apertura}`;
+
+  return `
+    <div class="prog-row" data-pi="${pi}" data-ri="${ri}">
+      <div class="prog-code">${escHtml(r.progressivo)}</div>
+      <div class="prog-stato">${statoLabel}</div>
+      <div class="prog-meta">${escHtml(meta)}</div>
+      <div class="prog-arrow">▶</div>
+    </div>
+    <div class="prog-detail" id="detail-${pi}-${ri}">
+      <div class="detail-grid">
+        ${detailCell('Progressivo', r.progressivo)}
+        ${detailCell('Tipo', r.tipo)}
+        ${detailCell('ID Sepack', r.id_sepack)}
+        ${detailCell('CAS', r.cas)}
+        ${detailCell('Fornitore', r.fornitore)}
+        ${detailCell('Lotto', r.lotto)}
+        ${detailCell('Scadenza', r.scadenza)}
+        ${detailCell('Posizione', r.posizione)}
+        ${detailCell('MISL', r.misl)}
+        ${detailCell('Data apertura', r.data_apertura || '—')}
+        ${detailCell('Data chiusura', r.data_chiusura || '—')}
+      </div>
+    </div>`;
+}
+
+function detailCell(lbl, val) {
+  if (!val) return '';
+  return `<div class="detail-cell"><div class="lbl">${lbl}</div><div class="val">${escHtml(String(val))}</div></div>`;
+}
+
+function toggleDetail(row) {
+  const pi = row.dataset.pi;
+  const ri = row.dataset.ri;
+  const detail = document.getElementById(`detail-${pi}-${ri}`);
+  const isOpen = detail.classList.contains('open');
+  detail.classList.toggle('open', !isOpen);
+  row.classList.toggle('expanded', !isOpen);
+}
+
+// ─── Reset ────────────────────────────────────────────────────────────────────
+function resetRicerca() {
+  document.getElementById('risultatiSection').style.display = 'none';
+  document.getElementById('searchSection').style.display = '';
+  ultimoRisultato = null;
+}
+
+// ─── Download CSV ─────────────────────────────────────────────────────────────
+function scaricaCSV() {
+  if (!ultimoRisultato?.prodotti?.length) return;
+
+  const cols = ['nome_prodotto','cas','progressivo','tipo','id_sepack','fornitore','lotto','scadenza','posizione','misl','stato','data_apertura','data_chiusura','scorta_minima','unita','inordine','nota','gruppo_nome','gruppo_scorta_minima','gruppo_unita','contributo_per_unita'];
+  const lines = [cols.join(',')];
+
+  ultimoRisultato.prodotti.forEach(p => {
+    p.progressivi.forEach(r => {
+      const vals = cols.map(c => {
+        let v = '';
+        if (['nome_prodotto','cas','scorta_minima','unita','inordine','nota','gruppo_nome','gruppo_scorta_minima','gruppo_unita'].includes(c)) v = String(p[c] ?? '');
+        else if (c === 'contributo_per_unita') v = String(p.contributo_per_unita ?? '');
+        else v = String(r[c] ?? '');
+        v = v.replace(/"/g, '""');
+        return v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v}"` : v;
+      });
+      lines.push(vals.join(','));
+    });
+  });
+
+  const ts = new Date().toISOString().slice(0,16).replace(/[T:]/g,'-');
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `lookup_${ultimoRisultato.tipo}_${ts}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ─── Util ─────────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
