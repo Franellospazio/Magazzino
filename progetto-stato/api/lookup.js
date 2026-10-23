@@ -1,5 +1,5 @@
-// api/lookup.js — Lookup batch: data una lista di valori (CAS / nome / lotto / id_sepack)
-// restituisce tutti i progressivi associati con i loro dati completi.
+// api/lookup.js — Lookup batch: data una lista di valori cerca in nome_prodotto (ILIKE), lotto o id_sepack
+// Una sola query OR per tutti i valori → restituisce prodotti raggruppati con progressivi.
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -21,14 +21,15 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo non consentito' });
 
-  // Autenticazione obbligatoria
   const user = await getUser(req);
   if (!user) return res.status(401).json({ error: 'Non autenticato' });
 
-  // Body: { tipo: 'cas'|'nome_prodotto'|'lotto'|'id_sepack', valori: string[] }
+  // Body: { tipo: 'nome_prodotto'|'lotto'|'id_sepack', valori: string[] }
+  // 'nome_prodotto' usa ILIKE (ricerca parziale, copre anche numeri CAS dentro il nome)
+  // 'lotto' e 'id_sepack' usano match esatto
   const { tipo, valori } = req.body;
 
-  const tipiValidi = ['cas', 'nome_prodotto', 'lotto', 'id_sepack'];
+  const tipiValidi = ['nome_prodotto', 'lotto', 'id_sepack'];
   if (!tipiValidi.includes(tipo)) {
     return res.status(400).json({ error: `tipo non valido. Usa: ${tipiValidi.join(', ')}` });
   }
@@ -39,18 +40,34 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Massimo 500 valori per chiamata' });
   }
 
-  // Normalizza valori (trim, no vuoti, no duplicati)
   const valoriPuliti = [...new Set(valori.map(v => v.trim()).filter(Boolean))];
 
-  // ── Query reagenti ────────────────────────────────────────────────────────
-  const { data: reagenti, error } = await supabase
-    .from('reagenti')
-    .select('progressivo, nome_prodotto, tipo, id_sepack, fornitore, lotto, scadenza_sepack, posizione, misl, data_apertura, data_chiusura, scorta_minima, cas')
-    .in(tipo, valoriPuliti);
+  const campiSelect = 'progressivo, nome_prodotto, tipo, id_sepack, fornitore, lotto, scadenza_sepack, posizione, misl, data_apertura, data_chiusura, scorta_minima';
+
+  let reagenti, error;
+
+  if (tipo === 'nome_prodotto') {
+    // ILIKE per ogni valore, poi uniamo i risultati client-side
+    // Supabase supporta .or() con ilike
+    const orFilter = valoriPuliti
+      .map(v => `nome_prodotto.ilike.%${v.replace(/%/g, '\\%').replace(/_/g, '\\_')}%`)
+      .join(',');
+
+    ({ data: reagenti, error } = await supabase
+      .from('reagenti')
+      .select(campiSelect)
+      .or(orFilter));
+  } else {
+    // Match esatto per lotto e id_sepack
+    ({ data: reagenti, error } = await supabase
+      .from('reagenti')
+      .select(campiSelect)
+      .in(tipo, valoriPuliti));
+  }
 
   if (error) return res.status(500).json({ error: error.message });
   if (!reagenti || reagenti.length === 0) {
-    return res.status(200).json({ trovati: 0, non_trovati: valoriPuliti, prodotti: [] });
+    return res.status(200).json({ tipo, cercati: valoriPuliti.length, trovati: 0, non_trovati: valoriPuliti, prodotti: [] });
   }
 
   // ── Arricchisci con ordini e gruppi ───────────────────────────────────────
@@ -96,7 +113,6 @@ export default async function handler(req, res) {
       const grp = gruppiMap[r.nome_prodotto] || {};
       prodottiMap[r.nome_prodotto] = {
         nome_prodotto: r.nome_prodotto,
-        cas: r.cas || '',
         scorta_minima: r.scorta_minima ?? '',
         unita: ord.unita || 'pz',
         volume_per_unita: ord.volume_per_unita || 1,
@@ -106,7 +122,7 @@ export default async function handler(req, res) {
         gruppo_nome: grp.gruppo_nome || '',
         gruppo_scorta_minima: grp.gruppo_scorta_minima ?? '',
         gruppo_unita: grp.gruppo_unita || '',
-        chiave_cercata: r[tipo],  // il valore con cui è stato trovato
+        contributo_per_unita: grp.contributo_per_unita ?? '',
         giacenza_aperta: 0,
         giacenza_totale: 0,
         progressivi: [],
@@ -126,7 +142,6 @@ export default async function handler(req, res) {
       id_sepack: r.id_sepack || '',
       fornitore: r.fornitore || '',
       lotto: r.lotto || '',
-      cas: r.cas || '',
       scadenza: r.scadenza_sepack || '',
       posizione: r.posizione || '',
       misl: r.misl || '',
@@ -136,7 +151,7 @@ export default async function handler(req, res) {
     });
   });
 
-  // Ordina progressivi: aperti → non aperti → chiusi, poi per progressivo asc
+  // Ordina progressivi: aperti → non aperti → chiusi
   const statoOrd = { aperto: 0, non_aperto: 1, chiuso: 2 };
   Object.values(prodottiMap).forEach(p => {
     p.progressivi.sort((a, b) => {
@@ -150,9 +165,17 @@ export default async function handler(req, res) {
     a.nome_prodotto.localeCompare(b.nome_prodotto)
   );
 
-  // Calcola quali valori non sono stati trovati
-  const chiaveSet = new Set(reagenti.map(r => (r[tipo] || '').toLowerCase()));
-  const non_trovati = valoriPuliti.filter(v => !chiaveSet.has(v.toLowerCase()));
+  // Per nome_prodotto (ILIKE): "non trovati" = valori per cui nessun prodotto contiene quella stringa
+  let non_trovati = [];
+  if (tipo === 'nome_prodotto') {
+    const nomiLower = Object.keys(prodottiMap).map(n => n.toLowerCase());
+    non_trovati = valoriPuliti.filter(v =>
+      !nomiLower.some(n => n.includes(v.toLowerCase()))
+    );
+  } else {
+    const chiaveSet = new Set(reagenti.map(r => (r[tipo] || '').toLowerCase()));
+    non_trovati = valoriPuliti.filter(v => !chiaveSet.has(v.toLowerCase()));
+  }
 
   return res.status(200).json({
     tipo,
