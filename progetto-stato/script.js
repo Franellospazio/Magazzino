@@ -866,7 +866,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         }).join("");
         fornitoreHTML = `<div style="margin-top:10px;"><span style="font-size:12px; color:#555; font-weight:bold;">🏭 Fornitore ordine:</span><br><div id="fornitoreBtns" style="margin-top:6px;">${btns}</div></div><input type="hidden" id="fornitoreSelezionato" value="${defaultId ?? ''}">`;
       }
-      scortaHTML += `<br>In ordine:<div id="adminInOrdineContainerDynamic" class="admin-in-ordine-container"><button type="button" id="decInOrdine" class="qty-btn minus">−</button><span id="inOrdineValue" class="qty-number qty-blue">${inOrdineVal}</span><button type="button" id="incInOrdine" class="qty-btn plus">+</button></div>${fornitoreHTML}<br>Modifica scorta minima:<input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" class="admin-scorta-input">`;
+      const unitaProdotto = prodotto.unita || 'pz';
+      const volumeProdotto = prodotto.volume_per_unita || 1;
+      const giacenzaEffProdotto = (prodotto.Giacenza || 0) * volumeProdotto;
+      scortaHTML += `<br>In ordine:<div id="adminInOrdineContainerDynamic" class="admin-in-ordine-container"><button type="button" id="decInOrdine" class="qty-btn minus">−</button><span id="inOrdineValue" class="qty-number qty-blue">${inOrdineVal}</span><button type="button" id="incInOrdine" class="qty-btn plus">+</button></div>${fornitoreHTML}
+      <br>Modifica scorta minima:
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:4px;">
+        <input type="number" id="scortaMinimaInput" value="${prodotto.ScortaMinima}" class="admin-scorta-input" style="width:80px;">
+        <select id="prodottoUnita" style="padding:5px 8px; border:1.5px solid #00B4CC; border-radius:5px; font-size:13px;">
+          ${['pz','ml','l','g','kg'].map(u => `<option value="${u}" ${unitaProdotto===u?'selected':''}>${u}</option>`).join('')}
+        </select>
+        <span style="font-size:12px; color:#888;">per pz: <input type="number" id="prodottoVolume" value="${volumeProdotto}" step="any" style="width:70px; padding:4px; border:1.5px solid #00B4CC; border-radius:5px; font-size:13px;"></span>
+      </div>
+      <div style="font-size:11px; color:#888; margin-top:2px;">Giacenza effettiva: <strong>${giacenzaEffProdotto} ${unitaProdotto}</strong> / min: <strong>${prodotto.ScortaMinima} ${unitaProdotto}</strong></div>`;
     }
     modalScorta.innerHTML = scortaHTML;
 
@@ -984,22 +996,35 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
         <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
           <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Scorta minima</div>
-          <input type="number" id="reagenteScortaMinima" value="${gruppo.scorta_minima}" style="width:80px; padding:5px; border:1.5px solid #00B4CC; border-radius:5px; font-size:15px; text-align:center;">
-          <button id="salvaScortaBtn" style="margin-left:8px; padding:5px 14px; background:#16a085; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Salva</button>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <input type="number" id="reagenteScortaMinima" value="${gruppo.scorta_minima}" style="width:80px; padding:5px; border:1.5px solid #00B4CC; border-radius:5px; font-size:15px; text-align:center;">
+            <select id="reagenteUnita" style="padding:5px 8px; border:1.5px solid #00B4CC; border-radius:5px; font-size:13px;">
+              ${['pz','ml','l','g','kg'].map(u => `<option value="${u}" ${(gruppo.unita||'pz')===u?'selected':''}>${u}</option>`).join('')}
+            </select>
+            <span style="font-size:12px; color:#888;">per bottiglia: <input type="number" id="reagenteVolume" value="${gruppo.volume_per_unita||1}" step="any" style="width:70px; padding:4px; border:1.5px solid #00B4CC; border-radius:5px; font-size:13px; text-align:center;"></span>
+            <button id="salvaScortaBtn" style="padding:5px 14px; background:#16a085; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Salva</button>
+          </div>
+          <div style="font-size:11px; color:#888; margin-top:4px;">Giacenza effettiva: <strong>${(gruppo.giacenza_effettiva||gruppo.giacenza||0).toFixed ? (gruppo.giacenza_effettiva||gruppo.giacenza||0) : gruppo.giacenza} ${gruppo.unita||'pz'}</strong> / min: <strong>${gruppo.scorta_minima} ${gruppo.unita||'pz'}</strong></div>
         </div>
         <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
           <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">🔗 Gruppo equivalenza</div>
           ${gruppo.in_gruppo
             ? `<div style="background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:8px; font-size:12px; color:#856404;">
                 Questo prodotto appartiene al gruppo <strong>${gruppo.gruppo_nome}</strong><br>
-                Giacenza totale gruppo: <strong>${gruppo.gruppo_giacenza}</strong> / scorta minima: <strong>${gruppo.gruppo_scorta_minima}</strong>
+                Giacenza totale gruppo: <strong>${gruppo.gruppo_giacenza} ${gruppo.gruppo_unita||'pz'}</strong> / scorta minima: <strong>${gruppo.gruppo_scorta_minima} ${gruppo.gruppo_unita||'pz'}</strong><br>
+                Contributo di questo prodotto: <strong>${gruppo.contributo_per_unita||1} ${gruppo.gruppo_unita||'pz'}</strong> per bottiglia
                 <br><button id="rimuoviDaGruppoBtn" style="margin-top:6px; padding:4px 10px; background:#e74c3c; color:white; border:none; border-radius:5px; font-size:11px; cursor:pointer;">Rimuovi dal gruppo</button>
               </div>`
             : `<div style="font-size:12px; color:#999; margin-bottom:6px;">Nessun gruppo assegnato — la scorta minima individuale è attiva.</div>
                <select id="gruppoSelect" style="width:100%; padding:6px; border:1.5px solid #16a085; border-radius:5px; font-size:13px;">
                  <option value="">— Seleziona gruppo —</option>
-                 ${(window._gruppiEq || []).map(g => `<option value="${g.id}">${g.nome} (scorta: ${g.scorta_minima})</option>`).join('')}
+                 ${(window._gruppiEq || []).map(g => `<option value="${g.id}" data-unita="${g.unita||'pz'}">${g.nome} (scorta: ${g.scorta_minima} ${g.unita||'pz'})</option>`).join('')}
                </select>
+               <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+                 <label style="font-size:12px; color:#555;">Contributo per bottiglia:</label>
+                 <input type="number" id="contributoInput" value="1" step="any" min="0" style="width:70px; padding:4px; border:1.5px solid #16a085; border-radius:5px; font-size:13px;">
+                 <span id="contributoUnitaLabel" style="font-size:12px; color:#888;">pz</span>
+               </div>
                <button id="aggiungiAGruppoBtn" style="margin-top:6px; padding:5px 14px; background:#16a085; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Aggiungi al gruppo</button>
                <button id="nuovoGruppoBtn" style="margin-top:6px; margin-left:8px; padding:5px 14px; background:#8e44ad; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">+ Nuovo gruppo</button>`
           }
@@ -1041,13 +1066,24 @@ document.addEventListener("DOMContentLoaded", async () => {
           closeModal();
         });
       } else {
+        // Aggiorna etichetta unità quando si cambia gruppo
+        document.getElementById("gruppoSelect")?.addEventListener("change", (e) => {
+          const sel = e.target;
+          const selectedOpt = sel.options[sel.selectedIndex];
+          const unitaGruppo = selectedOpt?.dataset?.unita || 'pz';
+          const label = document.getElementById("contributoUnitaLabel");
+          if (label) label.textContent = unitaGruppo;
+        });
+
         document.getElementById("aggiungiAGruppoBtn")?.addEventListener("click", async () => {
           const sel = document.getElementById("gruppoSelect");
           if (!sel.value) { alert("Seleziona un gruppo."); return; }
+          const contributoInput = document.getElementById("contributoInput");
+          const contributo_per_unita = parseFloat(contributoInput?.value) || 1;
           const res = await fetch("/api/gruppi", {
             method: "PATCH",
             headers: authHeaders(),
-            body: JSON.stringify({ id: parseInt(sel.value), aggiungi_membri: [gruppo.nome_prodotto] })
+            body: JSON.stringify({ id: parseInt(sel.value), aggiungi_membri: [{ nome_prodotto: gruppo.nome_prodotto, contributo_per_unita }] })
           });
           if (res.ok) {
             alert("Aggiunto al gruppo!");
@@ -1062,14 +1098,16 @@ document.addEventListener("DOMContentLoaded", async () => {
           const nome = prompt("Nome del nuovo gruppo:");
           if (!nome) return;
           const scorta = parseInt(prompt("Scorta minima del gruppo:") || "0");
+          const unitaGruppo = prompt("Unità di misura del gruppo (pz, ml, l, g, kg):") || "pz";
+          const contributo_per_unita = parseFloat(prompt(`Contributo di ${gruppo.nome_prodotto} per bottiglia (in ${unitaGruppo}):`) || "1") || 1;
           const res = await fetch("/api/gruppi", {
             method: "POST",
             headers: authHeaders(),
-            body: JSON.stringify({ nome, scorta_minima: scorta, membri: [gruppo.nome_prodotto] })
+            body: JSON.stringify({ nome, scorta_minima: scorta, unita: unitaGruppo, membri: [{ nome_prodotto: gruppo.nome_prodotto, contributo_per_unita }] })
           });
           const newGruppo = await res.json();
           window._gruppiEq = window._gruppiEq || [];
-          window._gruppiEq.push(newGruppo);
+          window._gruppiEq.push({ ...newGruppo, unita: unitaGruppo });
           alert(`Gruppo "${nome}" creato!`);
           closeModal();
           await reloadReagenti();
@@ -1115,13 +1153,25 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
       document.getElementById("salvaScortaBtn").addEventListener("click", async () => {
         const sm = parseInt(document.getElementById("reagenteScortaMinima").value);
+        const unita = document.getElementById("reagenteUnita").value;
+        const volume_per_unita = parseFloat(document.getElementById("reagenteVolume").value) || 1;
         if (isNaN(sm)) return;
+        // Salva scorta_minima sui reagenti
         await fetch("/api/reagenti", {
           method: "PATCH",
           headers: authHeaders(),
           body: JSON.stringify({ progressivo: gruppo.progressivi[0].progressivo, scorta_minima: sm })
         });
+        // Salva unità e volume in reagenti_ordini
+        await fetch("/api/reagenti", {
+          method: "PATCH",
+          headers: authHeaders(),
+          body: JSON.stringify({ nome_prodotto: gruppo.nome_prodotto, unita, volume_per_unita })
+        });
         gruppo.scorta_minima = sm;
+        gruppo.unita = unita;
+        gruppo.volume_per_unita = volume_per_unita;
+        gruppo.giacenza_effettiva = gruppo.giacenza * volume_per_unita;
         gruppo.progressivi.forEach(p => p.scorta_minima = sm);
         alert("Scorta minima aggiornata!");
       });
@@ -1340,20 +1390,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     let inOrdineNum = selectedProdotto.inordine ?? 0;
     let scortaMinimaNum = selectedProdotto.ScortaMinima;
     let fornitoreId = selectedProdotto.fornitore_selezionato ?? null;
+    let unitaVal = selectedProdotto.unita || 'pz';
+    let volumeVal = selectedProdotto.volume_per_unita || 1;
     if (isAdmin) {
       const inOrdineEl = document.getElementById("inOrdineValue");
       const scortaEl = document.getElementById("scortaMinimaInput");
       const fornitoreEl = document.getElementById("fornitoreSelezionato");
+      const unitaEl = document.getElementById("prodottoUnita");
+      const volumeEl = document.getElementById("prodottoVolume");
       if (inOrdineEl) inOrdineNum = parseInt(inOrdineEl.textContent) || 0;
       if (scortaEl) scortaMinimaNum = parseInt(scortaEl.value) || scortaMinimaNum;
       if (fornitoreEl && fornitoreEl.value) fornitoreId = parseInt(fornitoreEl.value);
+      if (unitaEl) unitaVal = unitaEl.value;
+      if (volumeEl) volumeVal = parseFloat(volumeEl.value) || 1;
     }
     if (inOrdineNum === 0) fornitoreId = null;
     try {
       const res = await fetch("/api/prodotti", {
         method: "PATCH",
         headers: authHeaders(),
-        body: JSON.stringify({ descrizione: selectedProdotto.Descrizione, Giacenza: giacenzaNum, inordine: inOrdineNum, ScortaMinima: scortaMinimaNum, fornitore_selezionato: fornitoreId, isAdmin })
+        body: JSON.stringify({ descrizione: selectedProdotto.Descrizione, Giacenza: giacenzaNum, inordine: inOrdineNum, ScortaMinima: scortaMinimaNum, fornitore_selezionato: fornitoreId, unita: unitaVal, volume_per_unita: volumeVal, isAdmin })
       });
       if (!res.ok) throw new Error();
       let fornitoreNome = null;
@@ -1367,6 +1423,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       selectedProdotto.ScortaMinima = scortaMinimaNum;
       selectedProdotto.fornitore_selezionato = fornitoreId;
       selectedProdotto.fornitore_selezionato_nome = fornitoreNome;
+      selectedProdotto.unita = unitaVal;
+      selectedProdotto.volume_per_unita = volumeVal;
       selectedProdotto.ultimo_aggiornamento = new Date().toISOString();
       if (!isAdmin && giacenzaNum < scortaMinimaNum) {
         const now = new Date();
