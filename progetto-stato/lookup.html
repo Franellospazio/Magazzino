@@ -170,14 +170,13 @@
     <div class="card">
       <div class="card-title">Tipo di ricerca</div>
       <div class="tipo-grid">
-        <button class="tipo-btn active" data-tipo="cas">🧪 Numero CAS</button>
-        <button class="tipo-btn" data-tipo="nome_prodotto">📦 Nome prodotto</button>
+        <button class="tipo-btn active" data-tipo="nome_prodotto">📦 Nome / CAS</button>
         <button class="tipo-btn" data-tipo="lotto">🏷 Lotto</button>
         <button class="tipo-btn" data-tipo="id_sepack">🔖 ID Sepack</button>
       </div>
 
       <div class="card-title">Valori da cercare</div>
-      <textarea id="valoriInput" placeholder="Incolla qui i valori — uno per riga&#10;&#10;Es. (per CAS):&#10;64-17-5&#10;67-64-1&#10;7732-18-5"></textarea>
+      <textarea id="valoriInput" placeholder="Incolla qui i valori — uno per riga&#10;&#10;Es. (nomi o CAS):&#10;Etanolo 96%&#10;64-17-5&#10;Acetone"></textarea>
       <div class="textarea-hint" id="textareaHint">Incolla una colonna da Excel: ogni riga è un valore da cercare. I duplicati vengono ignorati.</div>
 
       <button class="btn-cerca" id="cercaBtn" onclick="eseguiRicerca()">🔍 Cerca</button>
@@ -209,7 +208,7 @@
 
 <script>
 // ─── Stato ────────────────────────────────────────────────────────────────────
-let tipoSelezionato = 'cas';
+let tipoSelezionato = 'nome_prodotto';
 let ultimoRisultato = null;
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -246,8 +245,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // ─── Tipo chiave ──────────────────────────────────────────────────────────────
 const hintMap = {
-  cas: 'Es: 64-17-5 · 67-64-1 · 7732-18-5',
-  nome_prodotto: 'Es: Etanolo 96% · Acetone · Acido cloridrico',
+  nome_prodotto: 'Es: Etanolo 96% · 64-17-5 · Acetone (funziona anche con numeri CAS o nomi parziali)',
   lotto: 'Es: LOT-2024-XY01 · B12345',
   id_sepack: 'Es: SEP-0042 · SEP-0101',
 };
