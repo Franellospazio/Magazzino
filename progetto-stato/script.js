@@ -26,6 +26,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (s) currentSession = s;
   });
 
+  // Mostra "Ricerca batch" a tutti gli utenti loggati (o se auth disabilitata)
+  if (!AUTH_ENABLED || session) {
+    const lookupBtn = document.getElementById('lookupBtn');
+    if (lookupBtn) lookupBtn.style.display = 'inline-flex';
+  }
+
   function authHeaders() {
     return {
       'Content-Type': 'application/json',
