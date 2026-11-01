@@ -26,10 +26,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (s) currentSession = s;
   });
 
-  // Mostra "Ricerca batch" a tutti gli utenti loggati (o se auth disabilitata)
+  // Mostra pulsanti accessibili a tutti gli utenti loggati (o se auth disabilitata)
   if (!AUTH_ENABLED || session) {
     const lookupBtn = document.getElementById('lookupBtn');
     if (lookupBtn) lookupBtn.style.display = 'inline-flex';
+
+    const scanBtn = document.getElementById('scanBtn');
+    if (scanBtn) scanBtn.style.display = 'inline-flex';
+
+    const etichetteQrBtn = document.getElementById('etichetteQrBtn');
+    if (etichetteQrBtn) etichetteQrBtn.style.display = 'inline-flex';
   }
 
   function authHeaders() {
