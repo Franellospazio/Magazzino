@@ -60,16 +60,19 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-    // Fetch TUTTI i reagenti (inclusi chiusi) con paginazione
+    // Fetch reagenti con paginazione, filtro opzionale per nome (ILIKE)
+    const { nome: nomeFilter } = req.query;
     let allData = [];
     let from = 0;
     const pageSize = 1000;
     while (true) {
-      const { data: page, error } = await supabase
+      let q = supabase
         .from('reagenti')
         .select('*')
         .order('nome_prodotto', { ascending: true })
         .range(from, from + pageSize - 1);
+      if (nomeFilter) q = q.ilike('nome_prodotto', `%${nomeFilter}%`);
+      const { data: page, error } = await q;
       if (error) return res.status(500).json({ error: error.message });
       if (!page || page.length === 0) break;
       allData = allData.concat(page);
