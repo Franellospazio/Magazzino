@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Etichette QR — Sepack</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- qrcode più affidabile su mobile/laser -->
+  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     :root {
       --primary: #00B4CC;
@@ -21,30 +22,30 @@
     .header h1 { font-size: 17px; font-weight: 700; }
     .header a { color: var(--muted); font-size: 13px; text-decoration: none; }
 
-    .container { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+    .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
 
-    /* Tab switcher */
-    .tabs { display: flex; gap: 0; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,.1); }
+    .tabs { display: flex; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,.1); }
     .tab-btn { flex: 1; padding: 11px; background: var(--surface2); color: var(--muted); border: none; cursor: pointer; font-size: 14px; font-weight: 600; transition: background .15s, color .15s; }
     .tab-btn.active { background: var(--primary); color: white; }
 
     .card { background: var(--surface); border-radius: 12px; padding: 20px; margin-bottom: 18px; }
     .card h2 { font-size: 15px; font-weight: 700; margin-bottom: 14px; color: var(--primary); }
 
-    /* Filtri */
     .filtri-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
     .filtri-row label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
-    .filtri-row input, .filtri-row select { background: var(--surface2); border: 1px solid rgba(255,255,255,.12); color: var(--text); border-radius: 7px; padding: 8px 12px; font-size: 14px; }
-    .filtri-row .f-nome { flex: 1; min-width: 180px; }
-    .btn-cerca { background: var(--primary); color: white; border: none; border-radius: 7px; padding: 9px 18px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .filtri-row input, .filtri-row select {
+      background: var(--surface2); border: 1px solid rgba(255,255,255,.12);
+      color: var(--text); border-radius: 7px; padding: 8px 12px; font-size: 14px;
+    }
+    .f-grow { flex: 1; min-width: 120px; }
+    .btn-cerca { background: var(--primary); color: white; border: none; border-radius: 7px; padding: 9px 18px; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 
-    /* Lista */
-    .lista { display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow-y: auto; margin-top: 14px; }
-    .res-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--surface2); border-radius: 7px; cursor: pointer; border: 1px solid transparent; transition: border .12s; }
+    .lista { display: flex; flex-direction: column; gap: 5px; max-height: 340px; overflow-y: auto; margin-top: 14px; }
+    .res-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--surface2); border-radius: 7px; cursor: pointer; border: 1px solid transparent; }
     .res-item:hover { border-color: rgba(0,180,204,.4); }
     .res-item input[type=checkbox] { width: 17px; height: 17px; cursor: pointer; accent-color: var(--primary); flex-shrink: 0; }
-    .res-nome { font-size: 13px; font-weight: 600; flex: 1; }
-    .res-prog { font-size: 11px; color: var(--muted); font-family: monospace; }
+    .res-nome { font-size: 13px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .res-prog { font-size: 11px; color: var(--muted); font-family: monospace; flex-shrink: 0; }
     .stato-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 700; flex-shrink: 0; }
     .stato-na { background: rgba(52,152,219,.25); color: #3498db; }
     .stato-ap { background: rgba(22,160,133,.25); color: #1abc9c; }
@@ -53,112 +54,142 @@
     .sel-bar { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); margin-top: 10px; }
     .sel-bar button { background: none; border: 1px solid rgba(255,255,255,.2); color: var(--text); border-radius: 5px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
 
-    /* Opzioni formato */
-    .opt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-    .opt-cell { display: flex; flex-direction: column; gap: 4px; }
-    .opt-cell label { font-size: 12px; color: var(--muted); }
-    .opt-cell select, .opt-cell input[type=text] { background: var(--surface2); border: 1px solid rgba(255,255,255,.12); color: var(--text); border-radius: 7px; padding: 7px 10px; font-size: 13px; }
-    .opt-cell input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; margin-top: 4px; }
-
-    /* Genera */
     .btn-genera { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary); color: white; border: none; border-radius: 10px; padding: 14px 24px; font-size: 16px; font-weight: 800; cursor: pointer; width: 100%; margin-bottom: 20px; }
     .btn-genera:disabled { opacity: .4; cursor: default; }
 
-    /* Preview */
-    #previewSection { display: none; }
-    .preview-wrap { background: #111; border-radius: 10px; padding: 16px; overflow: auto; max-height: 560px; }
-    #printSheet { display: flex; flex-wrap: wrap; gap: var(--gap, 3mm); padding: var(--pad, 6mm); background: white; }
-
-    /* Spinner */
     .spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,.15); border-top-color: var(--primary); border-radius: 50%; animation: spin .7s linear infinite; margin: 20px auto; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    #previewSection { display: none; }
+    .preview-scroll { background: #111; border-radius: 10px; overflow: auto; max-height: 600px; }
     .btn-stampa { display: flex; align-items: center; justify-content: center; gap: 8px; background: #27ae60; color: white; border: none; border-radius: 10px; padding: 13px 22px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 14px; width: 100%; }
+    .info-count { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
 
-    /* Auth */
     #authWall { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; gap: 12px; padding: 60px 30px; text-align: center; }
     #authWall a { color: var(--primary); text-decoration: none; font-weight: 700; }
 
-    /* ═══════════════════════════════════════════════════
-       ETICHETTE — stili comuni (screen + print)
-    ═══════════════════════════════════════════════════ */
+    /* ══════════════════════════════════════════════
+       FOGLIO DI STAMPA A4 — 3 colonne × 7 righe
+       Etichette Markin C521: 70×42mm
+    ══════════════════════════════════════════════ */
+    #printSheet {
+      /* Dimensioni A4 esatte */
+      width: 210mm;
+      min-height: 297mm;
+      background: white;
+      margin: 0 auto;
+      /* Margini foglio: top/bottom 10.5mm, left/right 0mm (le colonne hanno padding interno) */
+      padding: 10.5mm 0;
+      display: grid;
+      grid-template-columns: repeat(3, 70mm);
+      grid-auto-rows: 42mm;
+      column-gap: 0;
+      row-gap: 0;
+      justify-content: center;
+    }
+
+    /* Singola etichetta 70×42mm */
     .etichetta {
+      width: 70mm;
+      height: 42mm;
       background: white;
       color: #111;
       display: flex;
       flex-direction: row;
       align-items: center;
-      gap: 4px;
-      width: var(--ew, 62mm);
-      height: var(--eh, 38mm);
-      padding: 4px 5px;
-      border: 1px dashed #bbb;
-      border-radius: 3px;
+      padding: 2mm 2mm 2mm 2mm;
+      gap: 2mm;
+      overflow: hidden;
       page-break-inside: avoid;
       break-inside: avoid;
-      overflow: hidden;
+      /* bordo leggero solo per anteprima, quasi invisibile in stampa */
+      box-shadow: inset 0 0 0 0.3pt #ddd;
     }
 
-    /* QR a sinistra */
-    .etichetta .eqr { flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-    .etichetta .eqr img, .etichetta .eqr canvas { display: block; }
+    .etichetta .eqr {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .etichetta .eqr canvas,
+    .etichetta .eqr img { display: block; }
 
-    /* Testi a destra */
     .etichetta .einfo {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 1.5px;
+      gap: 1px;
       min-width: 0;
       overflow: hidden;
     }
+
     .etichetta .enome {
       font-size: 6.5pt;
       font-weight: 800;
-      line-height: 1.2;
+      line-height: 1.25;
       word-break: break-word;
       hyphens: auto;
+      margin-bottom: 1.5px;
     }
     .etichetta .erow {
       font-size: 5.5pt;
-      color: #333;
-      line-height: 1.3;
+      color: #222;
+      line-height: 1.4;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
     }
-    .etichetta .erow span.lbl { color: #888; margin-right: 2px; }
+    .etichetta .erow .lbl {
+      color: #999;
+      font-size: 5pt;
+      flex-shrink: 0;
+    }
     /* Riga vuota per scrittura a mano */
     .etichetta .erow-vuota {
       display: flex;
-      align-items: center;
-      gap: 3px;
-      font-size: 5.5pt;
-      color: #888;
+      align-items: flex-end;
+      gap: 2px;
+      height: 9pt;
       border-bottom: 0.4pt solid #ccc;
-      padding-bottom: 1px;
       margin-top: 1px;
     }
-    .etichetta .erow-vuota .lbl { white-space: nowrap; }
+    .etichetta .erow-vuota .lbl {
+      font-size: 5pt;
+      color: #bbb;
+      flex-shrink: 0;
+      padding-bottom: 1px;
+    }
 
-    /* Etichetta consumabile — solo QR + nome centrati */
+    /* Consumabile: QR + nome centrati verticalmente */
     .etichetta.cons {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 2mm;
     }
-    .etichetta.cons .enome { font-size: 7pt; font-weight: 800; text-align: center; }
+    .etichetta.cons .enome {
+      font-size: 7pt;
+      text-align: center;
+      word-break: break-word;
+    }
 
-    /* ─── Print ─────────────────────────────────────────── */
+    /* ── Print ── */
     @media print {
-      body { background: white !important; }
+      body, html { background: white !important; margin: 0; padding: 0; }
       .header, .container > *:not(#previewSection) { display: none !important; }
       #previewSection { display: block !important; }
-      .preview-wrap { background: none; padding: 0; max-height: none; overflow: visible; border-radius: 0; }
-      #printSheet { padding: 5mm; gap: 2mm; background: white; }
-      .btn-stampa, h2, .info-count { display: none !important; }
-      .etichetta { border: 0.4pt dashed #ccc !important; }
+      .preview-scroll { background: none; max-height: none; overflow: visible; border-radius: 0; }
+      .btn-stampa, .info-count, h2 { display: none !important; }
+      #printSheet {
+        margin: 0;
+        padding: 10.5mm 0;
+        box-shadow: none;
+      }
+      .etichetta { box-shadow: inset 0 0 0 0.2pt #ccc; }
     }
   </style>
 </head>
@@ -171,30 +202,29 @@
 
 <div id="authWall">
   <h2>🔒 Accesso richiesto</h2>
-  <p>Devi essere loggato.</p>
+  <p>Devi essere loggato.</p><br>
   <a href="/login.html">Vai al login</a>
 </div>
 
 <div class="container" id="mainContent" style="display:none;">
 
-  <!-- Tab -->
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('reagenti')">🧪 Reagenti</button>
     <button class="tab-btn" onclick="switchTab('consumabili')">📦 Consumabili</button>
   </div>
 
-  <!-- ═══ TAB REAGENTI ═══ -->
+  <!-- ══ TAB REAGENTI ══ -->
   <div id="tabReagenti">
     <div class="card">
-      <h2>1. Cerca e seleziona le bottiglie</h2>
+      <h2>1. Seleziona range progressivi</h2>
       <div class="filtri-row">
-        <div class="f-nome">
-          <label>Nome prodotto</label>
-          <input type="text" id="rCercaNome" placeholder="es: acetone, etanolo…" style="width:100%;">
+        <div class="f-grow">
+          <label>Nome prodotto (opzionale)</label>
+          <input type="text" id="rNome" placeholder="es: acetone…" style="width:100%;">
         </div>
         <div>
           <label>Stato</label>
-          <select id="rCercaStato">
+          <select id="rStato">
             <option value="">Tutti</option>
             <option value="non_aperto">Non aperte</option>
             <option value="aperto">Aperte</option>
@@ -203,6 +233,20 @@
         </div>
         <div><button class="btn-cerca" onclick="cercaReagenti()">🔍 Cerca</button></div>
       </div>
+
+      <!-- Range progressivo -->
+      <div style="margin-top:14px; display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+        <div class="f-grow">
+          <label>Da progressivo</label>
+          <input type="text" id="rDa" placeholder="es: 2024-001" style="width:100%; font-family:monospace;">
+        </div>
+        <div class="f-grow">
+          <label>A progressivo</label>
+          <input type="text" id="rA" placeholder="es: 2024-020" style="width:100%; font-family:monospace;">
+        </div>
+        <div><button class="btn-cerca" onclick="applicaRange()">↕ Applica range</button></div>
+      </div>
+
       <div class="lista" id="rRisultati"></div>
       <div class="sel-bar" id="rSelBar" style="display:none;">
         <span id="rSelCount">0 selezionate</span>
@@ -211,29 +255,17 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2>2. Formato etichetta</h2>
-      <div class="opt-grid">
-        <div class="opt-cell"><label>Larghezza</label>
-          <select id="rOptW"><option value="50mm">50 mm</option><option value="62mm" selected>62 mm</option><option value="80mm">80 mm</option></select></div>
-        <div class="opt-cell"><label>Altezza</label>
-          <select id="rOptH"><option value="25mm">25 mm</option><option value="38mm" selected>38 mm</option><option value="50mm">50 mm</option></select></div>
-        <div class="opt-cell"><label>Dim. QR (px)</label>
-          <select id="rOptQR"><option value="70">70 px</option><option value="85" selected>85 px</option><option value="100">100 px</option></select></div>
-      </div>
-    </div>
-
     <button class="btn-genera" id="rBtnGenera" onclick="generaReagenti()" disabled>🏷️ Genera etichette reagenti</button>
   </div>
 
-  <!-- ═══ TAB CONSUMABILI ═══ -->
+  <!-- ══ TAB CONSUMABILI ══ -->
   <div id="tabConsumabili" style="display:none;">
     <div class="card">
       <h2>1. Cerca e seleziona i prodotti</h2>
       <div class="filtri-row">
-        <div class="f-nome">
+        <div class="f-grow">
           <label>Nome prodotto</label>
-          <input type="text" id="cCercaNome" placeholder="es: guanti, carta…" style="width:100%;">
+          <input type="text" id="cNome" placeholder="es: guanti, carta…" style="width:100%;">
         </div>
         <div><button class="btn-cerca" onclick="cercaConsumabili()">🔍 Cerca</button></div>
       </div>
@@ -245,36 +277,24 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2>2. Formato etichetta</h2>
-      <div class="opt-grid">
-        <div class="opt-cell"><label>Larghezza</label>
-          <select id="cOptW"><option value="40mm">40 mm</option><option value="50mm" selected>50 mm</option><option value="62mm">62 mm</option></select></div>
-        <div class="opt-cell"><label>Altezza</label>
-          <select id="cOptH"><option value="25mm" selected>25 mm</option><option value="30mm">30 mm</option><option value="38mm">38 mm</option></select></div>
-        <div class="opt-cell"><label>Dim. QR (px)</label>
-          <select id="cOptQR"><option value="60">60 px</option><option value="75" selected>75 px</option><option value="90">90 px</option></select></div>
-      </div>
-    </div>
-
     <button class="btn-genera" id="cBtnGenera" onclick="generaConsumabili()" disabled>🏷️ Genera etichette consumabili</button>
   </div>
 
-  <!-- Preview condivisa -->
-  <div id="previewSection" class="card" style="margin-top:4px;">
+  <!-- ══ Preview ══ -->
+  <div id="previewSection" class="card">
     <h2>3. Anteprima e stampa</h2>
-    <p class="info-count" id="infoCount" style="font-size:13px;color:var(--muted);margin-bottom:12px;"></p>
-    <div class="preview-wrap"><div id="printSheet"></div></div>
+    <p class="info-count" id="infoCount"></p>
+    <div class="preview-scroll">
+      <div id="printSheet"></div>
+    </div>
     <button class="btn-stampa" onclick="window.print()">🖨️ Stampa / Salva PDF</button>
   </div>
 
 </div>
 
 <script>
-const BASE_URL = window.location.origin;
-const SCAN_URL = BASE_URL + '/scan';
-
-let reagentiFiltrati = [];
+const SCAN_URL = window.location.origin + '/scan';
+let reagentiFiltrati = [];  // tutti i progressivi flat dopo cerca
 let consumabiliFiltrati = [];
 
 // ─── Auth ──────────────────────────────────────────────────────────────────
@@ -298,235 +318,265 @@ function authH() {
 window.addEventListener('DOMContentLoaded', () => {
   if (!getToken()) { document.getElementById('authWall').style.display = 'flex'; return; }
   document.getElementById('mainContent').style.display = 'block';
-  document.getElementById('rCercaNome').addEventListener('keydown', e => { if (e.key==='Enter') cercaReagenti(); });
-  document.getElementById('cCercaNome').addEventListener('keydown', e => { if (e.key==='Enter') cercaConsumabili(); });
+  document.getElementById('rNome').addEventListener('keydown', e => { if (e.key==='Enter') cercaReagenti(); });
+  document.getElementById('cNome').addEventListener('keydown', e => { if (e.key==='Enter') cercaConsumabili(); });
 });
 
-// ─── Tab switch ────────────────────────────────────────────────────────────
 function switchTab(tab) {
-  document.getElementById('tabReagenti').style.display    = tab === 'reagenti'    ? 'block' : 'none';
-  document.getElementById('tabConsumabili').style.display = tab === 'consumabili' ? 'block' : 'none';
-  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (i===0) === (tab==='reagenti')));
+  document.getElementById('tabReagenti').style.display    = tab==='reagenti'    ? 'block' : 'none';
+  document.getElementById('tabConsumabili').style.display = tab==='consumabili' ? 'block' : 'none';
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===0 ? tab==='reagenti' : tab==='consumabili'));
   document.getElementById('previewSection').style.display = 'none';
 }
 
-// ─── Reagenti ──────────────────────────────────────────────────────────────
+// ─── Reagenti: cerca ───────────────────────────────────────────────────────
 async function cercaReagenti() {
-  const nome = document.getElementById('rCercaNome').value.trim();
-  const stato = document.getElementById('rCercaStato').value;
+  const nome  = document.getElementById('rNome').value.trim();
+  const stato = document.getElementById('rStato').value;
   const el = document.getElementById('rRisultati');
   el.innerHTML = '<div class="spinner"></div>';
   document.getElementById('rSelBar').style.display = 'none';
   document.getElementById('rBtnGenera').disabled = true;
+
   try {
-    let url = `/api/reagenti?limit=500`;
+    // L'API reagenti senza progressivo restituisce i gruppi con progressivi annidati
+    let url = `/api/reagenti?limit=1000`;
     if (nome) url += `&nome=${encodeURIComponent(nome)}`;
     const res = await fetch(url, { headers: authH() });
     if (!res.ok) throw new Error('Errore ricerca');
-    let data = await res.json();
+    const data = await res.json();
 
-    // api/reagenti in GET senza progressivo restituisce gruppi, non progressivi raw
-    // Estraiamo i progressivi da tutti i gruppi
-    let progressivi = [];
-    if (Array.isArray(data)) {
-      data.forEach(g => {
-        if (g.progressivi) progressivi.push(...g.progressivi);
-        else progressivi.push(g); // già flat
-      });
-    }
+    // Appiattisci: ogni gruppo ha .progressivi[]
+    let flat = [];
+    (Array.isArray(data) ? data : [data]).forEach(g => {
+      if (g.progressivi) flat.push(...g.progressivi.map(p => ({ ...p, nome_prodotto: p.nome || g.nome_prodotto || g.nome })));
+      else flat.push(g);
+    });
 
-    if (stato) {
-      progressivi = progressivi.filter(r => {
-        if (stato === 'chiuso')     return !!r.data_chiusura;
-        if (stato === 'aperto')     return !!r.data_apertura && !r.data_chiusura;
-        if (stato === 'non_aperto') return !r.data_apertura;
-        return true;
-      });
-    }
+    // Filtro stato
+    if (stato) flat = flat.filter(r => {
+      if (stato === 'chiuso')     return !!r.data_chiusura;
+      if (stato === 'aperto')     return !!r.data_apertura && !r.data_chiusura;
+      if (stato === 'non_aperto') return !r.data_apertura;
+      return true;
+    });
 
-    reagentiFiltrati = progressivi;
-    renderListaReagenti(progressivi);
+    // Ordina per progressivo
+    flat.sort((a,b) => cmpProg(a.progressivo, b.progressivo));
+    reagentiFiltrati = flat;
+    renderListaR(flat);
   } catch(err) {
     el.innerHTML = `<div style="color:#e74c3c;font-size:13px;">${err.message}</div>`;
   }
 }
 
-function renderListaReagenti(data) {
+// ─── Reagenti: applica range ───────────────────────────────────────────────
+function applicaRange() {
+  const da = document.getElementById('rDa').value.trim();
+  const a  = document.getElementById('rA').value.trim();
+  if (!da && !a) { selTutti('r'); return; }
+
+  const pkDa = da ? parseProg(da) : null;
+  const pkA  = a  ? parseProg(a)  : null;
+
+  document.querySelectorAll('.res-chk-r').forEach((chk, i) => {
+    const pk = parseProg(reagentiFiltrati[i]?.progressivo || '');
+    let nel = true;
+    if (pkDa && (pk.y < pkDa.y || (pk.y === pkDa.y && pk.n < pkDa.n))) nel = false;
+    if (pkA  && (pk.y > pkA.y  || (pk.y === pkA.y  && pk.n > pkA.n)))  nel = false;
+    chk.checked = nel;
+  });
+  aggiornaSel('r');
+}
+
+function parseProg(s) {
+  const [y, n] = (s||'').split('-').map(Number);
+  return { y: y||0, n: n||0 };
+}
+function cmpProg(a, b) {
+  const pa = parseProg(a), pb = parseProg(b);
+  return pa.y !== pb.y ? pa.y - pb.y : pa.n - pb.n;
+}
+
+function renderListaR(data) {
   const el = document.getElementById('rRisultati');
   if (!data.length) { el.innerHTML = '<div style="color:rgba(255,255,255,.4);font-size:13px;padding:12px;">Nessun risultato.</div>'; return; }
-  el.innerHTML = data.map((r, i) => {
+  el.innerHTML = data.map((r,i) => {
     const ap = !!r.data_apertura && !r.data_chiusura;
     const ch = !!r.data_chiusura;
-    const s = ap ? 'ap' : ch ? 'ch' : 'na';
-    const label = ap ? 'Aperta' : ch ? 'Chiusa' : 'Non aperta';
+    const sc = ap?'ap':ch?'ch':'na';
+    const lb = ap?'Aperta':ch?'Chiusa':'Non aperta';
     return `<label class="res-item">
       <input type="checkbox" class="res-chk-r" data-idx="${i}" onchange="aggiornaSel('r')">
-      <span class="res-nome">${escHtml(r.nome_prodotto || r.nome || '')}</span>
-      <span class="res-prog">${escHtml(r.progressivo || '')}</span>
-      <span class="stato-badge stato-${s}">${label}</span>
+      <span class="res-nome">${escH(r.nome_prodotto||'')}</span>
+      <span class="res-prog">${escH(r.progressivo||'')}</span>
+      <span class="stato-badge stato-${sc}">${lb}</span>
     </label>`;
   }).join('');
   document.getElementById('rSelBar').style.display = 'flex';
   aggiornaSel('r');
 }
 
-// ─── Consumabili ───────────────────────────────────────────────────────────
+// ─── Consumabili: cerca ────────────────────────────────────────────────────
 async function cercaConsumabili() {
-  const nome = document.getElementById('cCercaNome').value.trim();
+  const nome = document.getElementById('cNome').value.trim();
   const el = document.getElementById('cRisultati');
   el.innerHTML = '<div class="spinner"></div>';
   document.getElementById('cSelBar').style.display = 'none';
   document.getElementById('cBtnGenera').disabled = true;
+
   try {
-    let url = `/api/prodotti${nome ? '?nome=' + encodeURIComponent(nome) : ''}`;
+    // usa il parametro ?nome= aggiunto in api/prodotti.js
+    const url = nome
+      ? `/api/prodotti?nome=${encodeURIComponent(nome)}`
+      : `/api/prodotti`;
     const res = await fetch(url, { headers: authH() });
     if (!res.ok) throw new Error('Errore ricerca');
     const data = await res.json();
     consumabiliFiltrati = Array.isArray(data) ? data : [data];
-    renderListaConsumabili(consumabiliFiltrati);
+    renderListaC(consumabiliFiltrati);
   } catch(err) {
     el.innerHTML = `<div style="color:#e74c3c;font-size:13px;">${err.message}</div>`;
   }
 }
 
-function renderListaConsumabili(data) {
+function renderListaC(data) {
   const el = document.getElementById('cRisultati');
   if (!data.length) { el.innerHTML = '<div style="color:rgba(255,255,255,.4);font-size:13px;padding:12px;">Nessun risultato.</div>'; return; }
-  el.innerHTML = data.map((p, i) => `
+  el.innerHTML = data.map((p,i) => `
     <label class="res-item">
       <input type="checkbox" class="res-chk-c" data-idx="${i}" onchange="aggiornaSel('c')">
-      <span class="res-nome">${escHtml(p.nome_prodotto)}</span>
-      <span class="res-prog" style="color:rgba(255,255,255,.4);">giacenza: ${p.giacenza ?? '–'}</span>
+      <span class="res-nome">${escH(p.nome_prodotto || p.Descrizione || '')}</span>
+      <span class="res-prog" style="color:rgba(255,255,255,.4);">giacenza: ${p.giacenza ?? p.Giacenza ?? '–'}</span>
     </label>`).join('');
   document.getElementById('cSelBar').style.display = 'flex';
   aggiornaSel('c');
 }
 
 // ─── Selezione ─────────────────────────────────────────────────────────────
-function aggiornaSel(tipo) {
-  const cls = tipo === 'r' ? '.res-chk-r' : '.res-chk-c';
+function aggiornaSel(t) {
+  const cls = t==='r' ? '.res-chk-r' : '.res-chk-c';
   const cnt = document.querySelectorAll(`${cls}:checked`).length;
-  const pl  = tipo === 'r' ? ['selezionata','selezionate'] : ['selezionato','selezionati'];
-  document.getElementById(tipo === 'r' ? 'rSelCount' : 'cSelCount').textContent = `${cnt} ${cnt===1?pl[0]:pl[1]}`;
-  document.getElementById(tipo === 'r' ? 'rBtnGenera' : 'cBtnGenera').disabled = cnt === 0;
+  const pl  = t==='r' ? ['selezionata','selezionate'] : ['selezionato','selezionati'];
+  document.getElementById(t==='r'?'rSelCount':'cSelCount').textContent = `${cnt} ${cnt===1?pl[0]:pl[1]}`;
+  document.getElementById(t==='r'?'rBtnGenera':'cBtnGenera').disabled = cnt === 0;
 }
-function selTutti(t)  { document.querySelectorAll(`.res-chk-${t}`).forEach(c => c.checked=true);  aggiornaSel(t); }
-function deselTutti(t){ document.querySelectorAll(`.res-chk-${t}`).forEach(c => c.checked=false); aggiornaSel(t); }
+function selTutti(t)  { document.querySelectorAll(`.res-chk-${t}`).forEach(c=>c.checked=true);  aggiornaSel(t); }
+function deselTutti(t){ document.querySelectorAll(`.res-chk-${t}`).forEach(c=>c.checked=false); aggiornaSel(t); }
 
 // ─── Genera etichette reagenti ─────────────────────────────────────────────
-function generaReagenti() {
-  const idxs = [...document.querySelectorAll('.res-chk-r:checked')].map(c => parseInt(c.dataset.idx));
+async function generaReagenti() {
+  const idxs = [...document.querySelectorAll('.res-chk-r:checked')].map(c=>parseInt(c.dataset.idx));
   if (!idxs.length) return;
 
-  const w   = document.getElementById('rOptW').value;
-  const h   = document.getElementById('rOptH').value;
-  const qrPx = parseInt(document.getElementById('rOptQR').value);
-
   const sheet = document.getElementById('printSheet');
-  sheet.style.setProperty('--ew', w);
-  sheet.style.setProperty('--eh', h);
-  sheet.innerHTML = '';
+  sheet.innerHTML = '<div style="color:#666;font-size:12px;padding:10px;">Generazione QR in corso…</div>';
 
-  idxs.forEach(idx => {
+  const ps = document.getElementById('previewSection');
+  ps.style.display = 'block';
+  ps.scrollIntoView({ behavior:'smooth', block:'start' });
+
+  // Genera in sequenza per non sovraccaricare il canvas
+  sheet.innerHTML = '';
+  for (const idx of idxs) {
     const r = reagentiFiltrati[idx];
+    await creaEtichetaReagente(sheet, r);
+  }
+
+  document.getElementById('infoCount').textContent =
+    `${idxs.length} etichett${idxs.length===1?'a':'e'} — layout A4 3×7 (Markin C521 70×42mm)`;
+}
+
+async function creaEtichetaReagente(sheet, r) {
+  return new Promise(resolve => {
     const url = `${SCAN_URL}?p=${encodeURIComponent(r.progressivo)}`;
     const div = document.createElement('div');
     div.className = 'etichetta';
 
-    // QR a sinistra
+    // QR — 90px ≈ 24mm a 96dpi
+    const canvas = document.createElement('canvas');
     const qrWrap = document.createElement('div');
     qrWrap.className = 'eqr';
-    new QRCode(qrWrap, { text: url, width: qrPx, height: qrPx, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+    qrWrap.appendChild(canvas);
     div.appendChild(qrWrap);
 
-    // Info a destra
+    // Info
     const info = document.createElement('div');
     info.className = 'einfo';
 
-    // Nome (max 60 char)
-    const nome = r.nome_prodotto || r.nome || '';
-    info.innerHTML += `<div class="enome">${escHtml(nome.length > 55 ? nome.substring(0,52)+'…' : nome)}</div>`;
-
-    // Progressivo — sempre presente
-    info.innerHTML += row('Prog.', r.progressivo);
-
-    // ID Sepack — se presente
-    if (r.id_sepack) info.innerHTML += row('Sepack', r.id_sepack);
-
-    // Scadenza — campo o riga vuota per penna
-    if (r.scadenza_sepack) info.innerHTML += row('Scad.', r.scadenza_sepack);
-    else info.innerHTML += rowVuota('Scad.');
-
-    // Data apertura
-    if (r.data_apertura) info.innerHTML += row('Aperta', r.data_apertura.split('T')[0]);
-    else info.innerHTML += rowVuota('Aperta');
-
-    // Data chiusura
-    if (r.data_chiusura) info.innerHTML += row('Chiusa', r.data_chiusura.split('T')[0]);
-    else info.innerHTML += rowVuota('Chiusa');
+    const nome = r.nome_prodotto || '';
+    info.innerHTML += `<div class="enome">${escH(nome.length>60?nome.substring(0,57)+'…':nome)}</div>`;
+    info.innerHTML += rowR('Prog.', r.progressivo);
+    if (r.id_sepack)        info.innerHTML += rowR('Sepack', r.id_sepack);
+    if (r.scadenza_sepack)  info.innerHTML += rowR('Scad.', r.scadenza_sepack);
+    else                    info.innerHTML += rowVuota('Scad.');
+    if (r.data_apertura)    info.innerHTML += rowR('Aperta', r.data_apertura.split('T')[0]);
+    else                    info.innerHTML += rowVuota('Aperta');
+    if (r.data_chiusura)    info.innerHTML += rowR('Chiusa', r.data_chiusura.split('T')[0]);
+    else                    info.innerHTML += rowVuota('Chiusa');
 
     div.appendChild(info);
     sheet.appendChild(div);
-  });
 
-  document.getElementById('infoCount').textContent =
-    `${idxs.length} etichett${idxs.length===1?'a':'e'} — clicca Stampa per procedere`;
-  const ps = document.getElementById('previewSection');
-  ps.style.display = 'block';
-  ps.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Genera QR sul canvas
+    QRCode.toCanvas(canvas, url, { width: 90, margin: 1, errorCorrectionLevel: 'M',
+      color: { dark: '#000000', light: '#ffffff' } }, () => resolve());
+  });
 }
 
 // ─── Genera etichette consumabili ──────────────────────────────────────────
-function generaConsumabili() {
-  const idxs = [...document.querySelectorAll('.res-chk-c:checked')].map(c => parseInt(c.dataset.idx));
+async function generaConsumabili() {
+  const idxs = [...document.querySelectorAll('.res-chk-c:checked')].map(c=>parseInt(c.dataset.idx));
   if (!idxs.length) return;
 
-  const w   = document.getElementById('cOptW').value;
-  const h   = document.getElementById('cOptH').value;
-  const qrPx = parseInt(document.getElementById('cOptQR').value);
-
   const sheet = document.getElementById('printSheet');
-  sheet.style.setProperty('--ew', w);
-  sheet.style.setProperty('--eh', h);
   sheet.innerHTML = '';
 
-  idxs.forEach(idx => {
+  for (const idx of idxs) {
     const p = consumabiliFiltrati[idx];
-    const url = `${SCAN_URL}?c=${encodeURIComponent(p.nome_prodotto)}`;
-    const div = document.createElement('div');
-    div.className = 'etichetta cons';
-
-    // QR centrato
-    const qrWrap = document.createElement('div');
-    qrWrap.className = 'eqr';
-    new QRCode(qrWrap, { text: url, width: qrPx, height: qrPx, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
-    div.appendChild(qrWrap);
-
-    // Nome sotto il QR
-    const nome = document.createElement('div');
-    nome.className = 'enome';
-    const n = p.nome_prodotto;
-    nome.textContent = n.length > 40 ? n.substring(0,37)+'…' : n;
-    div.appendChild(nome);
-
-    sheet.appendChild(div);
-  });
+    await creaEtichetaConsumabile(sheet, p);
+  }
 
   document.getElementById('infoCount').textContent =
-    `${idxs.length} etichett${idxs.length===1?'a master':'e master'} — clicca Stampa per procedere`;
+    `${idxs.length} etichett${idxs.length===1?'a master':'e master'} — layout A4 3×7 (Markin C521 70×42mm)`;
   const ps = document.getElementById('previewSection');
   ps.style.display = 'block';
-  ps.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  ps.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+async function creaEtichetaConsumabile(sheet, p) {
+  return new Promise(resolve => {
+    const nome = p.nome_prodotto || p.Descrizione || '';
+    const url  = `${SCAN_URL}?c=${encodeURIComponent(nome)}`;
+    const div  = document.createElement('div');
+    div.className = 'etichetta cons';
+
+    const canvas = document.createElement('canvas');
+    const qrWrap = document.createElement('div');
+    qrWrap.className = 'eqr';
+    qrWrap.appendChild(canvas);
+    div.appendChild(qrWrap);
+
+    const nomeEl = document.createElement('div');
+    nomeEl.className = 'enome';
+    nomeEl.textContent = nome.length>45 ? nome.substring(0,42)+'…' : nome;
+    div.appendChild(nomeEl);
+
+    sheet.appendChild(div);
+
+    QRCode.toCanvas(canvas, url, { width: 80, margin: 1, errorCorrectionLevel: 'M',
+      color: { dark: '#000000', light: '#ffffff' } }, () => resolve());
+  });
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
-function row(lbl, val) {
-  return `<div class="erow"><span class="lbl">${lbl}</span>${escHtml(String(val))}</div>`;
+function rowR(lbl, val) {
+  return `<div class="erow"><span class="lbl">${lbl}</span>${escH(String(val))}</div>`;
 }
 function rowVuota(lbl) {
   return `<div class="erow-vuota"><span class="lbl">${lbl}</span></div>`;
 }
-function escHtml(s) {
+function escH(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 </script>
