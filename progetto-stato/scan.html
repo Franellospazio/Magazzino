@@ -4,99 +4,87 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Scan — Sepack</title>
-  <!-- QR scanner: jsQR -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
   <style>
     :root {
       --primary: #00B4CC;
-      --ok: #16a085;
+      --ok:   #16a085;
       --warn: #e67e22;
-      --err: #e74c3c;
+      --cons: #8e44ad;
       --dark: #1a252f;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--dark); color: white; min-height: 100svh; display: flex; flex-direction: column; }
 
-    /* ── Header ── */
-    .header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: rgba(0,0,0,.4); z-index: 10; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: rgba(0,0,0,.4); }
     .header h1 { font-size: 16px; font-weight: 700; }
-    .header a { color: rgba(255,255,255,.7); font-size: 13px; text-decoration: none; }
+    .header a { color: rgba(255,255,255,.6); font-size: 13px; text-decoration: none; }
 
-    /* ── Scanner view ── */
+    /* ── Scanner ── */
     #scannerView { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
     #video { width: 100%; max-height: 55svh; object-fit: cover; }
-    .scan-overlay {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-      width: 220px; height: 220px; pointer-events: none;
-    }
-    .scan-corner {
-      position: absolute; width: 32px; height: 32px; border-color: var(--primary); border-style: solid; border-width: 0;
-    }
-    .scan-corner.tl { top:0; left:0; border-top-width:3px; border-left-width:3px; border-radius: 4px 0 0 0; }
-    .scan-corner.tr { top:0; right:0; border-top-width:3px; border-right-width:3px; border-radius: 0 4px 0 0; }
-    .scan-corner.bl { bottom:0; left:0; border-bottom-width:3px; border-left-width:3px; border-radius: 0 0 0 4px; }
-    .scan-corner.br { bottom:0; right:0; border-bottom-width:3px; border-right-width:3px; border-radius: 0 0 4px 0; }
+    .scan-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 220px; height: 220px; pointer-events: none; }
+    .scan-corner { position: absolute; width: 32px; height: 32px; border-color: var(--primary); border-style: solid; border-width: 0; }
+    .scan-corner.tl { top:0;left:0;border-top-width:3px;border-left-width:3px;border-radius:4px 0 0 0; }
+    .scan-corner.tr { top:0;right:0;border-top-width:3px;border-right-width:3px;border-radius:0 4px 0 0; }
+    .scan-corner.bl { bottom:0;left:0;border-bottom-width:3px;border-left-width:3px;border-radius:0 0 0 4px; }
+    .scan-corner.br { bottom:0;right:0;border-bottom-width:3px;border-right-width:3px;border-radius:0 0 4px 0; }
     .scan-hint { margin-top: 16px; font-size: 13px; color: rgba(255,255,255,.6); text-align: center; padding: 0 20px; }
 
-    /* ── Risultato bottiglia ── */
-    #bottigliaView { display: none; flex: 1; flex-direction: column; padding: 20px 16px; gap: 14px; overflow-y: auto; }
+    /* ── Scheda prodotto ── */
+    #prodottoView { display: none; flex: 1; flex-direction: column; padding: 20px 16px; gap: 14px; overflow-y: auto; }
 
-    .pill-stato {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 700;
-    }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
     .pill-aperto  { background: rgba(22,160,133,.25); color: #1abc9c; border: 1px solid #1abc9c55; }
     .pill-chiuso  { background: rgba(127,140,141,.2); color: #95a5a6; border: 1px solid #95a5a655; }
     .pill-nonap   { background: rgba(52,152,219,.2); color: #3498db; border: 1px solid #3498db55; }
+    .pill-cons    { background: rgba(142,68,173,.25); color: #bb8fce; border: 1px solid #bb8fce55; }
+    .pill-warn    { background: rgba(230,126,34,.25); color: #f39c12; border: 1px solid #f39c1255; }
 
     .nome { font-size: 20px; font-weight: 800; line-height: 1.25; }
-    .progressivo { font-size: 13px; color: rgba(255,255,255,.5); font-family: monospace; margin-top: 4px; }
+    .sub  { font-size: 13px; color: rgba(255,255,255,.5); font-family: monospace; margin-top: 4px; }
 
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .info-cell { background: rgba(255,255,255,.06); border-radius: 8px; padding: 10px 12px; }
     .info-cell .lbl { font-size: 10px; color: rgba(255,255,255,.45); text-transform: uppercase; letter-spacing: .06em; }
     .info-cell .val { font-size: 14px; font-weight: 600; margin-top: 3px; word-break: break-word; }
-    .info-cell.full { grid-column: 1 / -1; }
+    .info-cell.full { grid-column: 1/-1; }
 
-    /* ── Bottone azione ── */
+    /* Giacenza grande per consumabili */
+    .giacenza-big { text-align: center; padding: 20px; background: rgba(255,255,255,.06); border-radius: 12px; }
+    .giacenza-big .num { font-size: 52px; font-weight: 900; line-height: 1; }
+    .giacenza-big .lbl { font-size: 12px; color: rgba(255,255,255,.5); margin-top: 4px; }
+    .giacenza-big.warn .num { color: #f39c12; }
+    .giacenza-big.ok   .num { color: #1abc9c; }
+    .giacenza-big.zero .num { color: #e74c3c; }
+
+    /* Bottoni azione */
     .btn-azione {
       display: flex; align-items: center; justify-content: center; gap: 10px;
       padding: 18px; border: none; border-radius: 14px;
-      font-size: 18px; font-weight: 900; cursor: pointer; transition: opacity .15s;
-      width: 100%; margin-top: auto;
+      font-size: 18px; font-weight: 900; cursor: pointer; width: 100%;
+      transition: opacity .15s, transform .1s;
     }
     .btn-azione:active { opacity: .75; transform: scale(.98); }
-    .btn-apri   { background: var(--ok);   color: white; }
-    .btn-chiudi { background: var(--warn);  color: white; }
-    .btn-apri-chiudi { background: linear-gradient(135deg, var(--ok) 0%, var(--warn) 100%); color: white; }
+    .btn-apri    { background: var(--ok);   color: white; }
+    .btn-chiudi  { background: var(--warn); color: white; }
+    .btn-preleva { background: var(--cons); color: white; }
+    .btn-disabled { background: rgba(255,255,255,.1); color: rgba(255,255,255,.3); cursor: default; }
+    .btn-scan-again { width: 100%; padding: 12px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); border-radius: 10px; color: white; font-size: 14px; cursor: pointer; }
 
-    /* Bottone scansione manuale */
-    .btn-scan-again {
-      width: 100%; padding: 12px; background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.15); border-radius: 10px;
-      color: white; font-size: 14px; cursor: pointer;
-    }
-
-    /* ── Feedback ── */
-    #feedback {
-      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-      background: rgba(0,0,0,.85); border-radius: 16px; padding: 24px 32px;
-      text-align: center; font-size: 40px; display: none; z-index: 100;
-      backdrop-filter: blur(6px);
-    }
+    /* Feedback */
+    #feedback { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(0,0,0,.88); border-radius: 16px; padding: 24px 32px; text-align: center; font-size: 44px; display: none; z-index: 100; backdrop-filter: blur(8px); }
     #feedback p { font-size: 14px; margin-top: 8px; color: rgba(255,255,255,.8); }
 
-    /* ── Auth wall ── */
+    /* Auth wall */
     #authWall { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; gap: 12px; padding: 30px; text-align: center; }
     #authWall h2 { font-size: 20px; }
     #authWall p { color: rgba(255,255,255,.6); font-size: 14px; }
     #authWall a { color: var(--primary); text-decoration: none; font-weight: 700; }
 
-    /* ── Spinner ── */
     .spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,.2); border-top-color: var(--primary); border-radius: 50%; animation: spin .7s linear infinite; margin: 20px auto; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Errore ── */
     .err-box { background: rgba(231,76,60,.15); border: 1px solid rgba(231,76,60,.4); border-radius: 10px; padding: 16px; text-align: center; }
     .err-box .icon { font-size: 32px; }
     .err-box p { font-size: 14px; color: rgba(255,255,255,.8); margin-top: 8px; }
@@ -109,195 +97,142 @@
   <a href="/">← Magazzino</a>
 </div>
 
-<!-- Auth wall -->
 <div id="authWall">
   <h2>🔒 Accesso richiesto</h2>
   <p>Devi essere loggato per usare lo scanner.</p>
   <a href="/login.html">Vai al login</a>
 </div>
 
-<!-- Scanner camera -->
 <div id="scannerView">
   <video id="video" autoplay playsinline muted></video>
   <div class="scan-overlay">
-    <div class="scan-corner tl"></div>
-    <div class="scan-corner tr"></div>
-    <div class="scan-corner bl"></div>
-    <div class="scan-corner br"></div>
+    <div class="scan-corner tl"></div><div class="scan-corner tr"></div>
+    <div class="scan-corner bl"></div><div class="scan-corner br"></div>
   </div>
-  <div class="scan-hint">Inquadra il QR code sull'etichetta della bottiglia</div>
+  <div class="scan-hint">Inquadra il QR code sull'etichetta</div>
 </div>
 
-<!-- Dettaglio bottiglia -->
-<div id="bottigliaView"></div>
-
-<!-- Feedback animato -->
+<div id="prodottoView"></div>
 <div id="feedback"></div>
-
 <canvas id="canvas" style="display:none;"></canvas>
 
 <script>
-const SUPABASE_URL  = 'https://YOUR_SUPABASE_URL.supabase.co'; // ← sostituisci
 const BASE_URL = window.location.origin;
+let scanActive = true;
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
+// ─── Auth ──────────────────────────────────────────────────────────────────
 function getToken() {
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.includes('-auth-token')) {
-        const raw = localStorage.getItem(key);
-        const session = JSON.parse(raw);
-        return session?.access_token || session?.[0]?.access_token || null;
+      if (key?.includes('-auth-token')) {
+        const s = JSON.parse(localStorage.getItem(key));
+        return s?.access_token || s?.[0]?.access_token || null;
       }
     }
   } catch(e) {}
   return null;
 }
-function authHeaders() {
+function authH() {
   const t = getToken();
   return { 'Content-Type': 'application/json', ...(t ? { Authorization: 'Bearer ' + t } : {}) };
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
+// ─── Init ──────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
-  const token = getToken();
-  if (!token) {
+  if (!getToken()) {
     document.getElementById('authWall').style.display = 'flex';
     document.getElementById('scannerView').style.display = 'none';
     return;
   }
-
-  // Se arriva con ?p=progressivo diretto (da QR stampato), carica subito
   const params = new URLSearchParams(window.location.search);
-  const pParam = params.get('p');
-  if (pParam) {
-    document.getElementById('scannerView').style.display = 'none';
-    await caricaBottiglia(pParam);
-    return;
-  }
+  const p = params.get('p'); // reagente
+  const c = params.get('c'); // consumabile
 
-  // Altrimenti avvia scanner
+  if (p) { document.getElementById('scannerView').style.display = 'none'; await caricaReagente(p); return; }
+  if (c) { document.getElementById('scannerView').style.display = 'none'; await caricaConsumabile(decodeURIComponent(c)); return; }
+
   avviaScanner();
 });
 
-// ─── Scanner QR ───────────────────────────────────────────────────────────────
-let scanActive = true;
-
+// ─── Scanner ───────────────────────────────────────────────────────────────
 async function avviaScanner() {
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
-
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-    });
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 } } });
     video.srcObject = stream;
     video.play();
-
     const tick = () => {
       if (!scanActive) return;
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0);
         const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
-        if (code) {
-          scanActive = false;
-          stream.getTracks().forEach(t => t.stop());
-          handleQR(code.data);
-          return;
-        }
+        if (code) { scanActive = false; stream.getTracks().forEach(t => t.stop()); handleQR(code.data); return; }
       }
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
-  } catch (err) {
-    document.getElementById('scannerView').innerHTML = `
-      <div class="err-box" style="margin:20px;">
-        <div class="icon">📷</div>
-        <p>Fotocamera non accessibile.<br>${err.message}</p>
-      </div>`;
+  } catch(err) {
+    document.getElementById('scannerView').innerHTML = `<div class="err-box" style="margin:20px;"><div class="icon">📷</div><p>Fotocamera non accessibile.<br>${err.message}</p></div>`;
   }
 }
 
 function handleQR(data) {
-  // Accetta sia il progressivo diretto ("2024-001")
-  // che un URL completo ("https://.../scan?p=2024-001")
-  let progressivo = data.trim();
+  let progressivo = null, consumabile = null;
   try {
     const url = new URL(data);
-    const p = url.searchParams.get('p');
-    if (p) progressivo = p;
-  } catch(e) {}
-
+    progressivo  = url.searchParams.get('p');
+    consumabile  = url.searchParams.get('c');
+    if (consumabile) consumabile = decodeURIComponent(consumabile);
+  } catch(e) {
+    // dato grezzo = progressivo reagente
+    progressivo = data.trim();
+  }
   document.getElementById('scannerView').style.display = 'none';
-  caricaBottiglia(progressivo);
+  if (consumabile) caricaConsumabile(consumabile);
+  else if (progressivo) caricaReagente(progressivo);
+  else mostraErrore('QR non riconosciuto');
 }
 
-// ─── Carica bottiglia ─────────────────────────────────────────────────────────
-async function caricaBottiglia(progressivo) {
-  const view = document.getElementById('bottigliaView');
+// ─── Reagente ──────────────────────────────────────────────────────────────
+async function caricaReagente(progressivo) {
+  const view = document.getElementById('prodottoView');
   view.style.display = 'flex';
   view.innerHTML = '<div class="spinner"></div>';
-
   try {
-    const res = await fetch(`/api/reagenti?progressivo=${encodeURIComponent(progressivo)}`, {
-      headers: authHeaders()
-    });
+    const res = await fetch(`/api/reagenti?progressivo=${encodeURIComponent(progressivo)}`, { headers: authH() });
     if (!res.ok) throw new Error('Progressivo non trovato');
-    const r = await res.json();
-    renderBottiglia(r);
-  } catch (err) {
-    view.innerHTML = `
-      <div class="err-box">
-        <div class="icon">❌</div>
-        <p>${err.message}</p>
-      </div>
-      <button class="btn-scan-again" onclick="tornaScan()" style="margin-top:16px;">🔁 Scansiona di nuovo</button>`;
+    renderReagente(await res.json());
+  } catch(err) {
+    view.innerHTML = `<div class="err-box"><div class="icon">❌</div><p>${err.message}</p></div><button class="btn-scan-again" onclick="tornaScan()" style="margin-top:16px;">🔁 Scansiona di nuovo</button>`;
   }
 }
 
-// ─── Render scheda bottiglia ──────────────────────────────────────────────────
-function renderBottiglia(r) {
-  const view = document.getElementById('bottigliaView');
+function renderReagente(r) {
+  const view = document.getElementById('prodottoView');
+  const aperto = !!r.data_apertura && !r.data_chiusura;
+  const chiuso = !!r.data_chiusura;
+  const nonAp  = !r.data_apertura;
 
-  const aperto  = !!r.data_apertura && !r.data_chiusura;
-  const chiuso  = !!r.data_chiusura;
-  const nonAp   = !r.data_apertura;
+  const pill = aperto ? `<span class="pill pill-aperto">🟢 Aperto</span>`
+             : chiuso  ? `<span class="pill pill-chiuso">⚫ Chiuso</span>`
+             : `<span class="pill pill-nonap">🔵 Non aperto</span>`;
 
-  const pillHtml = aperto
-    ? `<span class="pill-stato pill-aperto">🟢 Aperto</span>`
-    : chiuso
-      ? `<span class="pill-stato pill-chiuso">⚫ Chiuso</span>`
-      : `<span class="pill-stato pill-nonap">🔵 Non aperto</span>`;
-
-  // Bottone azione principale
-  let btnHtml = '';
-  if (nonAp) {
-    btnHtml = `<button class="btn-azione btn-apri" onclick="aziona('${r.progressivo}','apri')">✅ Apri ora</button>`;
-  } else if (aperto) {
-    btnHtml = `<button class="btn-azione btn-chiudi" onclick="aziona('${r.progressivo}','chiudi')">🔒 Chiudi ora</button>`;
-  } else {
-    // chiuso — non si può fare altro
-    btnHtml = `<div class="err-box"><div class="icon">📦</div><p>Questa bottiglia è già chiusa.</p></div>`;
-  }
+  let btn = '';
+  if (nonAp)  btn = `<button class="btn-azione btn-apri"   onclick="azioneReagente('${esc(r.progressivo)}','apri')">✅ Apri ora</button>`;
+  else if (aperto) btn = `<button class="btn-azione btn-chiudi" onclick="azioneReagente('${esc(r.progressivo)}','chiudi')">🔒 Chiudi ora</button>`;
+  else        btn = `<div class="err-box"><div class="icon">📦</div><p>Bottiglia già chiusa.</p></div>`;
 
   const cell = (lbl, val, full) => val
-    ? `<div class="info-cell${full?' full':''}"><div class="lbl">${lbl}</div><div class="val">${escHtml(String(val))}</div></div>`
-    : '';
-
-  const oggi = new Date().toLocaleDateString('it-IT');
+    ? `<div class="info-cell${full?' full':''}"><div class="lbl">${lbl}</div><div class="val">${esc(String(val))}</div></div>` : '';
 
   view.innerHTML = `
-    ${pillHtml}
-    <div>
-      <div class="nome">${escHtml(r.nome_prodotto)}</div>
-      <div class="progressivo">${escHtml(r.progressivo)}</div>
-    </div>
-
+    ${pill}
+    <div><div class="nome">${esc(r.nome_prodotto)}</div><div class="sub">${esc(r.progressivo)}</div></div>
     <div class="info-grid">
       ${cell('Tipo', r.tipo)}
       ${cell('ID Sepack', r.id_sepack)}
@@ -305,65 +240,114 @@ function renderBottiglia(r) {
       ${cell('Lotto', r.lotto)}
       ${cell('Scadenza', r.scadenza_sepack)}
       ${cell('Posizione', r.posizione)}
-      ${cell('MISL', r.misl)}
       ${cell('Aperto il', r.data_apertura ? r.data_apertura.split('T')[0] : null)}
       ${cell('Chiuso il', r.data_chiusura ? r.data_chiusura.split('T')[0] : null)}
     </div>
-
-    <div style="font-size:12px; color:rgba(255,255,255,.4); text-align:center;">
-      Oggi: ${oggi}
-    </div>
-
-    ${btnHtml}
-    <button class="btn-scan-again" onclick="tornaScan()">🔁 Scansiona un'altra bottiglia</button>
-  `;
+    ${btn}
+    <button class="btn-scan-again" onclick="tornaScan()">🔁 Scansiona un'altra</button>`;
 }
 
-// ─── Azione apertura / chiusura ───────────────────────────────────────────────
-async function aziona(progressivo, tipo) {
+async function azioneReagente(progressivo, tipo) {
   const oggi = new Date().toISOString().split('T')[0];
-  const body = tipo === 'apri'
-    ? { progressivo, data_apertura: oggi }
-    : { progressivo, data_chiusura: oggi };
-
+  const body = tipo === 'apri' ? { progressivo, data_apertura: oggi } : { progressivo, data_chiusura: oggi };
   mostraFeedback(tipo === 'apri' ? '✅' : '🔒', tipo === 'apri' ? 'Aperta!' : 'Chiusa!');
-
   try {
-    const res = await fetch('/api/reagenti', {
-      method: 'PATCH',
-      headers: authHeaders(),
-      body: JSON.stringify(body)
-    });
+    const res = await fetch('/api/reagenti', { method: 'PATCH', headers: authH(), body: JSON.stringify(body) });
     if (!res.ok) throw new Error();
-    // Ricarica la scheda aggiornata dopo un momento
-    setTimeout(() => caricaBottiglia(progressivo), 1200);
-  } catch(e) {
-    mostraFeedback('❌', 'Errore — riprova');
+    setTimeout(() => caricaReagente(progressivo), 1200);
+  } catch(e) { mostraFeedback('❌', 'Errore — riprova'); }
+}
+
+// ─── Consumabile ───────────────────────────────────────────────────────────
+async function caricaConsumabile(nome) {
+  const view = document.getElementById('prodottoView');
+  view.style.display = 'flex';
+  view.innerHTML = '<div class="spinner"></div>';
+  try {
+    // GET prodotto dalla Magazzino via api/prodotti
+    const res = await fetch(`/api/prodotti?nome=${encodeURIComponent(nome)}`, { headers: authH() });
+    if (!res.ok) throw new Error('Prodotto non trovato');
+    const data = await res.json();
+    // api/prodotti può restituire array o oggetto
+    const p = Array.isArray(data) ? data.find(d => d.nome_prodotto === nome) : data;
+    if (!p) throw new Error('Prodotto non trovato');
+    renderConsumabile(p);
+  } catch(err) {
+    view.innerHTML = `<div class="err-box"><div class="icon">❌</div><p>${err.message}</p></div><button class="btn-scan-again" onclick="tornaScan()" style="margin-top:16px;">🔁 Scansiona di nuovo</button>`;
   }
+}
+
+function renderConsumabile(p) {
+  const view = document.getElementById('prodottoView');
+  const g = p.giacenza ?? 0;
+  const s = p.scorta_minima ?? null;
+  const unita = p.unita || 'pz';
+  const sottoscorta = s != null && g <= s;
+  const esaurito    = g <= 0;
+
+  const giacenzaClass = esaurito ? 'zero' : sottoscorta ? 'warn' : 'ok';
+  const warnBadge = sottoscorta && !esaurito
+    ? `<span class="pill pill-warn">⚠️ Sottoscorta</span>` : '';
+  const esauritoBadge = esaurito
+    ? `<span class="pill pill-warn" style="background:rgba(231,76,60,.2);color:#e74c3c;border-color:#e74c3c55;">🔴 Esaurito</span>` : '';
+
+  const btnPreleva = esaurito
+    ? `<button class="btn-azione btn-disabled" disabled>📦 Giacenza esaurita</button>`
+    : `<button class="btn-azione btn-preleva" onclick="preleva('${esc(p.nome_prodotto)}')">📦 Preleva (-1)</button>`;
+
+  view.innerHTML = `
+    <span class="pill pill-cons">📦 Consumabile</span>
+    ${warnBadge}${esauritoBadge}
+    <div><div class="nome">${esc(p.nome_prodotto)}</div>${p.categoria ? `<div class="sub">${esc(p.categoria)}</div>` : ''}</div>
+    <div class="giacenza-big ${giacenzaClass}">
+      <div class="num">${g}</div>
+      <div class="lbl">giacenza attuale (${unita})${s != null ? ` · scorta min: ${s}` : ''}</div>
+    </div>
+    ${btnPreleva}
+    <button class="btn-scan-again" onclick="tornaScan()">🔁 Scansiona un altro</button>`;
+}
+
+async function preleva(nome) {
+  mostraFeedback('📦', 'Prelievo...');
+  try {
+    const res = await fetch('/api/scan-consumabile', {
+      method: 'POST', headers: authH(),
+      body: JSON.stringify({ nome_prodotto: nome })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      mostraFeedback('❌', data.error || 'Errore');
+      return;
+    }
+    mostraFeedback('✅', `Prelevato!\nGiacenza: ${data.giacenza_attuale}${data.sottoscorta ? ' ⚠️' : ''}`);
+    setTimeout(() => caricaConsumabile(nome), 1400);
+  } catch(e) { mostraFeedback('❌', 'Errore — riprova'); }
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+function tornaScan() {
+  document.getElementById('prodottoView').style.display = 'none';
+  document.getElementById('prodottoView').innerHTML = '';
+  document.getElementById('scannerView').style.display = 'flex';
+  scanActive = true;
+  history.replaceState(null, '', '/scan');
+  avviaScanner();
 }
 
 function mostraFeedback(icon, testo) {
   const fb = document.getElementById('feedback');
-  fb.innerHTML = `${icon}<p>${testo}</p>`;
+  fb.innerHTML = `${icon}<p>${testo.replace(/\n/g,'<br>')}</p>`;
   fb.style.display = 'block';
-  setTimeout(() => { fb.style.display = 'none'; }, 1200);
+  setTimeout(() => { fb.style.display = 'none'; }, 1400);
 }
 
-// ─── Torna allo scanner ───────────────────────────────────────────────────────
-function tornaScan() {
-  document.getElementById('bottigliaView').style.display = 'none';
-  document.getElementById('bottigliaView').innerHTML = '';
-  const sv = document.getElementById('scannerView');
-  sv.style.display = 'flex';
-  scanActive = true;
-  avviaScanner();
-  // Pulisce URL
-  history.replaceState(null, '', '/scan');
+function mostraErrore(msg) {
+  const view = document.getElementById('prodottoView');
+  view.style.display = 'flex';
+  view.innerHTML = `<div class="err-box"><div class="icon">❌</div><p>${msg}</p></div><button class="btn-scan-again" onclick="tornaScan()" style="margin-top:16px;">🔁 Scansiona di nuovo</button>`;
 }
 
-function escHtml(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;'); }
 </script>
 </body>
 </html>
