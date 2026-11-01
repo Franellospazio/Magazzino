@@ -27,10 +27,16 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    const { data, error } = await supabase
+    let query = supabase
       .from('Magazzino')
       .select('*, fornitori:prodotto_fornitori(fornitore_id, ordine, fornitori(id, nome))')
       .order('Descrizione', { ascending: true });
+
+    // Filtro opzionale per nome (ricerca parziale, usato da scan.html e etichette-qr.html)
+    const { nome } = req.query;
+    if (nome) query = query.ilike('Descrizione', `%${nome}%`);
+
+    const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
 
     const prodotti = data.map(p => {
@@ -40,6 +46,10 @@ export default async function handler(req, res) {
       const fornitoreSelezionato = fornitoriOrdinati.find(f => f.id === p.fornitore_selezionato);
       return {
         ...p,
+        // Alias comodi per il frontend (mantiene anche i nomi originali)
+        nome_prodotto: p.Descrizione,
+        giacenza: p.Giacenza,
+        scorta_minima: p.ScortaMinima,
         fornitori: fornitoriOrdinati,
         fornitore_selezionato_nome: fornitoreSelezionato?.nome || null
       };
@@ -54,20 +64,22 @@ export default async function handler(req, res) {
       if (!user) return res.status(401).json({ error: 'Non autenticato' });
       isAdminUser = await checkAdmin(user.id);
     } else {
-      // Auth disabilitata: isAdmin viene dal body (password ori3 lato client)
       isAdminUser = req.body.isAdmin === true;
     }
 
-    const { descrizione, Giacenza, inordine, ScortaMinima, fornitore_selezionato } = req.body;
+    const { descrizione, Giacenza, inordine, ScortaMinima, fornitore_selezionato, unita, volume_per_unita } = req.body;
     if (!descrizione) return res.status(400).json({ error: 'Descrizione richiesta' });
 
     const updateData = { ultimo_aggiornamento: new Date().toISOString() };
     if (Giacenza !== undefined) updateData.Giacenza = Giacenza;
-    // inordine, ScortaMinima e fornitore solo per admin
+
+    // Campi solo admin
     if (isAdminUser) {
-      if (inordine !== undefined) updateData.inordine = inordine;
-      if (ScortaMinima !== undefined) updateData.ScortaMinima = ScortaMinima;
+      if (inordine !== undefined)            updateData.inordine = inordine;
+      if (ScortaMinima !== undefined)        updateData.ScortaMinima = ScortaMinima;
       if (fornitore_selezionato !== undefined) updateData.fornitore_selezionato = fornitore_selezionato;
+      if (unita !== undefined)               updateData.unita = unita;
+      if (volume_per_unita !== undefined)    updateData.volume_per_unita = volume_per_unita;
     }
 
     const { error } = await supabase.from('Magazzino').update(updateData).eq('Descrizione', descrizione);
