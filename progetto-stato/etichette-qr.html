@@ -349,8 +349,12 @@ async function cercaReagenti() {
     // Appiattisci: ogni gruppo ha .progressivi[]
     let flat = [];
     (Array.isArray(data) ? data : [data]).forEach(g => {
-      if (g.progressivi) flat.push(...g.progressivi.map(p => ({ ...p, nome_prodotto: p.nome || g.nome_prodotto || g.nome })));
-      else flat.push(g);
+      const nomeProdotto = g.nome_prodotto || g.nome || '';
+      if (g.progressivi && g.progressivi.length) {
+        g.progressivi.forEach(p => flat.push({ ...p, nome_prodotto: p.nome_prodotto || nomeProdotto }));
+      } else if (!g.progressivi) {
+        flat.push(g);
+      }
     });
 
     // Filtro stato
@@ -390,8 +394,11 @@ function applicaRange() {
 }
 
 function parseProg(s) {
-  const [y, n] = (s||'').split('-').map(Number);
-  return { y: y||0, n: n||0 };
+  // Formato: "23-1", "24-556" — anno a 2 cifre, numero senza zeri
+  const parts = (s||'').split('-');
+  const y = parseInt(parts[0]) || 0;
+  const n = parseInt(parts[1]) || 0;
+  return { y, n };
 }
 function cmpProg(a, b) {
   const pa = parseProg(a), pb = parseProg(b);
