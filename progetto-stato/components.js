@@ -6,10 +6,10 @@
 // ────────────────────────────────────────────────────────────────────
 const EMAILJS_PUBLIC_KEY  = 'BnJLQgx-iX-2J45cy';
 const EMAILJS_SERVICE_ID  = 'service_487ujbw';
-// Template dedicato alla richiesta acquisto — crea su EmailJS con le variabili:
-// {{prodotto}}, {{tipo}}, {{giacenza}}, {{operatore}}, {{nota}}, {{data}}
-// Se usi lo stesso template delle mail sottoscorta, cambia EMAILJS_TEMPLATE_ACQUISTO
-const EMAILJS_TEMPLATE_ID = 'template_acquisto';  // ← crea questo template su EmailJS
+// Usa il template esistente template_l5an0k5 ("Gestione giacenze magazzino")
+// Aggiungi nel corpo del template su EmailJS le variabili: {{tipo}}, {{operatore}}, {{nota}}
+// Le variabili {{prodotto}}, {{giacenza}}, {{time}} sono già presenti
+const EMAILJS_TEMPLATE_ID = 'template_l5an0k5';
 
 // ────────────────────────────────────────────────────────────────────
 // RIEMPIMENTO WIDGET
@@ -244,12 +244,15 @@ function _mostraModaleCampanellino({ nomeProdotto, giacenza, unita, tipoProdotto
         EMAILJS_SERVICE_ID,
         EMAILJS_TEMPLATE_ID,
         {
+          // Variabili compatibili con template_l5an0k5
+          title: `🔔 Richiesta acquisto — ${nomeProdotto}`,
           prodotto: nomeProdotto,
           tipo: tipoProdotto === 'reagente' ? 'Reagente' : 'Consumabile',
           giacenza: giacenza !== undefined && giacenza !== null ? `${giacenza} ${unita}` : 'non monitorata',
+          scorta: '',  // non applicabile per richiesta manuale
           operatore: emailOperatore || 'Operatore (non identificato)',
           nota: nota || '(nessuna nota)',
-          data: new Date().toLocaleString('it-IT'),
+          time: new Date().toLocaleString('it-IT'),
         },
         EMAILJS_PUBLIC_KEY
       );
