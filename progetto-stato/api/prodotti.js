@@ -67,11 +67,13 @@ export default async function handler(req, res) {
       isAdminUser = req.body.isAdmin === true;
     }
 
-    const { descrizione, Giacenza, inordine, ScortaMinima, fornitore_selezionato, unita, volume_per_unita } = req.body;
+    const { descrizione, Giacenza, inordine, ScortaMinima, fornitore_selezionato, unita, volume_per_unita, percentuale_riempimento } = req.body;
     if (!descrizione) return res.status(400).json({ error: 'Descrizione richiesta' });
 
     const updateData = { ultimo_aggiornamento: new Date().toISOString() };
     if (Giacenza !== undefined) updateData.Giacenza = Giacenza;
+    // Percentuale riempimento: tutti gli utenti autenticati possono modificarla
+    if (percentuale_riempimento !== undefined) updateData.percentuale_riempimento = percentuale_riempimento;
 
     // Campi solo admin
     if (isAdminUser) {
