@@ -120,9 +120,15 @@
     const { createClient } = supabase;
     const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Se già loggato vai direttamente all'app
+    // Legge eventuale ?next= per redirect post-login
+    function getNextUrl() {
+      const p = new URLSearchParams(window.location.search).get('next');
+      return p ? decodeURIComponent(p) : '/';
+    }
+
+    // Se già loggato vai direttamente alla destinazione
     sb.auth.getSession().then(({ data: { session } }) => {
-      if (session) window.location.href = '/';
+      if (session) window.location.href = getNextUrl();
     });
 
     async function handleLogin() {
@@ -149,8 +155,8 @@
         return;
       }
 
-      // Login ok — vai all'app
-      window.location.href = '/';
+      // Login ok — vai alla destinazione (o all'app se non c'è redirect)
+      window.location.href = getNextUrl();
     }
 
     function showError(msg) {
