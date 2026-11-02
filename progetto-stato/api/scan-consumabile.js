@@ -27,23 +27,23 @@ export default async function handler(req, res) {
   const { nome_prodotto } = req.body;
   if (!nome_prodotto) return res.status(400).json({ error: 'nome_prodotto richiesto' });
 
-  // Leggi giacenza attuale
+  // Leggi giacenza attuale — la PK della tabella è "Descrizione" (case-sensitive)
   const { data: prodotto, error: errRead } = await supabase
     .from('Magazzino')
-    .select('nome_prodotto, giacenza, scorta_minima, unita')
-    .eq('nome_prodotto', nome_prodotto)
+    .select('"Descrizione", "Giacenza", "ScortaMinima", unita')
+    .eq('Descrizione', nome_prodotto)
     .single();
 
   if (errRead || !prodotto) return res.status(404).json({ error: 'Prodotto non trovato' });
-  if (prodotto.giacenza <= 0) return res.status(409).json({ error: 'Giacenza esaurita', giacenza: 0 });
+  if (prodotto.Giacenza <= 0) return res.status(409).json({ error: 'Giacenza esaurita', giacenza: 0 });
 
-  const nuovaGiacenza = prodotto.giacenza - 1;
+  const nuovaGiacenza = prodotto.Giacenza - 1;
 
   // Aggiorna giacenza
   const { error: errUpdate } = await supabase
     .from('Magazzino')
-    .update({ giacenza: nuovaGiacenza })
-    .eq('nome_prodotto', nome_prodotto);
+    .update({ Giacenza: nuovaGiacenza })
+    .eq('Descrizione', nome_prodotto);
 
   if (errUpdate) return res.status(500).json({ error: errUpdate.message });
 
@@ -52,16 +52,16 @@ export default async function handler(req, res) {
     user_id: user.id,
     email: user.email,
     action: 'scan_consumabile',
-    details: `Prelievo QR: ${nome_prodotto} (giacenza: ${prodotto.giacenza} → ${nuovaGiacenza})`,
+    details: `Prelievo QR: ${nome_prodotto} (giacenza: ${prodotto.Giacenza} → ${nuovaGiacenza})`,
   }).then(() => {});
 
-  const sottoscorta = prodotto.scorta_minima != null && nuovaGiacenza < prodotto.scorta_minima;
+  const sottoscorta = prodotto.ScortaMinima != null && nuovaGiacenza < prodotto.ScortaMinima;
 
   return res.status(200).json({
     nome_prodotto,
-    giacenza_precedente: prodotto.giacenza,
+    giacenza_precedente: prodotto.Giacenza,
     giacenza_attuale: nuovaGiacenza,
-    scorta_minima: prodotto.scorta_minima,
+    scorta_minima: prodotto.ScortaMinima,
     sottoscorta,
     unita: prodotto.unita || 'pz',
   });
