@@ -171,7 +171,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const c = params.get('c'); // consumabile
 
   if (p) { document.getElementById('scannerView').style.display = 'none'; await caricaReagente(p); return; }
-  if (c) { document.getElementById('scannerView').style.display = 'none'; await caricaConsumabile(decodeURIComponent(c)); return; }
+  if (c) { document.getElementById('scannerView').style.display = 'none'; await caricaConsumabile(decodeURIComponent(c), true); return; }
 
   avviaScanner();
 });
@@ -214,7 +214,7 @@ function handleQR(data) {
     progressivo = data.trim();
   }
   document.getElementById('scannerView').style.display = 'none';
-  if (consumabile) caricaConsumabile(consumabile);
+  if (consumabile) caricaConsumabile(consumabile, true);
   else if (progressivo) caricaReagente(progressivo);
   else mostraErrore('QR non riconosciuto');
 }
@@ -326,7 +326,7 @@ async function azioneReagente(progressivo, tipo) {
 }
 
 // ─── Consumabile ───────────────────────────────────────────────────────────
-async function caricaConsumabile(nome) {
+async function caricaConsumabile(nome, autoPrelievo = false) {
   const view = document.getElementById('prodottoView');
   view.style.display = 'flex';
   view.innerHTML = '<div class="spinner"></div>';
@@ -335,16 +335,19 @@ async function caricaConsumabile(nome) {
     const res = await fetch(`/api/prodotti?nome=${encodeURIComponent(nome)}`, { headers: authH() });
     if (!res.ok) throw new Error('Prodotto non trovato');
     const data = await res.json();
-    // api/prodotti può restituire array o oggetto
-    const p = Array.isArray(data) ? data.find(d => d.nome_prodotto === nome) : data;
+    // api/prodotti restituisce sempre un array; prendiamo il match esatto su Descrizione
+    // oppure il primo risultato (l'API filtra già con ilike sul nome)
+    const arr = Array.isArray(data) ? data : [data];
+    const p = arr.find(d => (d.Descrizione || d.nome_prodotto || '').trim() === nome.trim())
+           || arr[0];
     if (!p) throw new Error('Prodotto non trovato');
-    renderConsumabile(p);
+    renderConsumabile(p, autoPrelievo);
   } catch(err) {
     view.innerHTML = `<div class="err-box"><div class="icon">❌</div><p>${err.message}</p></div><button class="btn-scan-again" onclick="tornaScan()" style="margin-top:16px;">🔁 Scansiona di nuovo</button>`;
   }
 }
 
-function renderConsumabile(p) {
+function renderConsumabile(p, autoPrelievo = false) {
   const view = document.getElementById('prodottoView');
   const g = p.giacenza ?? 0;
   const s = p.scorta_minima ?? null;
@@ -373,6 +376,11 @@ function renderConsumabile(p) {
     ${btnPreleva}
     <div id="scanWidgets"></div>
     <button class="btn-scan-again" onclick="tornaScan()">🔁 Scansiona un altro</button>`;
+
+  // Auto-prelievo: se arrivato da QR e prodotto non esaurito, scala automaticamente
+  if (autoPrelievo && !esaurito) {
+    setTimeout(() => preleva(p.nome_prodotto), 600);
+  }
 
   // Monta widget riempimento + campanellino
   const widgetsEl = document.getElementById('scanWidgets');
