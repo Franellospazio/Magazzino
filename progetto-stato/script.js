@@ -314,41 +314,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (p.ultimo_aggiornamento) content += `<br><span style="color:#666; font-size:12px;">📅 Aggiornato: ${formatData(p.ultimo_aggiornamento)}</span>`;
     content += p.ImageURL ? `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">` : `<br><em>(img non presente)</em>`;
     li.innerHTML = content;
-
-    // Widget riempimento + campanellino (solo se non readonly e components.js caricato)
-    if (!isReadonly && typeof creaRiempimentoWidget === 'function') {
-      const widgetRow = document.createElement('div');
-      widgetRow.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:6px;';
-
-      const rw = creaRiempimentoWidget({
-        valore: p.percentuale_riempimento ?? null,
-        onSave: async (v) => {
-          await fetch('/api/prodotti', {
-            method: 'PATCH',
-            headers: authHeaders(),
-            body: JSON.stringify({ descrizione: p.Descrizione, percentuale_riempimento: v })
-          });
-          p.percentuale_riempimento = v;
-        }
-      });
-      widgetRow.appendChild(rw);
-
-      const camp = creaCampanellino({
-        nomeProdotto: p.Descrizione,
-        giacenza: p.Giacenza,
-        unita: p.unita || 'pz',
-        tipoProdotto: 'consumabile',
-        emailOperatore: currentSession?.user?.email || ''
-      });
-      widgetRow.appendChild(camp);
-      li.appendChild(widgetRow);
-    }
-
-    li.addEventListener("click", (e) => {
-      // Non aprire il modal se si clicca su widget riempimento o campanellino
-      if (e.target.closest('.riempimento-widget') || e.target.closest('.campanellino-btn') || e.target.closest('.campanellino-modal-overlay')) return;
-      if (!isReadonly) openModal(p);
-    });
+    li.addEventListener("click", () => { if (!isReadonly) openModal(p); });
     return li;
   }
 
@@ -365,53 +331,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (g.inordine && g.inordine > 0) content += `<br>🛒 In ordine: ${g.inordine}`;
     if (g.nota) content += `<br><span style="display:inline-block; margin-top:3px; background:#2980b9; color:white; font-size:11px; font-weight:bold; padding:2px 10px; border-radius:10px;">📌 ${g.nota}</span>`;
     li.innerHTML = content;
-
-    // Widget riempimento per il progressivo aperto + campanellino acquisto
-    if (!isReadonly && typeof creaRiempimentoWidget === 'function') {
-      // Prendi il progressivo aperto (data_apertura, no data_chiusura) per il riempimento
-      const aperto = g.progressivi && g.progressivi.find(p => p.data_apertura && !p.data_chiusura);
-      const valoreAttuale = aperto ? (aperto.percentuale_riempimento ?? null) : null;
-
-      const widgetRow = document.createElement('div');
-      widgetRow.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:6px;';
-
-      const rw = creaRiempimentoWidget({
-        valore: valoreAttuale,
-        onSave: async (v) => {
-          if (!aperto) return;
-          await fetch('/api/reagenti', {
-            method: 'PATCH',
-            headers: authHeaders(),
-            body: JSON.stringify({ progressivo: aperto.progressivo, percentuale_riempimento: v })
-          });
-          aperto.percentuale_riempimento = v;
-        }
-      });
-
-      // Se nessun flacone aperto, widget disabilitato visivamente
-      if (!aperto) {
-        rw.title = 'Nessun flacone aperto';
-        rw.style.opacity = '0.35';
-        rw.style.pointerEvents = 'none';
-      }
-
-      widgetRow.appendChild(rw);
-
-      const camp = creaCampanellino({
-        nomeProdotto: g.nome_prodotto,
-        giacenza: g.giacenza,
-        unita: g.unita || 'pz',
-        tipoProdotto: 'reagente',
-        emailOperatore: currentSession?.user?.email || ''
-      });
-      widgetRow.appendChild(camp);
-      li.appendChild(widgetRow);
-    }
-
-    li.addEventListener("click", (e) => {
-      if (e.target.closest('.riempimento-widget') || e.target.closest('.campanellino-btn') || e.target.closest('.campanellino-modal-overlay')) return;
-      if (!isReadonly) openReagenteModal(g);
-    });
+    li.addEventListener("click", () => { if (!isReadonly) openReagenteModal(g); });
     return li;
   }
 
@@ -974,6 +894,57 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     modalScorta.innerHTML = scortaHTML;
 
+    // Widget riempimento + campanellino per consumabili
+    if (!isReadonly && typeof creaRiempimentoWidget === 'function') {
+      const widgetSec = document.createElement('div');
+      widgetSec.style.cssText = 'display:flex;align-items:center;gap:16px;margin-top:12px;padding:10px 12px;background:#fafafa;border-radius:8px;border:1px solid #eee;';
+
+      // Riempimento — prima confezione aperta (valore sul prodotto)
+      const rimpGrp = document.createElement('div');
+      rimpGrp.style.cssText = 'display:flex;align-items:center;gap:8px;';
+      const rimpLbl = document.createElement('div');
+      rimpLbl.style.cssText = 'font-size:11px;color:#777;';
+      rimpLbl.innerHTML = '<div style="font-weight:700;color:#555;margin-bottom:1px;">Riempimento</div><div>1ª confezione aperta</div>';
+      const rw = creaRiempimentoWidget({
+        valore: prodotto.percentuale_riempimento ?? null,
+        onSave: async (v) => {
+          await fetch('/api/prodotti', {
+            method: 'PATCH',
+            headers: authHeaders(),
+            body: JSON.stringify({ descrizione: prodotto.Descrizione, percentuale_riempimento: v })
+          });
+          prodotto.percentuale_riempimento = v;
+        }
+      });
+      rimpGrp.appendChild(rw);
+      rimpGrp.appendChild(rimpLbl);
+      widgetSec.appendChild(rimpGrp);
+
+      // Separatore
+      const sep = document.createElement('div');
+      sep.style.cssText = 'width:1px;height:36px;background:#e0e0e0;flex-shrink:0;';
+      widgetSec.appendChild(sep);
+
+      // Campanellino
+      const campGrp = document.createElement('div');
+      campGrp.style.cssText = 'display:flex;align-items:center;gap:6px;';
+      const campLbl = document.createElement('div');
+      campLbl.style.cssText = 'font-size:11px;color:#777;';
+      campLbl.innerHTML = '<div style="font-weight:700;color:#555;margin-bottom:1px;">Acquisto</div><div>richiesta manuale</div>';
+      const camp = creaCampanellino({
+        nomeProdotto: prodotto.Descrizione,
+        giacenza: prodotto.Giacenza,
+        unita: prodotto.unita || 'pz',
+        tipoProdotto: 'consumabile',
+        emailOperatore: currentSession?.user?.email || ''
+      });
+      campGrp.appendChild(camp);
+      campGrp.appendChild(campLbl);
+      widgetSec.appendChild(campGrp);
+
+      modalScorta.appendChild(widgetSec);
+    }
+
     if (isAdmin) {
       document.getElementById("decInOrdine").addEventListener("click", () => { const el = document.getElementById("inOrdineValue"); let v = parseInt(el.textContent); if (v > 0) el.textContent = v - 1; });
       document.getElementById("incInOrdine").addEventListener("click", () => { const el = document.getElementById("inOrdineValue"); el.textContent = parseInt(el.textContent) + 1; });
@@ -1127,6 +1098,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     modalScorta.innerHTML = html;
+
+    // Campanellino acquisto — livello prodotto, sopra la lista progressivi
+    if (!isReadonly && typeof creaCampanellino === 'function') {
+      const campWrap = document.createElement('div');
+      campWrap.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:#777;';
+      const campLbl = document.createElement('span');
+      campLbl.textContent = 'Richiedi acquisto:';
+      const camp = creaCampanellino({
+        nomeProdotto: gruppo.nome_prodotto,
+        giacenza: gruppo.giacenza,
+        unita: gruppo.unita || 'pz',
+        tipoProdotto: 'reagente',
+        emailOperatore: currentSession?.user?.email || ''
+      });
+      campWrap.appendChild(campLbl);
+      campWrap.appendChild(camp);
+      // Inserisce prima del primo figlio di modalScorta
+      modalScorta.insertBefore(campWrap, modalScorta.firstChild);
+    }
 
     // Listener progressivi
     modalScorta.querySelectorAll(".reagente-row").forEach(row => {
@@ -1345,6 +1335,37 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     modalScorta.innerHTML = html;
+
+    // Widget riempimento — solo se flacone aperto, montato dopo innerHTML
+    if (aperto && !r.data_chiusura && typeof creaRiempimentoWidget === 'function') {
+      const rimpWrap = document.createElement('div');
+      rimpWrap.style.cssText = 'display:flex;align-items:center;gap:12px;margin:12px 0 4px;padding:10px 12px;background:#fafafa;border-radius:8px;border:1px solid #eee;';
+      const lbl = document.createElement('div');
+      lbl.style.cssText = 'font-size:12px;color:#777;';
+      lbl.innerHTML = '<div style="font-weight:700;color:#555;margin-bottom:2px;">Riempimento</div><div style="font-size:11px;">Tocca il cerchio per aggiornare</div>';
+      const rw = creaRiempimentoWidget({
+        valore: r.percentuale_riempimento ?? null,
+        onSave: async (v) => {
+          await fetch('/api/reagenti', {
+            method: 'PATCH',
+            headers: authHeaders(),
+            body: JSON.stringify({ progressivo: r.progressivo, percentuale_riempimento: v })
+          });
+          r.percentuale_riempimento = v;
+        }
+      });
+      rimpWrap.appendChild(rw);
+      rimpWrap.appendChild(lbl);
+      // Inserisce subito dopo la tabella dati (dopo il "back" button e la tabella)
+      // Trova l'elemento da inserire prima: il primo blocco div dopo la tabella
+      const table = modalScorta.querySelector('table');
+      if (table && table.nextSibling) {
+        modalScorta.insertBefore(rimpWrap, table.nextSibling);
+      } else {
+        modalScorta.appendChild(rimpWrap);
+      }
+    }
+
     document.getElementById("backToGruppo").addEventListener("click", () => openReagenteModal(gruppo));
 
     // Apri bottiglia
