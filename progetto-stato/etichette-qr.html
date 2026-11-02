@@ -373,23 +373,67 @@ async function cercaReagenti() {
   }
 }
 
-// ─── Reagenti: applica range ───────────────────────────────────────────────
-function applicaRange() {
-  const da = document.getElementById('rDa').value.trim();
-  const a  = document.getElementById('rA').value.trim();
+// ─── Reagenti: cerca per range progressivo (fetch + filtra + renderizza tutto spuntato)
+async function applicaRange() {
+  const da  = document.getElementById('rDa').value.trim();
+  const a   = document.getElementById('rA').value.trim();
+  const stato = document.getElementById('rStato').value;
   if (!da && !a) { selTutti('r'); return; }
 
   const pkDa = da ? parseProg(da) : null;
   const pkA  = a  ? parseProg(a)  : null;
 
-  document.querySelectorAll('.res-chk-r').forEach((chk, i) => {
-    const pk = parseProg(reagentiFiltrati[i]?.progressivo || '');
-    let nel = true;
-    if (pkDa && (pk.y < pkDa.y || (pk.y === pkDa.y && pk.n < pkDa.n))) nel = false;
-    if (pkA  && (pk.y > pkA.y  || (pk.y === pkA.y  && pk.n > pkA.n)))  nel = false;
-    chk.checked = nel;
-  });
-  aggiornaSel('r');
+  const el = document.getElementById('rRisultati');
+  el.innerHTML = '<div class="spinner"></div>';
+  document.getElementById('rSelBar').style.display = 'none';
+  document.getElementById('rBtnGenera').disabled = true;
+
+  try {
+    // Ricarica tutti i reagenti (già filtrati per nome se presente)
+    const nome = document.getElementById('rNome').value.trim();
+    let url = `/api/reagenti?limit=1000`;
+    if (nome) url += `&nome=${encodeURIComponent(nome)}`;
+    const res = await fetch(url, { headers: authH() });
+    if (!res.ok) throw new Error('Errore ricerca');
+    const data = await res.json();
+
+    // Appiattisci
+    let flat = [];
+    (Array.isArray(data) ? data : [data]).forEach(g => {
+      const nomeProdotto = g.nome_prodotto || g.nome || '';
+      if (g.progressivi && g.progressivi.length) {
+        g.progressivi.forEach(p => flat.push({ ...p, nome_prodotto: p.nome_prodotto || nomeProdotto }));
+      } else if (!g.progressivi) {
+        flat.push(g);
+      }
+    });
+
+    // Filtro stato
+    if (stato) flat = flat.filter(r => {
+      if (stato === 'chiuso')     return !!r.data_chiusura;
+      if (stato === 'aperto')     return !!r.data_apertura && !r.data_chiusura;
+      if (stato === 'non_aperto') return !r.data_apertura;
+      return true;
+    });
+
+    // Filtro range progressivo
+    flat = flat.filter(r => {
+      const pk = parseProg(r.progressivo);
+      if (pkDa && (pk.y < pkDa.y || (pk.y === pkDa.y && pk.n < pkDa.n))) return false;
+      if (pkA  && (pk.y > pkA.y  || (pk.y === pkA.y  && pk.n > pkA.n)))  return false;
+      return true;
+    });
+
+    flat.sort((a,b) => cmpProg(a.progressivo, b.progressivo));
+    reagentiFiltrati = flat;
+    renderListaR(flat);
+
+    // Spunta tutti i risultati del range automaticamente
+    setTimeout(() => { selTutti('r'); }, 50);
+
+  } catch(err) {
+    el.innerHTML = `<div style="color:#e74c3c;font-size:13px;">${err.message}</div>`;
+  }
 }
 
 function parseProg(s) {
@@ -482,72 +526,223 @@ async function generaReagenti() {
   ps.style.display = 'block';
   ps.scrollIntoView({ behavior:'smooth', block:'start' });
 
-  // Genera in sequenza per non sovraccaricare il canvas
   sheet.innerHTML = '';
-  for (const idx of idxs) {
-    const r = reagentiFiltrati[idx];
-    await creaEtichetaReagente(sheet, r);
-  }
+  idxs.forEach(idx => creaEtichetaReagente(sheet, reagentiFiltrati[idx]));
 
   document.getElementById('infoCount').textContent =
     `${idxs.length} etichett${idxs.length===1?'a':'e'} — layout A4 3×7 (Markin C521 70×42mm)`;
 }
 
-// Genera URL immagine QR via Google Charts API (chiamata browser, no librerie JS)
-function qrImgUrl(testo, size) {
-  return `https://chart.googleapis.com/chart?cht=qr&chs=${size}x${size}&chl=${encodeURIComponent(testo)}&choe=UTF-8&chld=M|1`;
+// ─── Generatore QR puro JS inline (nessuna dipendenza esterna) ───────────────
+// Algoritmo minimale: genera matrice QR e la disegna su canvas
+// Basato su qrcodegen (Nayuki) semplificato per uso interno
+function disegnaQR(canvas, testo, size) {
+  // Tabella di codifica per QR versione 1-10, mode byte, ECC M
+  // Usiamo un approccio semplice: creiamo l'img via data URI da un canvas intermedio
+  // utilizzando la libreria embedded minificata qui sotto
+  _QRdraw(canvas, testo, size);
 }
 
-async function creaEtichetaReagente(sheet, r) {
-  return new Promise(resolve => {
-    const url = `${SCAN_URL}?p=${encodeURIComponent(r.progressivo)}`;
-    const div = document.createElement('div');
-    div.className = 'etichetta';
+// Implementazione QR minimale inline
+// Basata sull'algoritmo standard ISO 18004, supporta fino a ~100 caratteri URL, ECC M
+const _QR = (function() {
+  // Tabelle GF(256) per Reed-Solomon
+  const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+  (function(){let x=1;for(let i=0;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&256)x^=0x11d;}for(let i=255;i<512;i++)EXP[i]=EXP[i-255];})();
+  function gmul(a,b){return a&&b?EXP[LOG[a]+LOG[b]]:0;}
+  function genpoly(n){let p=[1];for(let i=0;i<n;i++){let q=[1,EXP[i]];let r=new Array(p.length+1).fill(0);for(let j=0;j<p.length;j++)for(let k=0;k<q.length;k++)r[j+k]^=gmul(p[j],q[k]);p=r;}return p;}
+  function rsdiv(data,n){let p=genpoly(n),r=[...data,...new Array(n).fill(0)];for(let i=0;i<data.length;i++){let c=r[i];if(c)for(let j=0;j<p.length;j++)r[i+j]^=gmul(p[j],c);}return r.slice(data.length);}
 
-    // QR — immagine 90px via Google Charts
-    const img = document.createElement('img');
-    img.src = qrImgUrl(url, 90);
-    img.width = 90; img.height = 90;
-    img.style.display = 'block';
-    const qrWrap = document.createElement('div');
-    qrWrap.className = 'eqr';
-    qrWrap.appendChild(img);
-    div.appendChild(qrWrap);
+  // Parametri versioni QR (codewords totali, codewords dati ECC-M, blocchi ECC-M)
+  const VER=[null,
+    {tot:26,  dat:16, ecb:[[1,26,16]]},
+    {tot:44,  dat:28, ecb:[[1,44,28]]},
+    {tot:70,  dat:44, ecb:[[1,70,44]]},
+    {tot:100, dat:64, ecb:[[2,50,32]]},
+    {tot:134, dat:86, ecb:[[2,67,43]]},
+    {tot:172, dat:108,ecb:[[4,43,27]]},
+    {tot:196, dat:124,ecb:[[4,49,31]]},
+    {tot:242, dat:154,ecb:[[2,60,38],[2,61,39]]},
+    {tot:292, dat:182,ecb:[[3,58,36],[2,59,37]]},
+    {tot:346, dat:216,ecb:[[4,69,43],[1,70,44]]},
+  ];
 
-    // Info
-    const info = document.createElement('div');
-    info.className = 'einfo';
+  function encode(text) {
+    const bytes = unescape(encodeURIComponent(text)).split('').map(c=>c.charCodeAt(0));
+    const n = bytes.length;
+    // Scegli versione minima
+    let ver=1;
+    for(;ver<=10;ver++){if(VER[ver].dat>=n+2)break;}
+    if(ver>10)ver=10;
+    const v=VER[ver];
+    // Bitstream
+    const bits=[];
+    function pushBits(val,len){for(let i=len-1;i>=0;i--)bits.push((val>>i)&1);}
+    pushBits(0b0100,4); // mode byte
+    pushBits(n,8);
+    bytes.forEach(b=>pushBits(b,8));
+    pushBits(0,4); // terminator
+    while(bits.length%8)bits.push(0);
+    const data=[];
+    for(let i=0;i<bits.length;i+=8){let b=0;for(let j=0;j<8;j++)b=(b<<1)|bits[i+j];data.push(b);}
+    const pad=[0xEC,0x11];while(data.length<v.dat)data.push(pad[(data.length-Math.ceil(n*8/8+2))%2]||pad[0]);
+    // EC codewords
+    const ecAll=[];
+    let di=0;
+    v.ecb.forEach(([cnt,tot,dat])=>{
+      for(let b=0;b<cnt;b++){
+        const block=data.slice(di,di+dat);
+        ecAll.push({d:block,e:rsdiv(block,tot-dat)});
+        di+=dat;
+      }
+    });
+    // Interleave
+    const final=[];
+    const maxD=Math.max(...ecAll.map(b=>b.d.length));
+    for(let i=0;i<maxD;i++)ecAll.forEach(b=>{if(i<b.d.length)final.push(b.d[i]);});
+    const maxE=Math.max(...ecAll.map(b=>b.e.length));
+    for(let i=0;i<maxE;i++)ecAll.forEach(b=>{if(i<b.e.length)final.push(b.e[i]);});
+    return {ver,data:final};
+  }
 
-    const nome = r.nome_prodotto || '';
-    info.innerHTML += `<div class="enome">${escH(nome.length>60?nome.substring(0,57)+'…':nome)}</div>`;
-    info.innerHTML += rowR('Prog.', r.progressivo);
-    if (r.id_sepack)        info.innerHTML += rowR('Sepack', r.id_sepack);
-    if (r.scadenza_sepack)  info.innerHTML += rowR('Scad.', r.scadenza_sepack);
-    else                    info.innerHTML += rowVuota('Scad.');
-    if (r.data_apertura)    info.innerHTML += rowR('Aperta', r.data_apertura.split('T')[0]);
-    else                    info.innerHTML += rowVuota('Aperta');
-    if (r.data_chiusura)    info.innerHTML += rowR('Chiusa', r.data_chiusura.split('T')[0]);
-    else                    info.innerHTML += rowVuota('Chiusa');
+  // Dimensione matrice
+  function sz(ver){return 4*ver+17;}
 
-    div.appendChild(info);
-    sheet.appendChild(div);
-    img.onload = () => resolve();
-    img.onerror = () => resolve(); // vai avanti anche se l'immagine fallisce
-  });
+  function makeMatrix(ver,data){
+    const s=sz(ver);
+    const m=Array.from({length:s},()=>new Int8Array(s).fill(-1)); // -1=libero
+    const func=Array.from({length:s},()=>new Uint8Array(s));
+
+    function setF(r,c,v){if(r>=0&&r<s&&c>=0&&c<s){m[r][c]=v;func[r][c]=1;}}
+
+    // Finder patterns
+    function finder(tr,tc){
+      for(let r=-1;r<=7;r++)for(let c=-1;c<=7;c++){
+        const v=(r===0||r===6||c===0||c===6)||(r>=2&&r<=4&&c>=2&&c<=4)?1:0;
+        if(r>=0&&r<7&&c>=0&&c<7)setF(tr+r,tc+c,v);
+        else setF(tr+r,tc+c,0);
+      }
+    }
+    finder(0,0);finder(0,s-7);finder(s-7,0);
+
+    // Timing
+    for(let i=8;i<s-8;i++){setF(6,i,(i&1)?0:1);setF(i,6,(i&1)?0:1);}
+
+    // Dark module
+    setF(4*ver+9,8,1);
+
+    // Alignment (ver>=2)
+    const apos={2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],9:[6,28,46],10:[6,32,50]};
+    if(ver>=2)(apos[ver]||[]).forEach(ar=>(apos[ver]||[]).forEach(ac=>{
+      if(!func[ar][ac]){for(let r=-2;r<=2;r++)for(let c=-2;c<=2;c++)setF(ar+r,ac+c,(Math.abs(r)===2||Math.abs(c)===2||!r&&!c)?1:0);}
+    }));
+
+    // Format info placeholder
+    const fpos=[0,1,2,3,4,5,7,8].concat([s-8,s-7,s-6,s-5,s-4,s-3,s-2,s-1]);
+    fpos.forEach(p=>{setF(8,p,0);setF(p,8,0);func[8][p]=1;func[p][8]=1;});
+
+    // Place data bits
+    const bits=[];
+    data.forEach(b=>{for(let i=7;i>=0;i--)bits.push((b>>i)&1);});
+    let bi=0;
+    for(let c=s-1;c>=0;c-=2){
+      if(c===6)c--;
+      for(let row=0;row<s;row++){
+        const r=(c&2^2)?row:s-1-row;
+        for(let dc=0;dc<=1;dc++){
+          const cc=c-dc;
+          if(!func[r][cc]&&bi<bits.length){m[r][cc]=bits[bi++]^1;} // mask pattern 1: (r+c)%2==0 → flip
+        }
+      }
+    }
+    // Mask pattern 1: (row+col)%2==0
+    for(let r=0;r<s;r++)for(let c=0;c<s;c++)if(!func[r][c]&&m[r][c]>=0&&(r+c)%2===0)m[r][c]^=1;
+
+    // Format info (ECC-M = 00, mask = 001 → format = 0b00_000_101 = 5 → with error correction)
+    // Format bits for ECC M (00) mask 1 (001) = 001 → 15-bit format word = 0x3615
+    const fmt=0x3615;
+    const fbits=[];for(let i=14;i>=0;i--)fbits.push((fmt>>i)&1);
+    const fp=[0,1,2,3,4,5,7,8];
+    fp.forEach((p,i)=>{m[8][p]=fbits[i];m[p][8]=fbits[14-i];});
+    [0,1,2,3,4,5,6,7].forEach((i)=>{m[s-1-i][8]=fbits[i];m[8][s-8+i]=fbits[14-i];});
+
+    return m;
+  }
+
+  return {encode, makeMatrix, sz};
+})();
+
+function _QRdraw(canvas, testo, size) {
+  try {
+    const {ver, data} = _QR.encode(testo);
+    const m = _QR.makeMatrix(ver, data);
+    const s = _QR.sz(ver);
+    const scale = Math.floor(size / (s + 8)); // 4 moduli quiete su ogni lato
+    const quiet = 4;
+    const px = scale * (s + quiet * 2);
+    canvas.width = px; canvas.height = px;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, px, px);
+    ctx.fillStyle = '#000000';
+    for (let r = 0; r < s; r++) {
+      for (let c = 0; c < s; c++) {
+        if (m[r][c] === 1) {
+          ctx.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
+        }
+      }
+    }
+  } catch(e) {
+    // Fallback: scrivi "QR" se qualcosa va storto
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,size,size);
+    ctx.fillStyle = '#000'; ctx.font = `${size/4}px monospace`;
+    ctx.fillText('QR?', size*0.1, size*0.6);
+    console.error('QR gen error:', e);
+  }
+}
+
+function creaEtichetaReagente(sheet, r) {
+  const url = `${SCAN_URL}?p=${encodeURIComponent(r.progressivo)}`;
+  const div = document.createElement('div');
+  div.className = 'etichetta';
+
+  // QR canvas generato inline
+  const canvas = document.createElement('canvas');
+  disegnaQR(canvas, url, 90);
+  const qrWrap = document.createElement('div');
+  qrWrap.className = 'eqr';
+  qrWrap.appendChild(canvas);
+  div.appendChild(qrWrap);
+
+  // Info
+  const info = document.createElement('div');
+  info.className = 'einfo';
+
+  const nome = r.nome_prodotto || '';
+  info.innerHTML += `<div class="enome">${escH(nome.length>60?nome.substring(0,57)+'…':nome)}</div>`;
+  info.innerHTML += rowR('Prog.', r.progressivo);
+  if (r.id_sepack)        info.innerHTML += rowR('Sepack', r.id_sepack);
+  if (r.scadenza_sepack)  info.innerHTML += rowR('Scad.', r.scadenza_sepack);
+  else                    info.innerHTML += rowVuota('Scad.');
+  if (r.data_apertura)    info.innerHTML += rowR('Aperta', r.data_apertura.split('T')[0]);
+  else                    info.innerHTML += rowVuota('Aperta');
+  if (r.data_chiusura)    info.innerHTML += rowR('Chiusa', r.data_chiusura.split('T')[0]);
+  else                    info.innerHTML += rowVuota('Chiusa');
+
+  div.appendChild(info);
+  sheet.appendChild(div);
 }
 
 // ─── Genera etichette consumabili ──────────────────────────────────────────
-async function generaConsumabili() {
+function generaConsumabili() {
   const idxs = [...document.querySelectorAll('.res-chk-c:checked')].map(c=>parseInt(c.dataset.idx));
   if (!idxs.length) return;
 
   const sheet = document.getElementById('printSheet');
   sheet.innerHTML = '';
-
-  for (const idx of idxs) {
-    const p = consumabiliFiltrati[idx];
-    await creaEtichetaConsumabile(sheet, p);
-  }
+  idxs.forEach(idx => creaEtichetaConsumabile(sheet, consumabiliFiltrati[idx]));
 
   document.getElementById('infoCount').textContent =
     `${idxs.length} etichett${idxs.length===1?'a master':'e master'} — layout A4 3×7 (Markin C521 70×42mm)`;
@@ -556,32 +751,26 @@ async function generaConsumabili() {
   ps.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
-async function creaEtichetaConsumabile(sheet, p) {
-  return new Promise(resolve => {
-    const nome = p.nome_prodotto || p.Descrizione || '';
-    const url  = `${SCAN_URL}?c=${encodeURIComponent(nome)}`;
-    const div  = document.createElement('div');
-    div.className = 'etichetta cons';
+function creaEtichetaConsumabile(sheet, p) {
+  const nome = p.nome_prodotto || p.Descrizione || '';
+  const url  = `${SCAN_URL}?c=${encodeURIComponent(nome)}`;
+  const div  = document.createElement('div');
+  div.className = 'etichetta cons';
 
-    // QR — immagine 80px via Google Charts
-    const img = document.createElement('img');
-    img.src = qrImgUrl(url, 80);
-    img.width = 80; img.height = 80;
-    img.style.display = 'block';
-    const qrWrap = document.createElement('div');
-    qrWrap.className = 'eqr';
-    qrWrap.appendChild(img);
-    div.appendChild(qrWrap);
+  // QR canvas generato inline
+  const canvas = document.createElement('canvas');
+  disegnaQR(canvas, url, 80);
+  const qrWrap = document.createElement('div');
+  qrWrap.className = 'eqr';
+  qrWrap.appendChild(canvas);
+  div.appendChild(qrWrap);
 
-    const nomeEl = document.createElement('div');
-    nomeEl.className = 'enome';
-    nomeEl.textContent = nome.length>45 ? nome.substring(0,42)+'…' : nome;
-    div.appendChild(nomeEl);
+  const nomeEl = document.createElement('div');
+  nomeEl.className = 'enome';
+  nomeEl.textContent = nome.length>45 ? nome.substring(0,42)+'…' : nome;
+  div.appendChild(nomeEl);
 
-    sheet.appendChild(div);
-    img.onload = () => resolve();
-    img.onerror = () => resolve();
-  });
+  sheet.appendChild(div);
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
