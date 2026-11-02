@@ -4,8 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Etichette QR — Sepack</title>
-  <!-- qrcode più affidabile su mobile/laser -->
-  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <!-- qrcode: jsdelivr primario, unpkg fallback -->
+  <script>
+    (function() {
+      function loadScript(src, cb) {
+        var s = document.createElement('script');
+        s.src = src;
+        s.onload = cb;
+        s.onerror = cb; // chiama cb anche in caso di errore (così il fallback parte)
+        document.head.appendChild(s);
+      }
+      var PRIMARY   = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+      var FALLBACK  = 'https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js';
+      loadScript(PRIMARY, function() {
+        if (typeof QRCode === 'undefined') {
+          loadScript(FALLBACK, function() {});
+        }
+      });
+    })();
+  </script>
   <style>
     :root {
       --primary: #00B4CC;
@@ -494,8 +511,24 @@ async function generaReagenti() {
     `${idxs.length} etichett${idxs.length===1?'a':'e'} — layout A4 3×7 (Markin C521 70×42mm)`;
 }
 
+// Aspetta che la libreria QRCode sia caricata (max 8 secondi)
+function waitForQRCode() {
+  return new Promise((resolve, reject) => {
+    if (typeof QRCode !== 'undefined') { resolve(); return; }
+    const start = Date.now();
+    const check = () => {
+      if (typeof QRCode !== 'undefined') { resolve(); return; }
+      if (Date.now() - start > 8000) { reject(new Error('QRCode library non caricata')); return; }
+      setTimeout(check, 100);
+    };
+    setTimeout(check, 100);
+  });
+}
+
 async function creaEtichetaReagente(sheet, r) {
-  return new Promise(resolve => {
+  return new Promise(async (resolve, reject) => {
+    try { await waitForQRCode(); } catch(e) { console.error(e); resolve(); return; }
+
     const url = `${SCAN_URL}?p=${encodeURIComponent(r.progressivo)}`;
     const div = document.createElement('div');
     div.className = 'etichetta';
@@ -552,7 +585,9 @@ async function generaConsumabili() {
 }
 
 async function creaEtichetaConsumabile(sheet, p) {
-  return new Promise(resolve => {
+  return new Promise(async (resolve, reject) => {
+    try { await waitForQRCode(); } catch(e) { console.error(e); resolve(); return; }
+
     const nome = p.nome_prodotto || p.Descrizione || '';
     const url  = `${SCAN_URL}?c=${encodeURIComponent(nome)}`;
     const div  = document.createElement('div');
