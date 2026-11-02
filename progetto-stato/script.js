@@ -314,7 +314,41 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (p.ultimo_aggiornamento) content += `<br><span style="color:#666; font-size:12px;">📅 Aggiornato: ${formatData(p.ultimo_aggiornamento)}</span>`;
     content += p.ImageURL ? `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">` : `<br><em>(img non presente)</em>`;
     li.innerHTML = content;
-    li.addEventListener("click", () => { if (!isReadonly) openModal(p); });
+
+    // Widget riempimento + campanellino (solo se non readonly e components.js caricato)
+    if (!isReadonly && typeof creaRiempimentoWidget === 'function') {
+      const widgetRow = document.createElement('div');
+      widgetRow.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:6px;';
+
+      const rw = creaRiempimentoWidget({
+        valore: p.percentuale_riempimento ?? null,
+        onSave: async (v) => {
+          await fetch('/api/prodotti', {
+            method: 'PATCH',
+            headers: authHeaders(),
+            body: JSON.stringify({ descrizione: p.Descrizione, percentuale_riempimento: v })
+          });
+          p.percentuale_riempimento = v;
+        }
+      });
+      widgetRow.appendChild(rw);
+
+      const camp = creaCampanellino({
+        nomeProdotto: p.Descrizione,
+        giacenza: p.Giacenza,
+        unita: p.unita || 'pz',
+        tipoProdotto: 'consumabile',
+        emailOperatore: currentSession?.user?.email || ''
+      });
+      widgetRow.appendChild(camp);
+      li.appendChild(widgetRow);
+    }
+
+    li.addEventListener("click", (e) => {
+      // Non aprire il modal se si clicca su widget riempimento o campanellino
+      if (e.target.closest('.riempimento-widget') || e.target.closest('.campanellino-btn') || e.target.closest('.campanellino-modal-overlay')) return;
+      if (!isReadonly) openModal(p);
+    });
     return li;
   }
 
@@ -331,7 +365,53 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (g.inordine && g.inordine > 0) content += `<br>🛒 In ordine: ${g.inordine}`;
     if (g.nota) content += `<br><span style="display:inline-block; margin-top:3px; background:#2980b9; color:white; font-size:11px; font-weight:bold; padding:2px 10px; border-radius:10px;">📌 ${g.nota}</span>`;
     li.innerHTML = content;
-    li.addEventListener("click", () => { if (!isReadonly) openReagenteModal(g); });
+
+    // Widget riempimento per il progressivo aperto + campanellino acquisto
+    if (!isReadonly && typeof creaRiempimentoWidget === 'function') {
+      // Prendi il progressivo aperto (data_apertura, no data_chiusura) per il riempimento
+      const aperto = g.progressivi && g.progressivi.find(p => p.data_apertura && !p.data_chiusura);
+      const valoreAttuale = aperto ? (aperto.percentuale_riempimento ?? null) : null;
+
+      const widgetRow = document.createElement('div');
+      widgetRow.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:6px;';
+
+      const rw = creaRiempimentoWidget({
+        valore: valoreAttuale,
+        onSave: async (v) => {
+          if (!aperto) return;
+          await fetch('/api/reagenti', {
+            method: 'PATCH',
+            headers: authHeaders(),
+            body: JSON.stringify({ progressivo: aperto.progressivo, percentuale_riempimento: v })
+          });
+          aperto.percentuale_riempimento = v;
+        }
+      });
+
+      // Se nessun flacone aperto, widget disabilitato visivamente
+      if (!aperto) {
+        rw.title = 'Nessun flacone aperto';
+        rw.style.opacity = '0.35';
+        rw.style.pointerEvents = 'none';
+      }
+
+      widgetRow.appendChild(rw);
+
+      const camp = creaCampanellino({
+        nomeProdotto: g.nome_prodotto,
+        giacenza: g.giacenza,
+        unita: g.unita || 'pz',
+        tipoProdotto: 'reagente',
+        emailOperatore: currentSession?.user?.email || ''
+      });
+      widgetRow.appendChild(camp);
+      li.appendChild(widgetRow);
+    }
+
+    li.addEventListener("click", (e) => {
+      if (e.target.closest('.riempimento-widget') || e.target.closest('.campanellino-btn') || e.target.closest('.campanellino-modal-overlay')) return;
+      if (!isReadonly) openReagenteModal(g);
+    });
     return li;
   }
 
