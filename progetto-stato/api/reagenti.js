@@ -203,7 +203,7 @@ export default async function handler(req, res) {
 
   // ── PATCH /api/reagenti ───────────────────────────────────────────────────
   if (req.method === 'PATCH') {
-    const { progressivo, data_apertura, data_chiusura, scorta_minima, inordine, nota, fornitore_selezionato, nome_prodotto, unita, volume_per_unita } = req.body;
+    const { progressivo, data_apertura, data_chiusura, scorta_minima, inordine, nota, fornitore_selezionato, nome_prodotto, unita, volume_per_unita, percentuale_riempimento } = req.body;
 
     if ((inordine !== undefined || nota !== undefined || fornitore_selezionato !== undefined || unita !== undefined || volume_per_unita !== undefined) && nome_prodotto) {
       const upsertData = { nome_prodotto };
@@ -223,7 +223,12 @@ export default async function handler(req, res) {
 
     const updateData = {};
     if (data_apertura !== undefined) updateData.data_apertura = data_apertura;
-    if (data_chiusura !== undefined) updateData.data_chiusura = data_chiusura;
+    if (data_chiusura !== undefined) {
+      updateData.data_chiusura = data_chiusura;
+      // Chiusura: azzera la percentuale riempimento
+      if (data_chiusura) updateData.percentuale_riempimento = null;
+    }
+    if (percentuale_riempimento !== undefined) updateData.percentuale_riempimento = percentuale_riempimento;
 
     if (scorta_minima !== undefined) {
       const { data: prod } = await supabase
