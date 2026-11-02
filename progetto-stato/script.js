@@ -931,7 +931,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         giacenza: prodotto.Giacenza,
         unita: prodotto.unita || 'pz',
         tipoProdotto: 'consumabile',
-        emailOperatore: currentSession?.user?.email || ''
+        emailOperatore: currentSession?.user?.email || '',
+        supabaseUrl: SUPABASE_URL_CLIENT,
+        supabaseAnon: SUPABASE_ANON_KEY,
+        accessToken: currentSession?.access_token || '',
       });
       campGrp.appendChild(camp);
       campGrp.appendChild(campLbl);
@@ -1105,7 +1108,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         giacenza: gruppo.giacenza,
         unita: gruppo.unita || 'pz',
         tipoProdotto: 'reagente',
-        emailOperatore: currentSession?.user?.email || ''
+        emailOperatore: currentSession?.user?.email || '',
+        supabaseUrl: SUPABASE_URL_CLIENT,
+        supabaseAnon: SUPABASE_ANON_KEY,
+        accessToken: currentSession?.access_token || '',
       });
       campWrap.appendChild(campLbl);
       campWrap.appendChild(camp);
