@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Scan — Sepack</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
     :root {
       --primary: #00B4CC;
@@ -88,6 +89,21 @@
     .err-box { background: rgba(231,76,60,.15); border: 1px solid rgba(231,76,60,.4); border-radius: 10px; padding: 16px; text-align: center; }
     .err-box .icon { font-size: 32px; }
     .err-box p { font-size: 14px; color: rgba(255,255,255,.8); margin-top: 8px; }
+
+    /* Widget riempimento su sfondo scuro */
+    .riempimento-section { background: rgba(255,255,255,.06); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; }
+    .riempimento-section .lbl { font-size: 12px; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .06em; }
+    .riempimento-section .hint { font-size: 12px; color: rgba(255,255,255,.35); }
+    .riempimento-steps button { background: rgba(255,255,255,.12) !important; border-color: rgba(255,255,255,.2) !important; color: rgba(255,255,255,.8) !important; }
+    .riempimento-steps button[style*="background:#"] { color: white !important; }
+
+    /* Campanellino acquisto */
+    .camp-section { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+    .camp-section .camp-lbl { font-size: 13px; color: rgba(255,255,255,.5); }
+    .campanellino-modal-overlay .modal { background: #1e2a35 !important; color: white !important; }
+    .campanellino-modal-overlay label { color: rgba(255,255,255,.8) !important; }
+    .campanellino-modal-overlay textarea { background: rgba(255,255,255,.08) !important; border-color: rgba(255,255,255,.2) !important; color: white !important; }
+    .campanellino-modal-overlay #campanellino-annulla { background: rgba(255,255,255,.08) !important; border-color: rgba(255,255,255,.15) !important; color: white !important; }
   </style>
 </head>
 <body>
@@ -116,6 +132,8 @@
 <div id="feedback"></div>
 <canvas id="canvas" style="display:none;"></canvas>
 
+<script src="components.js"></script>
+<script>emailjs.init("BnJLQgx-iX-2J45cy");</script>
 <script>
 const BASE_URL = window.location.origin;
 let scanActive = true;
@@ -244,7 +262,53 @@ function renderReagente(r) {
       ${cell('Chiuso il', r.data_chiusura ? r.data_chiusura.split('T')[0] : null)}
     </div>
     ${btn}
+    <div id="scanWidgets"></div>
     <button class="btn-scan-again" onclick="tornaScan()">🔁 Scansiona un'altra</button>`;
+
+  // Monta widget riempimento (solo se flacone aperto)
+  const widgetsEl = document.getElementById('scanWidgets');
+  if (widgetsEl && typeof creaRiempimentoWidget === 'function') {
+    // Riempimento
+    if (aperto) {
+      const sec = document.createElement('div');
+      sec.className = 'riempimento-section';
+      const lblDiv = document.createElement('div');
+      lblDiv.innerHTML = '<div class="lbl">Riempimento</div><div class="hint">Tocca il cerchio per aggiornare</div>';
+
+      const rw = creaRiempimentoWidget({
+        valore: r.percentuale_riempimento ?? null,
+        onSave: async (v) => {
+          await fetch('/api/reagenti', {
+            method: 'PATCH', headers: authH(),
+            body: JSON.stringify({ progressivo: r.progressivo, percentuale_riempimento: v })
+          });
+          r.percentuale_riempimento = v;
+        }
+      });
+      // Palette chiara su sfondo scuro
+      rw.querySelector('circle[stroke="#e0e0e0"]') && (rw.querySelector('circle[stroke="#e0e0e0"]').setAttribute('stroke', 'rgba(255,255,255,.15)'));
+      sec.appendChild(rw);
+      sec.appendChild(lblDiv);
+      widgetsEl.appendChild(sec);
+    }
+
+    // Campanellino
+    const campSec = document.createElement('div');
+    campSec.className = 'camp-section';
+    const campLbl = document.createElement('span');
+    campLbl.className = 'camp-lbl';
+    campLbl.textContent = 'Segnala necessità acquisto:';
+    const camp = creaCampanellino({
+      nomeProdotto: r.nome_prodotto,
+      giacenza: null, // per reagenti non c'è giacenza numerica diretta nella scheda singola
+      unita: 'pz',
+      tipoProdotto: 'reagente',
+      emailOperatore: getEmailOperatore()
+    });
+    campSec.appendChild(campLbl);
+    campSec.appendChild(camp);
+    widgetsEl.appendChild(campSec);
+  }
 }
 
 async function azioneReagente(progressivo, tipo) {
@@ -304,7 +368,49 @@ function renderConsumabile(p) {
       <div class="lbl">giacenza attuale (${unita})${s != null ? ` · scorta min: ${s}` : ''}</div>
     </div>
     ${btnPreleva}
+    <div id="scanWidgets"></div>
     <button class="btn-scan-again" onclick="tornaScan()">🔁 Scansiona un altro</button>`;
+
+  // Monta widget riempimento + campanellino
+  const widgetsEl = document.getElementById('scanWidgets');
+  if (widgetsEl && typeof creaRiempimentoWidget === 'function') {
+    // Riempimento (ha senso anche per consumabili: es. sacchetti parzialmente usati)
+    const sec = document.createElement('div');
+    sec.className = 'riempimento-section';
+    const lblDiv = document.createElement('div');
+    lblDiv.innerHTML = '<div class="lbl">Riempimento confezione</div><div class="hint">Tocca il cerchio per aggiornare</div>';
+
+    const rw = creaRiempimentoWidget({
+      valore: p.percentuale_riempimento ?? null,
+      onSave: async (v) => {
+        await fetch('/api/prodotti', {
+          method: 'PATCH', headers: authH(),
+          body: JSON.stringify({ descrizione: p.nome_prodotto, percentuale_riempimento: v })
+        });
+        p.percentuale_riempimento = v;
+      }
+    });
+    sec.appendChild(rw);
+    sec.appendChild(lblDiv);
+    widgetsEl.appendChild(sec);
+
+    // Campanellino
+    const campSec = document.createElement('div');
+    campSec.className = 'camp-section';
+    const campLbl = document.createElement('span');
+    campLbl.className = 'camp-lbl';
+    campLbl.textContent = 'Segnala necessità acquisto:';
+    const camp = creaCampanellino({
+      nomeProdotto: p.nome_prodotto,
+      giacenza: g,
+      unita,
+      tipoProdotto: 'consumabile',
+      emailOperatore: getEmailOperatore()
+    });
+    campSec.appendChild(campLbl);
+    campSec.appendChild(camp);
+    widgetsEl.appendChild(campSec);
+  }
 }
 
 async function preleva(nome) {
@@ -348,6 +454,16 @@ function mostraErrore(msg) {
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;'); }
+
+function getEmailOperatore() {
+  try {
+    const t = getToken();
+    if (!t) return '';
+    // Decodifica payload JWT (base64url)
+    const payload = JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    return payload.email || '';
+  } catch(e) { return ''; }
+}
 </script>
 </body>
 </html>
