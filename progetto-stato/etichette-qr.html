@@ -68,40 +68,40 @@
     #authWall a { color: var(--primary); text-decoration: none; font-weight: 700; }
 
     /* ══════════════════════════════════════════════
-       FOGLIO DI STAMPA A4 — 3 colonne × 7 righe
-       Etichette Markin C521: 70×42mm
+       FOGLIO DI STAMPA A4 — 3 colonne × 8 righe
+       Etichette: 70×36mm
+       Margine foglio: 4mm top + 4mm bottom
+       Verifica: 4 + (8×36) + 4 = 296mm ≈ 297mm A4 ✓
+                 3 × 70mm = 210mm = larghezza A4 ✓
     ══════════════════════════════════════════════ */
     #printSheet {
-      /* Dimensioni A4 esatte */
       width: 210mm;
       min-height: 297mm;
       background: white;
       margin: 0 auto;
-      /* Margini foglio: top/bottom 10.5mm, left/right 0mm (le colonne hanno padding interno) */
-      padding: 10.5mm 0;
+      padding: 4mm 0;          /* margine foglio solo top/bottom */
       display: grid;
       grid-template-columns: repeat(3, 70mm);
-      grid-auto-rows: 42mm;
+      grid-auto-rows: 36mm;
       column-gap: 0;
       row-gap: 0;
       justify-content: center;
     }
 
-    /* Singola etichetta 70×42mm */
+    /* Singola etichetta 70×36mm — nessun margine/padding, area piena */
     .etichetta {
       width: 70mm;
-      height: 42mm;
+      height: 36mm;
       background: white;
       color: #111;
       display: flex;
       flex-direction: row;
       align-items: center;
-      padding: 2mm 2mm 2mm 2mm;
+      padding: 0;
       gap: 2mm;
       overflow: hidden;
       page-break-inside: avoid;
       break-inside: avoid;
-      /* bordo leggero solo per anteprima, quasi invisibile in stampa */
       box-shadow: inset 0 0 0 0.3pt #ddd;
     }
 
@@ -177,6 +177,7 @@
     }
 
     /* ── Print ── */
+    @page { size: A4; margin: 0; }
     @media print {
       body, html { background: white !important; margin: 0; padding: 0; }
       .header, .container > *:not(#previewSection) { display: none !important; }
@@ -185,10 +186,10 @@
       .btn-stampa, .info-count, h2 { display: none !important; }
       #printSheet {
         margin: 0;
-        padding: 10.5mm 0;
+        padding: 4mm 0;   /* solo margine foglio top/bottom */
         box-shadow: none;
       }
-      .etichetta { box-shadow: inset 0 0 0 0.2pt #ccc; }
+      .etichetta { box-shadow: none; }
     }
   </style>
 </head>
