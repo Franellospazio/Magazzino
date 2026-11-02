@@ -31,11 +31,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const lookupBtn = document.getElementById('lookupBtn');
     if (lookupBtn) lookupBtn.style.display = 'inline-flex';
 
-    const scanBtn = document.getElementById('scanBtn');
-    if (scanBtn) scanBtn.style.display = 'inline-flex';
-
-    const etichetteQrBtn = document.getElementById('etichetteQrBtn');
-    if (etichetteQrBtn) etichetteQrBtn.style.display = 'inline-flex';
   }
 
   function authHeaders() {
