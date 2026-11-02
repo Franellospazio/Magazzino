@@ -152,9 +152,21 @@ function _coloreStep(s) {
 // ────────────────────────────────────────────────────────────────────
 // CAMPANELLINO ACQUISTO
 // ────────────────────────────────────────────────────────────────────
-// opts: { nomeProdotto, giacenza, unita, tipoProdotto ('reagente'|'consumabile'), emailOperatore }
+// opts: {
+//   nomeProdotto, giacenza, unita, tipoProdotto ('reagente'|'consumabile'),
+//   emailOperatore,
+//   (supabaseUrl, supabaseAnon, accessToken: ignorati — si usa /api/ultima-richiesta)
+// }
+// Restituisce un wrapper <div> con il bottone e la riga "ultima richiesta"
 function creaCampanellino(opts = {}) {
-  const { nomeProdotto, giacenza, unita = 'pz', tipoProdotto = 'reagente', emailOperatore = '' } = opts;
+  const {
+    nomeProdotto, giacenza, unita = 'pz',
+    tipoProdotto = 'reagente', emailOperatore = '',
+  } = opts;
+
+  // Wrapper esterno: bottone + riga info
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:inline-flex;flex-direction:column;align-items:center;gap:1px;';
 
   const btn = document.createElement('button');
   btn.className = 'campanellino-btn';
@@ -165,18 +177,71 @@ function creaCampanellino(opts = {}) {
     padding:2px 4px;border-radius:6px;transition:background .15s;
     line-height:1;
   `;
-  btn.addEventListener('mouseenter', () => btn.style.background = '#fff3cd');
-  btn.addEventListener('mouseleave', () => btn.style.background = 'none');
+  btn.addEventListener('mouseenter', () => { if (!btn.dataset.inviato) btn.style.background = '#fff3cd'; });
+  btn.addEventListener('mouseleave', () => { if (!btn.dataset.inviato) btn.style.background = 'none'; });
+
+  // Riga "ultima richiesta" — piccola e compatta
+  const infoRow = document.createElement('div');
+  infoRow.className = 'campanellino-info';
+  infoRow.style.cssText = `
+    font-size:9px;color:#e67e22;line-height:1.2;text-align:center;
+    max-width:90px;word-break:break-word;display:none;
+  `;
+
+  wrap.appendChild(btn);
+  wrap.appendChild(infoRow);
+
+  // Mostra info ultima richiesta dal log
+  function _mostraInfoRichiesta(data) {
+    if (!data) { infoRow.style.display = 'none'; return; }
+    const { quando, chi } = data;
+    const dataFmt = quando ? new Date(quando).toLocaleString('it-IT', {
+      day:'2-digit', month:'2-digit', year:'2-digit',
+      hour:'2-digit', minute:'2-digit',
+    }) : '';
+    const chiShort = chi ? chi.split('@')[0].substring(0, 12) : '—';
+    infoRow.textContent = `📋 ${dataFmt}\n${chiShort}`;
+    infoRow.style.display = 'block';
+    // Campanellino diventa arancione chiaro per segnalare già inviato
+    btn.style.background = '#fff3cd';
+    btn.style.opacity = '0.85';
+    btn.dataset.inviato = '1';
+    btn.title = `Richiesta già inviata il ${dataFmt} da ${chi || '—'}\nClicca per inviare un sollecito`;
+  }
+
+  // Aggiorna il badge dopo un nuovo invio
+  function _aggiornaDopoInvio(operatore) {
+    _mostraInfoRichiesta({ quando: new Date().toISOString(), chi: operatore });
+  }
+
+  // Carica ultima richiesta tramite endpoint Vercel (usa service role, visibile a tutti)
+  {
+    const prodottoEscaped = encodeURIComponent(nomeProdotto);
+    fetch(`/api/ultima-richiesta?prodotto=${prodottoEscaped}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(body => {
+        if (body && body.richiesta) {
+          _mostraInfoRichiesta(body.richiesta);
+        }
+      })
+      .catch(() => {}); // silenzioso
+  }
 
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
-    _mostraModaleCampanellino({ nomeProdotto, giacenza, unita, tipoProdotto, emailOperatore, btn });
+    _mostraModaleCampanellino({
+      nomeProdotto, giacenza, unita, tipoProdotto, emailOperatore, btn,
+      onInviato: _aggiornaDopoInvio,
+    });
   });
 
-  return btn;
+  return wrap;
 }
 
-function _mostraModaleCampanellino({ nomeProdotto, giacenza, unita, tipoProdotto, emailOperatore, btn }) {
+function _mostraModaleCampanellino({
+  nomeProdotto, giacenza, unita, tipoProdotto, emailOperatore, btn,
+  onInviato,
+}) {
   // Rimuovi modali precedenti
   document.querySelectorAll('.campanellino-modal-overlay').forEach(el => el.remove());
 
@@ -239,6 +304,9 @@ function _mostraModaleCampanellino({ nomeProdotto, giacenza, unita, tipoProdotto
     inviaBtn.textContent = 'Invio…';
     statusDiv.style.display = 'none';
 
+    const now = new Date();
+    const operatoreDisplay = emailOperatore || 'Operatore (non identificato)';
+
     try {
       await emailjs.send(
         EMAILJS_SERVICE_ID,
@@ -250,19 +318,35 @@ function _mostraModaleCampanellino({ nomeProdotto, giacenza, unita, tipoProdotto
           tipo: tipoProdotto === 'reagente' ? 'Reagente' : 'Consumabile',
           giacenza: giacenza !== undefined && giacenza !== null ? `${giacenza} ${unita}` : 'non monitorata',
           scorta: '',  // non applicabile per richiesta manuale
-          operatore: emailOperatore || 'Operatore (non identificato)',
+          operatore: operatoreDisplay,
           nota: nota || '(nessuna nota)',
-          time: new Date().toLocaleString('it-IT'),
+          time: now.toLocaleString('it-IT'),
         },
         EMAILJS_PUBLIC_KEY
       );
+
+      // Salva su access_log tramite endpoint Vercel (service role, bypass RLS)
+      fetch('/api/salva-richiesta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prodotto: nomeProdotto,
+          operatore: emailOperatore || null,
+          nota: nota || null,
+        }),
+      }).catch(() => {});
 
       // Feedback visivo sul campanellino
       if (btn) {
         btn.innerHTML = '✅';
         btn.title = 'Richiesta inviata';
         btn.style.opacity = '0.6';
-        setTimeout(() => { btn.innerHTML = '🔔'; btn.title = 'Richiedi acquisto'; btn.style.opacity = '1'; }, 4000);
+        setTimeout(() => {
+          btn.innerHTML = '🔔';
+          btn.style.opacity = '1';
+          // Aggiorna la riga info sotto il campanellino
+          if (onInviato) onInviato(emailOperatore || null);
+        }, 2000);
       }
 
       statusDiv.style.display = 'block';
