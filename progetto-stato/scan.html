@@ -159,6 +159,9 @@ function authH() {
 // ─── Init ──────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
   if (!getToken()) {
+    // Costruisce l'URL di redirect: /login.html?next=<url corrente>
+    const next = encodeURIComponent(window.location.pathname + window.location.search);
+    document.getElementById('authWall').querySelector('a').href = `/login.html?next=${next}`;
     document.getElementById('authWall').style.display = 'flex';
     document.getElementById('scannerView').style.display = 'none';
     return;
