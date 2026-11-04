@@ -176,6 +176,8 @@ html, body {
   text-align: center;
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
   animation: animModal 0.3s ease-out;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 @keyframes animModal {
@@ -398,5 +400,3 @@ html, body {
   outline: none;
 }
 .admin-scorta-input:focus { border-color: #007B9E; }
-
-
