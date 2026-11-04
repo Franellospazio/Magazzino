@@ -1058,7 +1058,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           <select id="reagenteUnita" style="padding:6px 10px; border:1.5px solid #00B4CC; border-radius:5px; font-size:14px;">
             ${['pz','ml','l','g','kg'].map(u => `<option value="${u}" ${(gruppo.unita||'pz')===u?'selected':''}>${u}</option>`).join('')}
           </select>
-          <span style="font-size:11px; color:#888; margin-left:8px;">Usata per scorta minima, volume bottiglia e contributo gruppo.</span>
+          <span style="font-size:11px; color:#888; margin-left:8px;">Usata per scorta minima e volume per bottiglia.</span>
         </div>
         <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
           <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Scorta minima individuale</div>
@@ -1074,13 +1074,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             ? `<div style="background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:10px; font-size:13px; color:#856404;">
                 <div style="font-weight:700; margin-bottom:4px;">📦 ${gruppo.gruppo_nome}</div>
                 <div style="font-size:12px; color:#6b5000;">Giacenza totale gruppo: <strong>${gruppo.gruppo_giacenza}</strong> / scorta minima: <strong>${gruppo.gruppo_scorta_minima}</strong></div>
-                <div style="margin-top:10px; border-top:1px dashed #ffc107; padding-top:8px;">
-                  <div style="font-size:11px; font-weight:700; color:#856404; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Contributo di questo prodotto</div>
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <input type="number" id="contributoEditInput" value="${gruppo.contributo_per_unita||1}" step="any" min="0" style="width:70px; padding:4px; border:1.5px solid #ffc107; border-radius:5px; font-size:14px; text-align:center;">
-                    <span style="font-size:12px; color:#856404;">per ogni bottiglia aperta</span>
-                  </div>
-                </div>
+                <div style="font-size:11px; color:#888; margin-top:4px;">Il contributo al gruppo è pari al volume per bottiglia impostato sopra.</div>
                 <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
                   <button id="rimuoviDaGruppoBtn" style="padding:5px 12px; background:#e74c3c; color:white; border:none; border-radius:5px; font-size:12px; cursor:pointer;">Rimuovi dal gruppo</button>
                   <button id="eliminaGruppoBtn" style="padding:5px 12px; background:#7f1d1d; color:white; border:none; border-radius:5px; font-size:12px; cursor:pointer;">🗑 Elimina gruppo intero</button>
@@ -1091,11 +1085,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                  <option value="">— Nessun gruppo (individuale) —</option>
                  ${(window._gruppiEq || []).map(g => `<option value="${g.id}" data-unita="${g.unita||'pz'}">${g.nome} (scorta: ${g.scorta_minima} ${g.unita||'pz'})</option>`).join('')}
                </select>
-               <div id="contributoRow" style="display:none; align-items:center; gap:8px; margin-bottom:8px;">
-                 <label style="font-size:12px; color:#555; white-space:nowrap;">Contributo per bottiglia:</label>
-                 <input type="number" id="contributoInput" value="1" step="any" min="0" style="width:70px; padding:4px; border:1.5px solid #16a085; border-radius:5px; font-size:13px;">
-                 <span id="contributoUnitaLabel" style="font-size:12px; color:#888;">pz</span>
-               </div>
+               <div style="font-size:11px; color:#888; margin-bottom:6px;">Il contributo al gruppo sarà il volume per bottiglia. Seleziona il gruppo e salva.</div>
                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
                  <button id="nuovoGruppoBtn" style="padding:5px 14px; background:#8e44ad; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">+ Nuovo gruppo</button>
                  ${(window._gruppiEq || []).length > 0 ? `<button id="eliminaGruppoListaBtn" style="padding:5px 14px; background:#7f1d1d; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">🗑 Elimina gruppo…</button>` : ''}
@@ -1180,16 +1170,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
         });
       } else {
-        // Mostra/nasconde il campo contributo quando si sceglie un gruppo
-        document.getElementById("gruppoSelect")?.addEventListener("change", (e) => {
-          const sel = e.target;
-          const selectedOpt = sel.options[sel.selectedIndex];
-          const unitaGruppo = selectedOpt?.dataset?.unita || 'pz';
-          const label = document.getElementById("contributoUnitaLabel");
-          if (label) label.textContent = unitaGruppo;
-          const contributoRow = document.getElementById("contributoRow");
-          if (contributoRow) contributoRow.style.display = sel.value ? "flex" : "none";
-        });
+        // Nessun listener speciale su gruppoSelect — il contributo viene dal volume per bottiglia
 
         // Elimina un gruppo dalla lista (senza essere nel gruppo)
         document.getElementById("eliminaGruppoListaBtn")?.addEventListener("click", async () => {
@@ -1257,29 +1238,26 @@ document.addEventListener("DOMContentLoaded", async () => {
           const volume_per_unita = parseFloat(document.getElementById("reagenteVolume").value) || 1;
           const notaVal = document.getElementById("reagenteNotaInput").value.trim();
 
-          // Gruppo equivalenza: aggiorna contributo se già in gruppo, oppure assegna a nuovo gruppo
-          if (gruppo.in_gruppo) {
-            const contributoEl = document.getElementById("contributoEditInput");
-            const nuovoContributo = parseFloat(contributoEl?.value) || 1;
-            if (nuovoContributo !== (gruppo.contributo_per_unita || 1)) {
-              await fetch("/api/gruppi", {
-                method: "PATCH",
-                headers: authHeaders(),
-                body: JSON.stringify({ id: gruppo.gruppo_id, aggiorna_contributo: { nome_prodotto: gruppo.nome_prodotto, contributo_per_unita: nuovoContributo } })
-              });
-              gruppo.contributo_per_unita = nuovoContributo;
-            }
-          } else {
-            // Se l'utente ha selezionato un gruppo dalla select, assegna al salvataggio
+          // Gruppo equivalenza: se non in gruppo e l'utente ha selezionato uno, assegna con volume_per_unita come contributo
+          if (!gruppo.in_gruppo) {
             const selGruppo = document.getElementById("gruppoSelect");
             if (selGruppo?.value) {
-              const contributoInput = document.getElementById("contributoInput");
-              const contributo_per_unita = parseFloat(contributoInput?.value) || 1;
+              // il contributo è il volume per bottiglia (già letto sopra)
               await fetch("/api/gruppi", {
                 method: "PATCH",
                 headers: authHeaders(),
-                body: JSON.stringify({ id: parseInt(selGruppo.value), aggiungi_membri: [{ nome_prodotto: gruppo.nome_prodotto, contributo_per_unita }] })
+                body: JSON.stringify({ id: parseInt(selGruppo.value), aggiungi_membri: [{ nome_prodotto: gruppo.nome_prodotto, contributo_per_unita: volume_per_unita }] })
               });
+              // Aggiorna gruppo locale
+              const gSel = (window._gruppiEq || []).find(g => g.id === parseInt(selGruppo.value));
+              if (gSel) {
+                gruppo.in_gruppo = true;
+                gruppo.gruppo_id = gSel.id;
+                gruppo.gruppo_nome = gSel.nome;
+                gruppo.gruppo_scorta_minima = gSel.scorta_minima;
+                gruppo.gruppo_unita = gSel.unita;
+                gruppo.contributo_per_unita = volume_per_unita;
+              }
             }
           }
 
@@ -1304,6 +1282,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
           patchReagenteLiInList(gruppo);
           btn.textContent = "✅ Salvato!";
+          // Ricarica la lista in background per mantenere dati aggiornati
+          reloadReagenti().catch(() => {});
           setTimeout(() => { btn.disabled = false; btn.textContent = "💾 Salva modifiche"; }, 1500);
         } catch(e) {
           alert("Errore durante il salvataggio: " + e.message);
