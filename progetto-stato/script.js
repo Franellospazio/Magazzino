@@ -1044,7 +1044,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             <option value="">— Nessun fornitore selezionato —</option>
             ${tuttiFornitori.map(f => `<option value="${f.id}" ${gruppo.fornitore_selezionato === f.id ? 'selected' : ''}>${f.nome}</option>`).join('')}
           </select>
-          <button id="salvaFornitoreReagenteBtn" style="margin-top:6px; padding:5px 14px; background:#8e44ad; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Salva fornitore</button>
         </div>
         <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
           <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">In ordine</div>
@@ -1053,7 +1052,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             <span id="inOrdineValueR" class="qty-number qty-blue">${gruppo.inordine || 0}</span>
             <button type="button" id="incInOrdineR" class="qty-btn plus">+</button>
           </div>
-          <button id="salvaInOrdineBtn" style="margin-top:6px; padding:5px 14px; background:#8e44ad; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Salva in ordine</button>
         </div>
         <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
           <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Scorta minima</div>
@@ -1063,18 +1061,24 @@ document.addEventListener("DOMContentLoaded", async () => {
               ${['pz','ml','l','g','kg'].map(u => `<option value="${u}" ${(gruppo.unita||'pz')===u?'selected':''}>${u}</option>`).join('')}
             </select>
             <span style="font-size:12px; color:#888;">per bottiglia: <input type="number" id="reagenteVolume" value="${gruppo.volume_per_unita||1}" step="any" style="width:70px; padding:4px; border:1.5px solid #00B4CC; border-radius:5px; font-size:13px; text-align:center;"></span>
-            <button id="salvaScortaBtn" style="padding:5px 14px; background:#16a085; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Salva</button>
           </div>
-          <div style="font-size:11px; color:#888; margin-top:4px;">Giacenza effettiva: <strong>${(gruppo.giacenza_effettiva||gruppo.giacenza||0).toFixed ? (gruppo.giacenza_effettiva||gruppo.giacenza||0) : gruppo.giacenza} ${gruppo.unita||'pz'}</strong> / min: <strong>${gruppo.scorta_minima} ${gruppo.unita||'pz'}</strong></div>
+          <div style="font-size:11px; color:#888; margin-top:4px;">Giacenza effettiva: <strong>${(gruppo.giacenza_effettiva||gruppo.giacenza||0)} ${gruppo.unita||'pz'}</strong> / min: <strong>${gruppo.scorta_minima} ${gruppo.unita||'pz'}</strong></div>
         </div>
         <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
           <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">🔗 Gruppo equivalenza</div>
           ${gruppo.in_gruppo
             ? `<div style="background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:8px; font-size:12px; color:#856404;">
-                Questo prodotto appartiene al gruppo <strong>${gruppo.gruppo_nome}</strong><br>
-                Giacenza totale gruppo: <strong>${gruppo.gruppo_giacenza} ${gruppo.gruppo_unita||'pz'}</strong> / scorta minima: <strong>${gruppo.gruppo_scorta_minima} ${gruppo.gruppo_unita||'pz'}</strong><br>
-                Contributo di questo prodotto: <strong>${gruppo.contributo_per_unita||1} ${gruppo.gruppo_unita||'pz'}</strong> per bottiglia
-                <br><button id="rimuoviDaGruppoBtn" style="margin-top:6px; padding:4px 10px; background:#e74c3c; color:white; border:none; border-radius:5px; font-size:11px; cursor:pointer;">Rimuovi dal gruppo</button>
+                Gruppo: <strong>${gruppo.gruppo_nome}</strong><br>
+                Giacenza totale: <strong>${gruppo.gruppo_giacenza} ${gruppo.gruppo_unita||'pz'}</strong> / scorta minima: <strong>${gruppo.gruppo_scorta_minima} ${gruppo.gruppo_unita||'pz'}</strong>
+                <div style="display:flex; align-items:center; gap:8px; margin-top:6px; flex-wrap:wrap;">
+                  <label style="font-size:12px; color:#856404; font-weight:600;">Contributo per bottiglia:</label>
+                  <input type="number" id="contributoEditInput" value="${gruppo.contributo_per_unita||1}" step="any" min="0" style="width:70px; padding:4px; border:1.5px solid #ffc107; border-radius:5px; font-size:13px; text-align:center;">
+                  <span style="font-size:12px; color:#888;">${gruppo.gruppo_unita||'pz'}</span>
+                </div>
+                <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                  <button id="rimuoviDaGruppoBtn" style="padding:4px 10px; background:#e74c3c; color:white; border:none; border-radius:5px; font-size:11px; cursor:pointer;">Rimuovi dal gruppo</button>
+                  <button id="eliminaGruppoBtn" style="padding:4px 10px; background:#7f1d1d; color:white; border:none; border-radius:5px; font-size:11px; cursor:pointer;">🗑 Elimina gruppo intero</button>
+                </div>
               </div>`
             : `<div style="font-size:12px; color:#999; margin-bottom:6px;">Nessun gruppo assegnato — la scorta minima individuale è attiva.</div>
                <select id="gruppoSelect" style="width:100%; padding:6px; border:1.5px solid #16a085; border-radius:5px; font-size:13px;">
@@ -1090,8 +1094,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                <button id="nuovoGruppoBtn" style="margin-top:6px; margin-left:8px; padding:5px 14px; background:#8e44ad; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">+ Nuovo gruppo</button>`
           }
         </div>
+        <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+          <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">📌 Nota</div>
           <input type="text" id="reagenteNotaInput" value="${gruppo.nota || ''}" placeholder="Es: Lavaggio celle, GC-MS..." style="width:100%; padding:6px; border:1.5px solid #2980b9; border-radius:5px; font-size:13px; box-sizing:border-box;">
-          <button id="salvaNotaBtn" style="margin-top:6px; padding:5px 14px; background:#2980b9; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Salva nota</button>
+        </div>
+        <div style="margin-top:16px; border-top:2px solid #eee; padding-top:14px; text-align:center;">
+          <button id="salvaTuttoReagenteBtn" style="padding:10px 32px; background:#16a085; color:white; border:none; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; width:100%;">💾 Salva modifiche</button>
         </div>`;
     }
 
@@ -1145,8 +1153,23 @@ document.addEventListener("DOMContentLoaded", async () => {
             body: JSON.stringify({ id: gruppo.gruppo_id, rimuovi_membri: [gruppo.nome_prodotto] })
           });
           gruppo.in_gruppo = false; gruppo.gruppo_id = null; gruppo.gruppo_nome = null;
-          alert("Rimosso dal gruppo.");
           closeModal();
+          await reloadReagenti();
+        });
+        document.getElementById("eliminaGruppoBtn")?.addEventListener("click", async () => {
+          if (!confirm(`Eliminare il gruppo "${gruppo.gruppo_nome}" e dissociare tutti i prodotti?\nQuesta operazione non può essere annullata.`)) return;
+          const res = await fetch("/api/gruppi", {
+            method: "DELETE",
+            headers: authHeaders(),
+            body: JSON.stringify({ id: gruppo.gruppo_id })
+          });
+          if (res.ok) {
+            window._gruppiEq = (window._gruppiEq || []).filter(g => g.id !== gruppo.gruppo_id);
+            closeModal();
+            await reloadReagenti();
+          } else {
+            alert("Errore durante l'eliminazione del gruppo.");
+          }
         });
       } else {
         // Aggiorna etichetta unità quando si cambia gruppo
@@ -1197,66 +1220,60 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
       }
 
-      document.getElementById("salvaFornitoreReagenteBtn").addEventListener("click", async () => {
-        const sel = document.getElementById("reagenteFornitoreSelect");
-        const fId = sel.value ? parseInt(sel.value) : null;
-        const fNome = sel.value ? sel.options[sel.selectedIndex].text : null;
-        await fetch("/api/reagenti", {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify({ nome_prodotto: gruppo.nome_prodotto, fornitore_selezionato: fId })
-        });
-        gruppo.fornitore_selezionato = fId;
-        gruppo.fornitore_selezionato_nome = fNome;
-        patchReagenteLiInList(gruppo);
-        alert("Fornitore salvato!");
-      });
+      // ── Unico "Salva modifiche" ──────────────────────────────────────────────
+      document.getElementById("salvaTuttoReagenteBtn").addEventListener("click", async () => {
+        const btn = document.getElementById("salvaTuttoReagenteBtn");
+        btn.disabled = true; btn.textContent = "⏳ Salvataggio…";
+        try {
+          const sel = document.getElementById("reagenteFornitoreSelect");
+          const fId = sel.value ? parseInt(sel.value) : null;
+          const fNome = sel.value ? sel.options[sel.selectedIndex].text : null;
+          const inOrdineVal = parseInt(document.getElementById("inOrdineValueR").textContent);
+          const sm = parseInt(document.getElementById("reagenteScortaMinima").value);
+          const unita = document.getElementById("reagenteUnita").value;
+          const volume_per_unita = parseFloat(document.getElementById("reagenteVolume").value) || 1;
+          const notaVal = document.getElementById("reagenteNotaInput").value.trim();
 
-      document.getElementById("salvaInOrdineBtn").addEventListener("click", async () => {
-        const val = parseInt(document.getElementById("inOrdineValueR").textContent);
-        await fetch("/api/reagenti", {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify({ nome_prodotto: gruppo.nome_prodotto, inordine: val })
-        });
-        gruppo.inordine = val;
-        patchReagenteLiInList(gruppo);
-        alert("In ordine aggiornato!");
-      });
-      document.getElementById("salvaNotaBtn").addEventListener("click", async () => {
-        const notaVal = document.getElementById("reagenteNotaInput").value.trim();
-        await fetch("/api/reagenti", {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify({ nome_prodotto: gruppo.nome_prodotto, nota: notaVal })
-        });
-        gruppo.nota = notaVal;
-        patchReagenteLiInList(gruppo);
-        alert("Nota salvata!");
-      });
-      document.getElementById("salvaScortaBtn").addEventListener("click", async () => {
-        const sm = parseInt(document.getElementById("reagenteScortaMinima").value);
-        const unita = document.getElementById("reagenteUnita").value;
-        const volume_per_unita = parseFloat(document.getElementById("reagenteVolume").value) || 1;
-        if (isNaN(sm)) return;
-        // Salva scorta_minima sui reagenti
-        await fetch("/api/reagenti", {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify({ progressivo: gruppo.progressivi[0].progressivo, scorta_minima: sm })
-        });
-        // Salva unità e volume in reagenti_ordini
-        await fetch("/api/reagenti", {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify({ nome_prodotto: gruppo.nome_prodotto, unita, volume_per_unita })
-        });
-        gruppo.scorta_minima = sm;
-        gruppo.unita = unita;
-        gruppo.volume_per_unita = volume_per_unita;
-        gruppo.giacenza_effettiva = gruppo.giacenza * volume_per_unita;
-        gruppo.progressivi.forEach(p => p.scorta_minima = sm);
-        alert("Scorta minima aggiornata!");
+          // Contributo se in gruppo
+          if (gruppo.in_gruppo) {
+            const contributoEl = document.getElementById("contributoEditInput");
+            const nuovoContributo = parseFloat(contributoEl?.value) || 1;
+            if (nuovoContributo !== (gruppo.contributo_per_unita || 1)) {
+              await fetch("/api/gruppi", {
+                method: "PATCH",
+                headers: authHeaders(),
+                body: JSON.stringify({ id: gruppo.gruppo_id, aggiorna_contributo: { nome_prodotto: gruppo.nome_prodotto, contributo_per_unita: nuovoContributo } })
+              });
+              gruppo.contributo_per_unita = nuovoContributo;
+            }
+          }
+
+          await Promise.all([
+            fetch("/api/reagenti", { method: "PATCH", headers: authHeaders(),
+              body: JSON.stringify({ nome_prodotto: gruppo.nome_prodotto, fornitore_selezionato: fId, inordine: inOrdineVal, nota: notaVal, unita, volume_per_unita }) }),
+            isNaN(sm) ? Promise.resolve() :
+              fetch("/api/reagenti", { method: "PATCH", headers: authHeaders(),
+                body: JSON.stringify({ progressivo: gruppo.progressivi[0].progressivo, scorta_minima: sm }) }),
+          ]);
+
+          gruppo.fornitore_selezionato = fId;
+          gruppo.fornitore_selezionato_nome = fNome;
+          gruppo.inordine = inOrdineVal;
+          gruppo.nota = notaVal;
+          if (!isNaN(sm)) {
+            gruppo.scorta_minima = sm;
+            gruppo.unita = unita;
+            gruppo.volume_per_unita = volume_per_unita;
+            gruppo.giacenza_effettiva = gruppo.giacenza * volume_per_unita;
+            gruppo.progressivi.forEach(p => p.scorta_minima = sm);
+          }
+          patchReagenteLiInList(gruppo);
+          btn.textContent = "✅ Salvato!";
+          setTimeout(() => { btn.disabled = false; btn.textContent = "💾 Salva modifiche"; }, 1500);
+        } catch(e) {
+          alert("Errore durante il salvataggio: " + e.message);
+          btn.disabled = false; btn.textContent = "💾 Salva modifiche";
+        }
       });
     }
 
