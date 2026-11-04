@@ -26,7 +26,10 @@ export default async function handler(req, res) {
     .order('created_at', { ascending: false })
     .limit(1);
 
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) {
+    console.error('[ultima-richiesta] Supabase error:', error.message, '| prodotto:', prodotto);
+    return res.status(500).json({ error: error.message });
+  }
   if (!data || data.length === 0) return res.status(200).json({ richiesta: null });
 
   return res.status(200).json({
