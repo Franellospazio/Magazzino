@@ -1054,44 +1054,52 @@ document.addEventListener("DOMContentLoaded", async () => {
           </div>
         </div>
         <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
-          <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Scorta minima</div>
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Unità di misura</div>
+          <select id="reagenteUnita" style="padding:6px 10px; border:1.5px solid #00B4CC; border-radius:5px; font-size:14px;">
+            ${['pz','ml','l','g','kg'].map(u => `<option value="${u}" ${(gruppo.unita||'pz')===u?'selected':''}>${u}</option>`).join('')}
+          </select>
+          <span style="font-size:11px; color:#888; margin-left:8px;">Usata per scorta minima, volume bottiglia e contributo gruppo.</span>
+        </div>
+        <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+          <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Scorta minima individuale</div>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <input type="number" id="reagenteScortaMinima" value="${gruppo.scorta_minima}" style="width:80px; padding:5px; border:1.5px solid #00B4CC; border-radius:5px; font-size:15px; text-align:center;">
-            <select id="reagenteUnita" style="padding:5px 8px; border:1.5px solid #00B4CC; border-radius:5px; font-size:13px;">
-              ${['pz','ml','l','g','kg'].map(u => `<option value="${u}" ${(gruppo.unita||'pz')===u?'selected':''}>${u}</option>`).join('')}
-            </select>
-            <span style="font-size:12px; color:#888;">per bottiglia: <input type="number" id="reagenteVolume" value="${gruppo.volume_per_unita||1}" step="any" style="width:70px; padding:4px; border:1.5px solid #00B4CC; border-radius:5px; font-size:13px; text-align:center;"></span>
+            <span style="font-size:12px; color:#888;">vol/bottiglia: <input type="number" id="reagenteVolume" value="${gruppo.volume_per_unita||1}" step="any" style="width:65px; padding:4px; border:1.5px solid #00B4CC; border-radius:5px; font-size:13px; text-align:center;"></span>
           </div>
-          <div style="font-size:11px; color:#888; margin-top:4px;">Giacenza effettiva: <strong>${(gruppo.giacenza_effettiva||gruppo.giacenza||0)} ${gruppo.unita||'pz'}</strong> / min: <strong>${gruppo.scorta_minima} ${gruppo.unita||'pz'}</strong></div>
+          <div style="font-size:11px; color:#888; margin-top:4px;">Giacenza effettiva: <strong>${(gruppo.giacenza_effettiva||gruppo.giacenza||0)} u.</strong> / min: <strong>${gruppo.scorta_minima} u.</strong></div>
         </div>
         <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
           <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">🔗 Gruppo equivalenza</div>
           ${gruppo.in_gruppo
-            ? `<div style="background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:8px; font-size:12px; color:#856404;">
-                Gruppo: <strong>${gruppo.gruppo_nome}</strong><br>
-                Giacenza totale: <strong>${gruppo.gruppo_giacenza} ${gruppo.gruppo_unita||'pz'}</strong> / scorta minima: <strong>${gruppo.gruppo_scorta_minima} ${gruppo.gruppo_unita||'pz'}</strong>
-                <div style="display:flex; align-items:center; gap:8px; margin-top:6px; flex-wrap:wrap;">
-                  <label style="font-size:12px; color:#856404; font-weight:600;">Contributo per bottiglia:</label>
-                  <input type="number" id="contributoEditInput" value="${gruppo.contributo_per_unita||1}" step="any" min="0" style="width:70px; padding:4px; border:1.5px solid #ffc107; border-radius:5px; font-size:13px; text-align:center;">
-                  <span style="font-size:12px; color:#888;">${gruppo.gruppo_unita||'pz'}</span>
+            ? `<div style="background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:10px; font-size:13px; color:#856404;">
+                <div style="font-weight:700; margin-bottom:4px;">📦 ${gruppo.gruppo_nome}</div>
+                <div style="font-size:12px; color:#6b5000;">Giacenza totale gruppo: <strong>${gruppo.gruppo_giacenza}</strong> / scorta minima: <strong>${gruppo.gruppo_scorta_minima}</strong></div>
+                <div style="margin-top:10px; border-top:1px dashed #ffc107; padding-top:8px;">
+                  <div style="font-size:11px; font-weight:700; color:#856404; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Contributo di questo prodotto</div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <input type="number" id="contributoEditInput" value="${gruppo.contributo_per_unita||1}" step="any" min="0" style="width:70px; padding:4px; border:1.5px solid #ffc107; border-radius:5px; font-size:14px; text-align:center;">
+                    <span style="font-size:12px; color:#856404;">per ogni bottiglia aperta</span>
+                  </div>
                 </div>
                 <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-                  <button id="rimuoviDaGruppoBtn" style="padding:4px 10px; background:#e74c3c; color:white; border:none; border-radius:5px; font-size:11px; cursor:pointer;">Rimuovi dal gruppo</button>
-                  <button id="eliminaGruppoBtn" style="padding:4px 10px; background:#7f1d1d; color:white; border:none; border-radius:5px; font-size:11px; cursor:pointer;">🗑 Elimina gruppo intero</button>
+                  <button id="rimuoviDaGruppoBtn" style="padding:5px 12px; background:#e74c3c; color:white; border:none; border-radius:5px; font-size:12px; cursor:pointer;">Rimuovi dal gruppo</button>
+                  <button id="eliminaGruppoBtn" style="padding:5px 12px; background:#7f1d1d; color:white; border:none; border-radius:5px; font-size:12px; cursor:pointer;">🗑 Elimina gruppo intero</button>
                 </div>
               </div>`
-            : `<div style="font-size:12px; color:#999; margin-bottom:6px;">Nessun gruppo assegnato — la scorta minima individuale è attiva.</div>
-               <select id="gruppoSelect" style="width:100%; padding:6px; border:1.5px solid #16a085; border-radius:5px; font-size:13px;">
-                 <option value="">— Seleziona gruppo —</option>
+            : `<div style="font-size:12px; color:#999; margin-bottom:8px;">Nessun gruppo assegnato — la scorta minima individuale è attiva.</div>
+               <select id="gruppoSelect" style="width:100%; padding:6px; border:1.5px solid #16a085; border-radius:5px; font-size:13px; margin-bottom:6px;">
+                 <option value="">— Nessun gruppo (individuale) —</option>
                  ${(window._gruppiEq || []).map(g => `<option value="${g.id}" data-unita="${g.unita||'pz'}">${g.nome} (scorta: ${g.scorta_minima} ${g.unita||'pz'})</option>`).join('')}
                </select>
-               <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
-                 <label style="font-size:12px; color:#555;">Contributo per bottiglia:</label>
+               <div id="contributoRow" style="display:none; align-items:center; gap:8px; margin-bottom:8px;">
+                 <label style="font-size:12px; color:#555; white-space:nowrap;">Contributo per bottiglia:</label>
                  <input type="number" id="contributoInput" value="1" step="any" min="0" style="width:70px; padding:4px; border:1.5px solid #16a085; border-radius:5px; font-size:13px;">
                  <span id="contributoUnitaLabel" style="font-size:12px; color:#888;">pz</span>
                </div>
-               <button id="aggiungiAGruppoBtn" style="margin-top:6px; padding:5px 14px; background:#16a085; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">Aggiungi al gruppo</button>
-               <button id="nuovoGruppoBtn" style="margin-top:6px; margin-left:8px; padding:5px 14px; background:#8e44ad; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">+ Nuovo gruppo</button>`
+               <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+                 <button id="nuovoGruppoBtn" style="padding:5px 14px; background:#8e44ad; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">+ Nuovo gruppo</button>
+                 ${(window._gruppiEq || []).length > 0 ? `<button id="eliminaGruppoListaBtn" style="padding:5px 14px; background:#7f1d1d; color:white; border:none; border-radius:5px; font-size:13px; cursor:pointer;">🗑 Elimina gruppo…</button>` : ''}
+               </div>`
           }
         </div>
         <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
@@ -1172,31 +1180,46 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
         });
       } else {
-        // Aggiorna etichetta unità quando si cambia gruppo
+        // Mostra/nasconde il campo contributo quando si sceglie un gruppo
         document.getElementById("gruppoSelect")?.addEventListener("change", (e) => {
           const sel = e.target;
           const selectedOpt = sel.options[sel.selectedIndex];
           const unitaGruppo = selectedOpt?.dataset?.unita || 'pz';
           const label = document.getElementById("contributoUnitaLabel");
           if (label) label.textContent = unitaGruppo;
+          const contributoRow = document.getElementById("contributoRow");
+          if (contributoRow) contributoRow.style.display = sel.value ? "flex" : "none";
         });
 
-        document.getElementById("aggiungiAGruppoBtn")?.addEventListener("click", async () => {
+        // Elimina un gruppo dalla lista (senza essere nel gruppo)
+        document.getElementById("eliminaGruppoListaBtn")?.addEventListener("click", async () => {
           const sel = document.getElementById("gruppoSelect");
-          if (!sel.value) { alert("Seleziona un gruppo."); return; }
-          const contributoInput = document.getElementById("contributoInput");
-          const contributo_per_unita = parseFloat(contributoInput?.value) || 1;
+          const gruppiDisponibili = window._gruppiEq || [];
+          if (gruppiDisponibili.length === 0) { alert("Nessun gruppo da eliminare."); return; }
+          // Se c'è un gruppo selezionato nella select, proponi quello; altrimenti chiedi
+          let targetId = parseInt(sel?.value);
+          let targetNome = sel?.value ? sel.options[sel.selectedIndex]?.text : null;
+          if (!targetId) {
+            // Costruiamo una prompt con la lista
+            const listaStr = gruppiDisponibili.map((g, i) => `${i+1}. ${g.nome} (id:${g.id})`).join('\n');
+            const scelta = prompt(`Quale gruppo vuoi eliminare?\n\n${listaStr}\n\nInserisci il numero:`);
+            const idx = parseInt(scelta) - 1;
+            if (isNaN(idx) || idx < 0 || idx >= gruppiDisponibili.length) return;
+            targetId = gruppiDisponibili[idx].id;
+            targetNome = gruppiDisponibili[idx].nome;
+          }
+          if (!confirm(`Eliminare il gruppo "${targetNome}"?\nTutti i prodotti associati verranno dissociati.\nQuesta operazione non può essere annullata.`)) return;
           const res = await fetch("/api/gruppi", {
-            method: "PATCH",
+            method: "DELETE",
             headers: authHeaders(),
-            body: JSON.stringify({ id: parseInt(sel.value), aggiungi_membri: [{ nome_prodotto: gruppo.nome_prodotto, contributo_per_unita }] })
+            body: JSON.stringify({ id: targetId })
           });
           if (res.ok) {
-            alert("Aggiunto al gruppo!");
+            window._gruppiEq = (window._gruppiEq || []).filter(g => g.id !== targetId);
             closeModal();
             await reloadReagenti();
           } else {
-            alert("Errore nel salvataggio.");
+            alert("Errore durante l'eliminazione del gruppo.");
           }
         });
 
@@ -1234,7 +1257,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           const volume_per_unita = parseFloat(document.getElementById("reagenteVolume").value) || 1;
           const notaVal = document.getElementById("reagenteNotaInput").value.trim();
 
-          // Contributo se in gruppo
+          // Gruppo equivalenza: aggiorna contributo se già in gruppo, oppure assegna a nuovo gruppo
           if (gruppo.in_gruppo) {
             const contributoEl = document.getElementById("contributoEditInput");
             const nuovoContributo = parseFloat(contributoEl?.value) || 1;
@@ -1245,6 +1268,18 @@ document.addEventListener("DOMContentLoaded", async () => {
                 body: JSON.stringify({ id: gruppo.gruppo_id, aggiorna_contributo: { nome_prodotto: gruppo.nome_prodotto, contributo_per_unita: nuovoContributo } })
               });
               gruppo.contributo_per_unita = nuovoContributo;
+            }
+          } else {
+            // Se l'utente ha selezionato un gruppo dalla select, assegna al salvataggio
+            const selGruppo = document.getElementById("gruppoSelect");
+            if (selGruppo?.value) {
+              const contributoInput = document.getElementById("contributoInput");
+              const contributo_per_unita = parseFloat(contributoInput?.value) || 1;
+              await fetch("/api/gruppi", {
+                method: "PATCH",
+                headers: authHeaders(),
+                body: JSON.stringify({ id: parseInt(selGruppo.value), aggiungi_membri: [{ nome_prodotto: gruppo.nome_prodotto, contributo_per_unita }] })
+              });
             }
           }
 
