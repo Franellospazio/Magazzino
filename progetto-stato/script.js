@@ -30,7 +30,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!AUTH_ENABLED || session) {
     const lookupBtn = document.getElementById('lookupBtn');
     if (lookupBtn) lookupBtn.style.display = 'inline-flex';
-
   }
 
   function authHeaders() {
@@ -104,6 +103,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   let isAdmin = AUTH_ENABLED ? isAdminFromDB : false;
   let fornitoriCache = {};
   let tuttiFornitori = [];
+
+  // ─── Visibilità pulsanti in base al ruolo ─────────────────────────────────
+  // "Mostra tutti", "Sottoscorta" e "In ordine" solo per admin
+  if (!isAdmin) {
+    const searchButton_ = document.querySelector('.searchButton');
+    const sottoscortaBtn_ = document.getElementById('sottoscortaBtn');
+    const inOrdineBtn_ = document.getElementById('inOrdineBtn');
+    if (searchButton_) searchButton_.style.display = 'none';
+    if (sottoscortaBtn_) sottoscortaBtn_.style.display = 'none';
+    if (inOrdineBtn_) inOrdineBtn_.style.display = 'none';
+  }
 
   // ─── Preferiti (Supabase, per utente loggato) ────────────────────────────
   let preferiti = new Set();
