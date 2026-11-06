@@ -154,6 +154,7 @@ function _coloreStep(s) {
 // ────────────────────────────────────────────────────────────────────
 // opts: {
 //   nomeProdotto, giacenza, unita, tipoProdotto ('reagente'|'consumabile'),
+//   scortaMinima, inGruppo, gruppoNome, gruppoGiacenza, gruppoScortaMinima, gruppoUnita,
 //   emailOperatore,
 //   (supabaseUrl, supabaseAnon, accessToken: ignorati — si usa /api/ultima-richiesta)
 // }
@@ -161,6 +162,9 @@ function _coloreStep(s) {
 function creaCampanellino(opts = {}) {
   const {
     nomeProdotto, giacenza, unita = 'pz',
+    scortaMinima = null,
+    inGruppo = false, gruppoNome = null,
+    gruppoGiacenza = null, gruppoScortaMinima = null, gruppoUnita = 'pz',
     tipoProdotto = 'reagente', emailOperatore = '',
   } = opts;
 
@@ -231,6 +235,7 @@ function creaCampanellino(opts = {}) {
     e.stopPropagation();
     _mostraModaleCampanellino({
       nomeProdotto, giacenza, unita, tipoProdotto, emailOperatore, btn,
+      scortaMinima, inGruppo, gruppoNome, gruppoGiacenza, gruppoScortaMinima, gruppoUnita,
       onInviato: _aggiornaDopoInvio,
     });
   });
@@ -240,6 +245,7 @@ function creaCampanellino(opts = {}) {
 
 function _mostraModaleCampanellino({
   nomeProdotto, giacenza, unita, tipoProdotto, emailOperatore, btn,
+  scortaMinima, inGruppo, gruppoNome, gruppoGiacenza, gruppoScortaMinima, gruppoUnita,
   onInviato,
 }) {
   // Rimuovi modali precedenti
@@ -317,7 +323,10 @@ function _mostraModaleCampanellino({
           prodotto: nomeProdotto,
           tipo: tipoProdotto === 'reagente' ? 'Reagente' : 'Consumabile',
           giacenza: giacenza !== undefined && giacenza !== null ? `${giacenza} ${unita}` : 'non monitorata',
-          scorta: '',  // non applicabile per richiesta manuale
+          scorta: scortaMinima !== null && scortaMinima !== undefined ? `${scortaMinima} ${unita}` : '—',
+          gruppo_info: inGruppo && gruppoNome
+            ? `Gruppo: ${gruppoNome} — Giacenza totale: ${gruppoGiacenza ?? '?'} ${gruppoUnita} / Scorta minima gruppo: ${gruppoScortaMinima ?? '?'} ${gruppoUnita}`
+            : '—',
           operatore: operatoreDisplay,
           nota: nota || '(nessuna nota)',
           time: now.toLocaleString('it-IT'),
