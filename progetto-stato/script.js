@@ -99,10 +99,75 @@ document.addEventListener("DOMContentLoaded", async () => {
   let showingSottoscorta = false;
   let showingInOrdine = false;
   let showingCategorie = false;
+  let showingPreferiti = false;
   let activeCategoryBtn = null;
   let isAdmin = AUTH_ENABLED ? isAdminFromDB : false;
   let fornitoriCache = {};
   let tuttiFornitori = [];
+
+  // ─── Preferiti (Supabase, per utente loggato) ────────────────────────────
+  let preferiti = new Set();
+
+  async function loadPreferiti() {
+    if (!currentSession) return;
+    try {
+      const res = await fetch('/api/preferiti', { headers: authHeaders() });
+      if (!res.ok) return;
+      const ids = await res.json();
+      preferiti = new Set(ids);
+    } catch {}
+  }
+
+  function isPref(id) { return preferiti.has(id); }
+
+  function togglePref(id, starEl) {
+    const adding = !preferiti.has(id);
+    if (adding) {
+      preferiti.add(id);
+      if (starEl) { starEl.textContent = '⭐'; starEl.style.color = '#f39c12'; starEl.title = 'Rimuovi dai preferiti'; }
+    } else {
+      preferiti.delete(id);
+      if (starEl) { starEl.textContent = '☆'; starEl.style.color = '#ccc'; starEl.title = 'Aggiungi ai preferiti'; }
+    }
+    // Persiste in background
+    fetch('/api/preferiti', {
+      method: adding ? 'POST' : 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ prodotto_id: id }),
+    }).catch(() => {});
+    // Se stiamo vedendo i preferiti, aggiorna la lista
+    if (showingPreferiti) { results.innerHTML = ''; renderPreferiti(); }
+  }
+
+  function creaStellina(id) {
+    const star = document.createElement('span');
+    star.style.cssText = 'float:right; font-size:18px; cursor:pointer; padding:0 4px; line-height:1;';
+    star.title = isPref(id) ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti';
+    star.textContent = isPref(id) ? '⭐' : '☆';
+    star.style.color = isPref(id) ? '#f39c12' : '#ccc';
+    star.addEventListener('click', (e) => {
+      e.stopPropagation(); // non aprire il modale
+      togglePref(id, star);
+    });
+    return star;
+  }
+
+  function renderPreferiti() {
+    const prefProdotti = prodotti.filter(p => isPref('p_' + p.Descrizione));
+    const prefReagenti = reagenti.filter(g => isPref('r_' + g.nome_prodotto));
+    if (prefProdotti.length === 0 && prefReagenti.length === 0) {
+      results.innerHTML = "<li style='padding:14px; color:#999; text-align:center;'>Nessun prodotto preferito — usa ⭐ accanto a un prodotto per aggiungerlo.</li>";
+      return;
+    }
+    prefProdotti.forEach(p => results.appendChild(createProductLi(p)));
+    if (prefReagenti.length > 0) {
+      const header = document.createElement("li");
+      header.style.cssText = "background:#f39c12; color:white; font-weight:bold; padding:8px 12px; font-size:13px; list-style:none; border-radius:6px; margin-top:8px;";
+      header.textContent = "🧪 Reagenti preferiti";
+      results.appendChild(header);
+      prefReagenti.forEach(g => results.appendChild(createReagenteLi(g)));
+    }
+  }
 
   const ADMIN_PASSWORD = "ori3";
   const STICKER_URL = "https://wonuzdqupujzeqhucxok.supabase.co/storage/v1/object/public/Admin/IMG_9082.webp";
@@ -296,6 +361,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const li = document.createElement("li");
     li.style.borderBottom = "1px solid #ccc";
     li.style.padding = "5px 0";
+    li.style.position = "relative";
     const keyParts = p.Descrizione.split("_");
     const nome = keyParts[0];
     const taglio = keyParts[keyParts.length - 1];
@@ -309,6 +375,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (p.ultimo_aggiornamento) content += `<br><span style="color:#666; font-size:12px;">📅 Aggiornato: ${formatData(p.ultimo_aggiornamento)}</span>`;
     content += p.ImageURL ? `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">` : `<br><em>(img non presente)</em>`;
     li.innerHTML = content;
+    li.prepend(creaStellina('p_' + p.Descrizione));
     li.addEventListener("click", () => { if (!isReadonly) openModal(p); });
     return li;
   }
@@ -318,6 +385,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const li = document.createElement("li");
     li.style.borderBottom = "1px solid #ccc";
     li.style.padding = "5px 0";
+    li.style.position = "relative";
     li.dataset.reagente = g.nome_prodotto;
     let gc = g.giacenza < g.scorta_minima ? "red" : g.giacenza === g.scorta_minima ? "orange" : "green";
     let content = `<strong style="color:black;">${g.nome_prodotto}</strong>`;
@@ -326,6 +394,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (g.inordine && g.inordine > 0) content += `<br>🛒 In ordine: ${g.inordine}`;
     if (g.nota) content += `<br><span style="display:inline-block; margin-top:3px; background:#2980b9; color:white; font-size:11px; font-weight:bold; padding:2px 10px; border-radius:10px;">📌 ${g.nota}</span>`;
     li.innerHTML = content;
+    li.prepend(creaStellina('r_' + g.nome_prodotto));
     li.addEventListener("click", () => { if (!isReadonly) openReagenteModal(g); });
     return li;
   }
@@ -351,8 +420,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (typeof fornitoriContainer !== 'undefined' && fornitoriContainer) { fornitoriContainer.innerHTML = ""; fornitoriContainer.style.display = "none"; }
     activeMislBtn = null;
     showingAll = false; showingSottoscorta = false;
-    showingInOrdine = false; showingCategorie = false;
+    showingInOrdine = false; showingCategorie = false; showingPreferiti = false;
     activeCategoryBtn = null;
+    const pb = document.getElementById('preferitiBtn');
+    if (pb) pb.classList.remove('active');
   }
 
   function renderAll() {
@@ -404,7 +475,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function refreshLista() {
-    if (showingAll) { results.innerHTML = ""; renderAll(); }
+    if (showingPreferiti) { results.innerHTML = ""; renderPreferiti(); }
+    else if (showingAll) { results.innerHTML = ""; renderAll(); }
     else if (showingSottoscorta) {
       results.innerHTML = "";
       const prodSotto = prodotti.filter(p => p.Giacenza < p.ScortaMinima);
@@ -456,6 +528,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (showingAll) resetAll();
     else { resetAll(); renderAll(); showingAll = true; }
   });
+
+  const preferitiBtn = document.getElementById('preferitiBtn');
+  if (preferitiBtn) {
+    preferitiBtn.addEventListener('click', () => {
+      if (showingPreferiti) { resetAll(); return; }
+      resetAll();
+      showingPreferiti = true;
+      preferitiBtn.classList.add('active');
+      renderPreferiti();
+    });
+  }
 
   sottoscortaBtn.addEventListener("click", () => {
     if (showingSottoscorta) { resetAll(); return; }
@@ -1591,5 +1674,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // ─── Init ─────────────────────────────────────────────────────────────────
-  Promise.all([loadProdotti(), loadReagenti(), loadGruppiEq()]);
+  Promise.all([loadProdotti(), loadReagenti(), loadGruppiEq(), loadPreferiti()]);
 });
