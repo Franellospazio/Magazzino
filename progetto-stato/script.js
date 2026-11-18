@@ -383,7 +383,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     content += ` — <span style="color:${gc};">${p.Giacenza}</span> (<span style="color:blue;">${p.ScortaMinima}</span>)`;
     if (p.inordine && p.inordine > 0) content += `<br>🛒 In ordine: ${p.inordine}`;
     if (p.ultimo_aggiornamento) content += `<br><span style="color:#666; font-size:12px;">📅 Aggiornato: ${formatData(p.ultimo_aggiornamento)}</span>`;
-    content += p.ImageURL ? `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">` : `<br><em>(img non presente)</em>`;
+    if (p.ImageURL) content += `<br><img src="${p.ImageURL}" alt="${p.Descrizione}" style="max-width:100px; max-height:100px; margin-top:5px;">`;
     li.innerHTML = content;
     li.prepend(creaStellina('p_' + p.Descrizione));
     li.addEventListener("click", () => { if (!isReadonly) openModal(p); });
