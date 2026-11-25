@@ -168,10 +168,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
   const params = new URLSearchParams(window.location.search);
   const p = params.get('p'); // reagente
-  const c = params.get('c'); // consumabile
+  // consumabile: ?c=… (etichette PDF e del sito) oppure ?id=… (etichette
+  // stampate dalla Zebra fino al 25/11/2026). URLSearchParams decodifica già.
+  const c = params.get('c') || params.get('id');
 
   if (p) { document.getElementById('scannerView').style.display = 'none'; await caricaReagente(p); return; }
-  if (c) { document.getElementById('scannerView').style.display = 'none'; await caricaConsumabile(decodeURIComponent(c), true); return; }
+  if (c) { document.getElementById('scannerView').style.display = 'none'; await caricaConsumabile(c, true); return; }
 
   avviaScanner();
 });
@@ -207,8 +209,7 @@ function handleQR(data) {
   try {
     const url = new URL(data);
     progressivo  = url.searchParams.get('p');
-    consumabile  = url.searchParams.get('c');
-    if (consumabile) consumabile = decodeURIComponent(consumabile);
+    consumabile  = url.searchParams.get('c') || url.searchParams.get('id');
   } catch(e) {
     // dato grezzo = progressivo reagente
     progressivo = data.trim();
@@ -338,16 +339,21 @@ async function caricaConsumabile(nome, autoPrelievo = false) {
     // api/prodotti restituisce sempre un array; prendiamo il match esatto su Descrizione
     // oppure il primo risultato (l'API filtra già con ilike sul nome)
     const arr = Array.isArray(data) ? data : [data];
-    const p = arr.find(d => (d.Descrizione || d.nome_prodotto || '').trim() === nome.trim())
-           || arr[0];
-    if (!p) throw new Error('Prodotto non trovato');
-    renderConsumabile(p, autoPrelievo);
+    const norm = s => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    const esatto = arr.find(d => (d.Descrizione || d.nome_prodotto || '').trim() === nome.trim())
+                || arr.find(d => norm(d.Descrizione || d.nome_prodotto) === norm(nome));
+    if (esatto) { renderConsumabile(esatto, autoPrelievo); return; }
+    // Nome non trovato uguale: NIENTE prelievo automatico (si rischierebbe di
+    // scaricare un altro prodotto che contiene lo stesso testo)
+    if (!arr.length) throw new Error(`Prodotto non trovato:<br><b>${esc(nome)}</b><br>forse è stato rinominato o cancellato.`);
+    renderConsumabile(arr[0], false,
+      `⚠️ Non trovo esattamente «${esc(nome)}». Controlla che sia il prodotto giusto prima di prelevare.`);
   } catch(err) {
     view.innerHTML = `<div class="err-box"><div class="icon">❌</div><p>${err.message}</p></div><button class="btn-scan-again" onclick="tornaScan()" style="margin-top:16px;">🔁 Scansiona di nuovo</button>`;
   }
 }
 
-function renderConsumabile(p, autoPrelievo = false) {
+function renderConsumabile(p, autoPrelievo = false, avviso = '') {
   const view = document.getElementById('prodottoView');
   const g = p.giacenza ?? 0;
   const s = p.scorta_minima ?? null;
@@ -368,6 +374,7 @@ function renderConsumabile(p, autoPrelievo = false) {
   view.innerHTML = `
     <span class="pill pill-cons">📦 Consumabile</span>
     ${warnBadge}${esauritoBadge}
+    ${avviso ? `<div class="err-box" style="background:rgba(230,126,34,.15);border-color:rgba(230,126,34,.5);"><p>${avviso}</p></div>` : ''}
     <div><div class="nome">${esc(p.nome_prodotto)}</div>${p.categoria ? `<div class="sub">${esc(p.categoria)}</div>` : ''}</div>
     <div class="giacenza-big ${giacenzaClass}">
       <div class="num">${g}</div>
