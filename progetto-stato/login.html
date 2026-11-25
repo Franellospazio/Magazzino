@@ -122,8 +122,10 @@
 
     // Legge eventuale ?next= per redirect post-login
     function getNextUrl() {
+      // get() decodifica già: una seconda decodifica rovinava i nomi con
+      // + & # % (es. ?c=… delle etichette). Solo indirizzi di questo sito.
       const p = new URLSearchParams(window.location.search).get('next');
-      return p ? decodeURIComponent(p) : '/';
+      return (p && p.startsWith('/') && !p.startsWith('//')) ? p : '/';
     }
 
     // Se già loggato vai direttamente alla destinazione
